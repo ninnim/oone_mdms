@@ -1,0 +1,140 @@
+
+
+// All API request Header
+
+
+  // options.headers['x-hasura-admin-secret'] = token;
+  //           options.headers['Content-Type'] = 'application/json';
+  //           options.headers['Accept'] = 'application/json';
+
+  //           // For development, keep these headers
+  //           options.headers['x-hasura-tenant'] =
+  //               '0a12968d-2a38-48ee-b60a-ce2498040825';
+  //           options.headers['x-hasura-user'] = 'admin';
+  //           options.headers['x-hasura-role'] = 'super-admin';
+
+
+// Read All Season
+
+// Method GET https://mdms.oone.bz/api/rest/v2/Season?search=%%&offset=0&limit=25
+
+// Response Read All Season
+{
+  "Paging": {
+    "Item": {
+      "Total": 1
+    }
+  },
+  "Season": [
+    {
+      "Id": 119,
+      "Name": "Summers",
+      "Description": "Summer",
+      "MonthRange": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "Active": true
+    }
+  ]
+}
+
+// Read Season by ID
+// Method GET https://mdms.oone.bz/api/rest/v2/Season/119
+
+// Response Read Season by ID
+
+{
+  "Season": [
+    {
+      "Id": 119,
+      "Name": "Summers",
+      "Description": "Summer",
+      "MonthRange": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "Active": true
+    }
+  ]
+}
+// Create Season
+// Method POST https://mdms.oone.bz/api/rest/v2/Season
+
+// Request Create Season
+{
+  "Season": {
+    "Name": "Summers",
+    "Description": "Summer",
+    "MonthRange": [2,3,4,5]
+  }
+}
+// Response Create Season
+{
+  "Season": {
+    "Id": 119,
+    "Name": "Summers",
+    "Description": "Summer",
+    "MonthRange": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "Active": true
+  }
+}
+
+// Update Season 
+
+// Method POST https://mdms.oone.bz/api/rest/v2/Season/119
+
+// Request Update Season
+{
+  "Season": {
+"Name":"Summers",
+    "Description": "Summer-Update",
+    "MonthRange": [2,3,4,5,6]
+  }
+}
+
+// Response Update Season
+{
+  "Season": {
+    "Id": 119,
+    "Name": "Summers",
+    "Description": "Summer-Update",
+    "MonthRange": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "Active": true
+  }
+}
+
+// Delete Season
+// Method DELETE https://mdms.oone.bz/api/rest/v2/Season/119
+// Response Delete Season
+{
+  "Season": {
+    "Id": 119,
+    "Name": "Summers",
+    "Description": "Summer-Update",
+    "MonthRange": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "Active": true
+  }
+}
+

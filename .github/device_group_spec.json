@@ -1,0 +1,158 @@
+// All API request Header
+
+
+  // options.headers['x-hasura-admin-secret'] = token;
+  //           options.headers['Content-Type'] = 'application/json';
+  //           options.headers['Accept'] = 'application/json';
+
+  //           // For development, keep these headers
+  //           options.headers['x-hasura-tenant'] =
+  //               '0a12968d-2a38-48ee-b60a-ce2498040825';
+  //           options.headers['x-hasura-user'] = 'admin';
+  //           options.headers['x-hasura-role'] = 'super-admin';
+
+
+// Read All Device Group
+// Method GET https://mdms.oone.bz/api/rest/v1/DeviceGroup?search=%%&limit=25&offset=0&includeDevices=true
+// Response Read All Device Group
+{
+  "Paging": {
+    "Item": {
+      "Total": 1
+    }
+  },
+  "DeviceGroup": [
+    {
+      "Id": 69,
+      "Name": "Group-01",
+      "Active": true,
+      "Description": "Group-01",
+      "Devices": [
+        {
+          "Id": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
+          "SerialNumber": "SD0001-01",
+          "Name": "",
+          "DeviceType": "Smart Meter",
+          "Model": "EDMI",
+          "Manufacturer": "EDMIk",
+          "Status": "None",
+          "LinkStatus": "None",
+          "Active": true
+        }
+      ]
+    }
+  ]
+}
+// Read Device Group by ID
+// Method GET https://mdms.oone.bz/api/rest/v1/DeviceGroup/69?includeDevices=true
+// Response Read Device Group by ID
+{
+  "DeviceGroup": {
+    "Id": 69,
+    "Name": "Group-01",
+    "Description": "Group-01",
+    "Active": true,
+    "DevicePaging": {
+      "Item": {
+        "Total": 1
+      }
+    },
+    "Devices": [
+      {
+        "Id": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
+        "SerialNumber": "SD0001-01",
+        "Name": "",
+        "DeviceType": "Smart Meter",
+        "Model": "EDMI",
+        "Manufacturer": "EDMIk",
+        "Status": "None",
+        "LinkStatus": "None",
+        "Active": true
+      }
+    ]
+  }
+}
+
+// Create Device Group
+// Method POST https://mdms.oone.bz/api/rest/v1/DeviceGroup
+// Request Create Device Group
+{
+  "DeviceGroup": {
+    "Name": "Group-C",
+    "Description": "Group-c common",
+    "Devices": {
+      "on_conflict": {
+        "constraint": "PK_Device",
+        "update_columns": [
+          "DeviceGroupId"
+        ]
+      },
+      "data": []
+    }
+  },
+  "RemovedDevices": []
+}
+
+// Response Create Device Group
+{
+  "DeviceGroup": {
+    "Id": 194,
+    "Name": "Group-C",
+    "Description": "Group-c common",
+    "Active": true,
+    "BillingDevices": []
+  },
+  "RemovedDevices": {
+    "affected_rows": 0
+  }
+}
+
+// Update Device Group
+// Method POST https://mdms.oone.bz/api/rest/v1/DeviceGroup
+// Request Update Device Group
+{
+  "DeviceGroup": {
+    "Id": 194,
+    "Name": "Group-C-Update",
+    "Description": "Group-c common",
+    "Devices": {
+      "on_conflict": {
+        "constraint": "PK_Device",
+        "update_columns": [
+          "DeviceGroupId"
+        ]
+      },
+      "data": [{"Id":"8be0994a-4869-4ae8-969b-32681b040ab5"}]
+    }
+  },
+  "RemovedDevices": []
+}
+
+// Response Update Device Group
+{
+  "DeviceGroup": {
+    "Id": 194,
+    "Name": "Group-C-Update",
+    "Description": "Group-c common",
+    "Active": true,
+    "BillingDevices": []
+  },
+  "RemovedDevices": {
+    "affected_rows": 0
+  }
+}
+// Delete Device Group
+// Method DELETE https://mdms.oone.bz/api/rest/v1/DeviceGroup/194
+// Response Delete Device Group
+{
+  "DeviceGroup": {
+    "Id": 194,
+    "Name": "Group-C-Update",
+    "Description": "Group-c common",
+    "Active": true,
+    "BillingDevices": []
+  },
+  "RemovedDevices": {
+    "affected_rows": 0
+  }
+}

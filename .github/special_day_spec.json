@@ -1,0 +1,253 @@
+
+// All API request Header
+
+
+  // options.headers['x-hasura-admin-secret'] = token;
+  //           options.headers['Content-Type'] = 'application/json';
+  //           options.headers['Accept'] = 'application/json';
+
+  //           // For development, keep these headers
+  //           options.headers['x-hasura-tenant'] =
+  //               '0a12968d-2a38-48ee-b60a-ce2498040825';
+  //           options.headers['x-hasura-user'] = 'admin';
+  //           options.headers['x-hasura-role'] = 'super-admin';
+
+
+// Read All Special Day 
+// Method GET https://mdms.oone.bz/api/rest/v2/SpecialDay?search=%%&includeSpecialDayDetail=false&limit=25&offset=0
+// Response Read All Special Day
+
+{
+  "Paging": {
+    "Item": {
+      "Total": 2
+    }
+  },
+  "SpecialDay": [
+    {
+      "Id": 126,
+      "Name": "Khmer Holiday01k",
+      "Description": "Khmer Holiday01",
+      "Active": true
+    },
+    {
+      "Id": 122,
+      "Name": "nk",
+      "Description": "nk",
+      "Active": true
+    }
+  ]
+}
+
+// if includeSpecialDayDetail=true
+// Response Read All Special Day with Detail
+
+{
+  "Paging": {
+    "Item": {
+      "Total": 2
+    }
+  },
+  "SpecialDay": [
+    {
+      "Id": 126,
+      "Name": "Khmer Holiday01k",
+      "Description": "Khmer Holiday01",
+      "Active": true,
+       "SpecialDayDetails": [
+        {
+          "Id": 74,
+          "Name": "KHmer",
+          "Description": "k",
+          "StartDate": "2025-06-27T00:00:00+07:00",
+          "EndDate": "2025-06-27T00:00:00+07:00",
+          "Active": true
+        },
+        {
+          "Id": 73,
+          "Name": "Khmer New-01",
+          "Description": "Khmer New",
+          "StartDate": "2025-04-12T00:00:00+07:00",
+          "EndDate": "2025-04-16T00:00:00+07:00",
+          "Active": true
+        }
+      ]
+    },
+    {
+      "Id": 122,
+      "Name": "nk",
+      "Description": "nk",
+      "Active": true,
+      "SpecialDayDetail": []
+    }
+  ]
+}
+
+// Read Special Day by ID
+// Method GET 	https://mdms.oone.bz/api/rest/SpecialDay/126?includeSpecialDayDetail=true&search=%%
+
+// Response Read Special Day by ID
+
+{
+  "SpecialDay": [
+    {
+      "Id": 126,
+      "Name": "Khmer Holiday01k",
+      "Description": "Khmer Holiday01",
+      "Active": true,
+      "SpecialDayDetails": [
+        {
+          "Id": 74,
+          "Name": "KHmer",
+          "Description": "k",
+          "StartDate": "2025-06-27T00:00:00+07:00",
+          "EndDate": "2025-06-27T00:00:00+07:00",
+          "Active": true
+        },
+        {
+          "Id": 73,
+          "Name": "Khmer New-01",
+          "Description": "Khmer New",
+          "StartDate": "2025-04-12T00:00:00+07:00",
+          "EndDate": "2025-04-16T00:00:00+07:00",
+          "Active": true
+        }
+      ]
+    }
+  ]
+}
+
+// Create Special Day
+// Method POST https://mdms.oone.bz/api/rest/SpecialDay
+// Request Create Special Day
+{
+  "SpecialDay": {
+    "Name": "Khmer Holiday01k",
+    "Description": "Khmer Holiday01",
+    "SpecialDayDetails": [
+      {
+        "Name": "KHmer",
+        "Description": "k",
+        "StartDate": "2025-06-27T00:00:00+07:00",
+        "EndDate": "2025-06-27T00:00:00+07:00"
+      },
+      {
+        "Name": "Khmer New-01",
+        "Description": "Khmer New",
+        "StartDate": "2025-04-12T00:00:00+07:00",
+        "EndDate": "2025-04-16T00:00:00+07:00"
+      }
+    ]
+  }
+}
+// if not include SpecialDayDetails
+// Response Create Special Day
+{
+  "SpecialDay": {
+    "Name": "Khmer Holiday01k",
+    "Description": "Khmer Holiday01",
+    "Active": true
+  }
+}
+// Update Special Day
+// Method POST https://mdms.oone.bz/api/rest/SpecialDay/126
+// Request Update Special Day
+{
+  "SpecialDay": {
+    "Description": "DC-01-Update",
+    "Name": "DC-01"
+  }
+}
+
+// Response Update Special Day
+{
+  "SpecialDay": {
+    "Id": 126,
+    "Name": "DC-01",
+    "Description": "DC-01-Update",
+    "Active": true
+  }
+}
+
+
+// if includeSpecialDayDetail=true
+// Request Update Special Day with Detail
+{
+  "SpecialDay": {
+    "Description": "DC-01-Update",
+    "Name": "DC-01",
+    "SpecialDayDetails": [
+      {
+        "Id": 74,
+        "Name": "KHmer",
+        "Description": "k",
+        "StartDate": "2025-06-27T00:00:00+07:00",
+        "EndDate": "2025-06-27T00:00:00+07:00"
+      },
+      {
+        "Id": 73,
+        "Name": "Khmer New-01",
+        "Description": "Khmer New",
+        "StartDate": "2025-04-12T00:00:00+07:00",
+        "EndDate": "2025-04-16T00:00:00+07:00"
+      }
+    ]
+  }
+}
+// Response Update Special Day with Detail
+{
+  "SpecialDay": {
+    "Id": 126,
+    "Name": "DC-01",
+    "Description": "DC-01-Update",
+    "Active": true,
+    "SpecialDayDetails": [
+      {
+        "Id": 74,
+        "Name": "KHmer",
+        "Description": "k",
+        "StartDate": "2025-06-27T00:00:00+07:00",
+        "EndDate": "2025-06-27T00:00:00+07:00",
+        "Active": true
+      },
+      {
+        "Id": 73,
+        "Name": "Khmer New-01",
+        "Description": "Khmer New",
+        "StartDate": "2025-04-12T00:00:00+07:00",
+        "EndDate": "2025-04-16T00:00:00+07:00",
+        "Active": true
+      }
+    ]
+  }
+}
+
+// Delete Special Day
+// Method DELETE https://mdms.oone.bz/api/rest/SpecialDay/126
+// Response Delete Special Day
+{
+  "SpecialDay": {
+    "Id": 126,
+    "Name": "DC-01",
+    "Description": "DC-01-Update",
+    "Active": true,
+    "SpecialDayDetails": [
+      {
+        "Id": 74,
+        "Name": "KHmer",
+        "Description": "k",
+        "StartDate": "2025-06-27T00:00:00+07:00",
+        "EndDate": "2025-06-27T00:00:00+07:00",
+        "Active": true
+      },
+      {
+        "Id": 73,
+        "Name": "Khmer New-01",
+        "Description": "Khmer New",
+        "StartDate": "2025-04-12T00:00:00+07:00",
+        "EndDate": "2025-04-16T00:00:00+07:00",
+        "Active": true
+      }
+    ]
+  }
+}

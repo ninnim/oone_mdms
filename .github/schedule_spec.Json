@@ -1,0 +1,245 @@
+// All API request Header
+
+
+  // options.headers['x-hasura-admin-secret'] = token;
+  //           options.headers['Content-Type'] = 'application/json';
+  //           options.headers['Accept'] = 'application/json';
+
+  //           // For development, keep these headers
+  //           options.headers['x-hasura-tenant'] =
+  //               '0a12968d-2a38-48ee-b60a-ce2498040825';
+  //           options.headers['x-hasura-user'] = 'admin';
+  //           options.headers['x-hasura-role'] = 'super-admin';
+
+  // Read All Sechedule
+  // Method GET https://mdms.oone.bz/core/api/rest/v1/Schedule?offset=0&limit=25
+  // Response Read All Schedule
+{
+  "Paging": {
+    "Item": {
+      "limit": 25,
+      "offset": 0,
+      "total": 1,
+      "pages": 1
+    }
+  },
+  "Schedule": [
+    {
+      "BillingDeviceId": "6f37dd10-ef69-4714-b59b-accdd60abb5c",
+      "JobId": 252,
+      "JobTriggerId": 336,
+      "Code": "K",
+      "Name": "K",
+      "JobStatus": "None",
+      "TargetType": "Group",
+      "CronExpression": "0 0 0 24 * ?",
+      "BillingDevice": {
+        "JobId": 252,
+        "JobTriggerId": 0,
+        "SiteId": 93,
+        "DeviceId": null,
+        "DeviceGroupId": 69,
+        "TimeOfUseId": 10,
+        "Status": "Enabled",
+        "NextBillingDate": "2025-06-24T00:00:00+00:00",
+        "Interval": "Monthly",
+        "RetryCount": 1,
+        "LastExecutionTime": null,
+        "UserId": "",
+        "Active": true,
+        "Id": "6f37dd10-ef69-4714-b59b-accdd60abb5c",
+        "TenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+        "CreatedBy": "nin nin",
+        "CreatedDate": "2025-06-24T01:49:54.009392+00:00",
+        "RowDate": "2025-06-24T01:49:54.009385+00:00"
+      },
+      "Id": 252,
+      "Active": true,
+      "CreatedDate": "2025-06-24T01:49:53.938867+00:00",
+      "CreatedBy": "nin nin"
+    }
+  ]
+}
+
+// Read Schedule by ID
+// Method https://mdms.oone.bz/core/api/rest/v1/Schedule/6f37dd10-ef69-4714-b59b-accdd60abb5c
+// Response Read Schedule by ID
+{
+  "Schedule": {
+    "BillingDeviceId": "6f37dd10-ef69-4714-b59b-accdd60abb5c",
+    "JobId": 252,
+    "JobTriggerId": 336,
+    "Code": "K",
+    "Name": "K",
+    "JobStatus": "None",
+    "TargetType": "Group",
+    "CronExpression": "0 0 0 24 * ?",
+    "BillingDevice": {
+      "JobId": 252,
+      "JobTriggerId": 0,
+      "SiteId": 93,
+      "DeviceId": null,
+      "DeviceGroupId": 69,
+      "TimeOfUseId": 10,
+      "Status": "Enabled",
+      "NextBillingDate": "2025-06-24T00:00:00+00:00",
+      "Interval": "Monthly",
+      "RetryCount": 1,
+      "LastExecutionTime": null,
+      "UserId": "",
+      "Active": true,
+      "Id": "6f37dd10-ef69-4714-b59b-accdd60abb5c",
+      "TenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+      "CreatedBy": "nin nin",
+      "CreatedDate": "2025-06-24T01:49:54.009392+00:00",
+      "RowDate": "2025-06-24T01:49:54.009385+00:00"
+    },
+    "Id": 252,
+    "Active": true,
+    "CreatedDate": "2025-06-24T01:49:53.938867+00:00",
+    "CreatedBy": "nin nin"
+  }
+}
+// Create Schedule
+// Method POST https://mdms.oone.bz/core/api/rest/v1/Schedule
+// Request Create Schedule
+{
+  "Code": "SD-001",
+  "Name": "SD-001",
+  "CronExpression": "0 0 0 4 * ?",
+  "BillingDevice": {
+    "DeviceId": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
+    "SiteId": 134,
+    "TimeOfUseId": 10,
+    "Status": "Enabled",
+    "NextBillingDate": "2025-07-04",
+    "RetryCount": 1
+  }
+}
+
+// Response Create Schedule
+{
+  "BillingDeviceId": "1d87143b-9eea-4646-b904-4d9b701f32fb",
+  "JobId": 289,
+  "JobTriggerId": 381,
+  "Code": "SD-001",
+  "Name": "SD-001",
+  "JobStatus": "None",
+  "TargetType": "Device",
+  "CronExpression": "0 0 0 4 * ?",
+  "BillingDevice": {
+    "JobId": 289,
+    "JobTriggerId": 0,
+    "SiteId": 134,
+    "DeviceId": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
+    "DeviceGroupId": null,
+    "TimeOfUseId": 10,
+    "Status": "Enabled",
+    "NextBillingDate": "2025-07-04T00:00:00",
+    "Interval": "Monthly",
+    "RetryCount": 1,
+    "LastExecutionTime": null,
+    "UserId": "",
+    "Active": true,
+    "Id": "1d87143b-9eea-4646-b904-4d9b701f32fb",
+    "TenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+    "CreatedBy": "nin nin",
+    "CreatedDate": "2025-07-04T02:58:31.524252+00:00",
+    "RowDate": "2025-07-04T02:58:31.5242359+00:00"
+  },
+  "Id": 289,
+  "Active": true,
+  "CreatedDate": "2025-07-04T02:58:31.4496475+00:00",
+  "CreatedBy": "nin nin"
+}
+
+// Update Schedule
+// Method POST https://mdms.oone.bz/core/api/rest/v1/Schedule/1d87143b-9eea-4646-b904-4d9b701f32fb
+// Request Update Schedule
+{
+  "Code": "SD-001-Update",
+  "Name": "SD-001-Update",
+  "CronExpression": "0 0 0 4 * ?",
+  "BillingDevice": {
+    "DeviceId": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
+    "SiteId": 134,
+    "TimeOfUseId": 10,
+    "Status": "Enabled",
+    "NextBillingDate": "2025-07-04",
+    "RetryCount": 1
+  }
+}
+
+// Response Update Schedule
+{
+  "BillingDeviceId": "1d87143b-9eea-4646-b904-4d9b701f32fb",
+  "JobId": 289,
+  "JobTriggerId": 381,
+  "Code": "SD-001-Update",
+  "Name": "SD-001-Update",
+  "JobStatus": "None",
+  "TargetType": "Device",
+  "CronExpression": "0 0 0 4 * ?",
+  "BillingDevice": {
+    "JobId": 289,
+    "JobTriggerId": 0,
+    "SiteId": 134,
+    "DeviceId": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
+    "DeviceGroupId": null,
+    "TimeOfUseId": 10,
+    "Status": "Enabled",
+    "NextBillingDate": "2025-07-04T00:00:00",
+    "Interval": "Monthly",
+    "RetryCount": 1,
+    "LastExecutionTime": null,
+    "UserId": "",
+    "Active": true,
+    "Id": "1d87143b-9eea-4646-b904-4d9b701f32fb",
+    "TenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+    "CreatedBy": "nin nin",
+    "CreatedDate": "2025-07-04T02:58:31.524252+00:00",
+    "RowDate": "2025-07-04T02:58:31.5242359+00:00"
+  },
+  "Id": 289,
+  "Active": true,
+  "CreatedDate": "2025-07-04T02:58:31.4496475+00:00",
+  "CreatedBy": "nin nin"
+} 
+
+// Delete Schedule
+// Method DELETE https://mdms.oone.bz/core/api/rest/v1/Schedule/1d87143b-9eea-4646-b904-4d9b701f32fb
+// Response Delete Schedule
+{
+  "BillingDeviceId": "1d87143b-9eea-4646-b904-4d9b701f32fb",
+  "JobId": 289,
+  "JobTriggerId": 381,
+  "Code": "SD-001-Update",
+  "Name": "SD-001-Update",
+  "JobStatus": "None",
+  "TargetType": "Device",
+  "CronExpression": "0 0 0 4 * ?",
+  "BillingDevice": {
+    "JobId": 289,
+    "JobTriggerId": 0,
+    "SiteId": 134,
+    "DeviceId": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
+    "DeviceGroupId": null,
+    "TimeOfUseId": 10,
+    "Status": "Enabled",
+    "NextBillingDate": "2025-07-04T00:00:00",
+    "Interval": "Monthly",
+    "RetryCount": 1,
+    "LastExecutionTime": null,
+    "UserId": "",
+    "Active": true,
+    "Id": "1d87143b-9eea-4646-b904-4d9b701f32fb",
+    "TenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+    "CreatedBy": "nin nin",
+    "CreatedDate": "2025-07-04T02:58:31.524252+00:00",
+    "RowDate": "2025-07-04T02:58:31.5242359+00:00"
+  },
+  "Id": 289,
+  "Active": true,
+  "CreatedDate": "2025-07-04T02:58:31.4496475+00:00",
+  "CreatedBy": "nin nin"
+} 

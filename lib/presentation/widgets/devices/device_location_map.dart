@@ -1,0 +1,148 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../core/models/address.dart';
+
+class DeviceLocationMap extends StatefulWidget {
+  final Address? address;
+  final bool readOnly;
+
+  const DeviceLocationMap({super.key, this.address, this.readOnly = true});
+
+  @override
+  State<DeviceLocationMap> createState() => _DeviceLocationMapState();
+}
+
+class _DeviceLocationMapState extends State<DeviceLocationMap> {
+  @override
+  Widget build(BuildContext context) {
+    if (widget.address?.latitude == null || widget.address?.longitude == null) {
+      return Container(
+        height: 300,
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.location_off, size: 48, color: Colors.grey),
+              SizedBox(height: 8),
+              Text(
+                'No location data available',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final position = LatLng(
+      widget.address!.latitude!,
+      widget.address!.longitude!,
+    );
+
+    return Container(
+      height: 300,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: kIsWeb
+            ? _buildWebMapFallback()
+            : GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: position,
+                  zoom: 15,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('device_location'),
+                    position: position,
+                    infoWindow: InfoWindow(
+                      title: 'Device Location',
+                      snippet: widget.address!.shortText.isNotEmpty
+                          ? widget.address!.shortText
+                          : widget.address!.longText.isNotEmpty
+                          ? widget.address!.longText
+                          : 'Device Location',
+                    ),
+                  ),
+                },
+                myLocationEnabled: false,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: true,
+                mapToolbarEnabled: false,
+                compassEnabled: true,
+                rotateGesturesEnabled: false,
+                scrollGesturesEnabled: true,
+                zoomGesturesEnabled: true,
+                tiltGesturesEnabled: false,
+              ),
+      ),
+    );
+  }
+
+  Widget _buildWebMapFallback() {
+    return Container(
+      width: double.infinity,
+      height: 300,
+      color: Colors.grey[100],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.map, size: 48, color: Colors.grey),
+          const SizedBox(height: 8),
+          const Text(
+            'Map View',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (widget.address?.latitude != null &&
+              widget.address?.longitude != null)
+            Text(
+              'Lat: ${widget.address!.latitude!.toStringAsFixed(6)}, '
+              'Lng: ${widget.address!.longitude!.toStringAsFixed(6)}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              final lat = widget.address!.latitude!;
+              final lng = widget.address!.longitude!;
+              // For web, we can open Google Maps in a new tab
+              // This is just a placeholder - you could implement actual map opening
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Location: $lat, $lng'),
+                  action: SnackBarAction(
+                    label: 'Copy',
+                    onPressed: () {
+                      // Copy coordinates to clipboard
+                    },
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('Open in Maps'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563eb),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
