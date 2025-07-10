@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/api_service.dart';
@@ -9,7 +8,6 @@ import '../common/status_chip.dart';
 import '../common/results_pagination.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 
 enum CustomMapType { normal, satellite, hybrid, terrain }
 
@@ -35,7 +33,6 @@ class AdvancedDeviceMapView extends StatefulWidget {
 class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
-  Set<Circle> _clusters = {};
   LatLng _center = const LatLng(
     11.556400,
     104.928200,
@@ -56,11 +53,10 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalItems = 0;
-  int _itemsPerPage = 10; // Smaller page size for sidebar
+  int _itemsPerPage = 8; // Smaller page size for sidebar
   String _searchQuery = '';
 
-  // Clustering parameters
-  static const double _clusterDistance = 100.0; // pixels
+  // Clustering
   final List<DeviceCluster> _deviceClusters = [];
 
   @override
@@ -129,7 +125,7 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
       if (response.success) {
         setState(() {
           _mapDevices = response.data ?? [];
-          _totalItems = response.paging?.item?.total ?? 0;
+          _totalItems = response.paging?.item.total ?? 0;
           _totalPages = (_totalItems / _itemsPerPage).ceil();
         });
       }
@@ -229,28 +225,84 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
   void _createMarkers() async {
     final markers = <Marker>{};
 
-    for (int i = 0; i < _deviceClusters.length; i++) {
-      final cluster = _deviceClusters[i];
+    // Enhanced zoom-responsive clustering (similar to your sample)
+    const double individualMarkerZoom =
+        15.0; // Show individual markers at high zoom
+    const double clusterZoom = 12.0; // Start clustering at medium zoom
 
-      if (cluster.devices.length == 1) {
-        // Single device marker
-        final device = cluster.devices.first;
-        final markerIcon = await _createDeviceMarkerIcon(device);
+    if (_zoom >= individualMarkerZoom) {
+      // High zoom: Show individual device markers
+      for (final device in _allDevicesForMap) {
+        if (device.address?.latitude != null &&
+            device.address?.longitude != null) {
+          final markerIcon = await _createDeviceMarkerIcon(device);
 
-        markers.add(
-          Marker(
-            markerId: MarkerId('device_${device.id}'),
-            position: cluster.center,
-            icon: markerIcon,
-            onTap: () => _onDeviceMarkerTapped(device),
-            infoWindow: InfoWindow(
-              title: device.serialNumber,
-              snippet: device.status.isNotEmpty ? device.status : 'Unknown',
+          markers.add(
+            Marker(
+              markerId: MarkerId('device_${device.id}'),
+              position: LatLng(
+                device.address!.latitude!,
+                device.address!.longitude!,
+              ),
+              icon: markerIcon,
+              onTap: () => _onDeviceMarkerTapped(device),
+              infoWindow: InfoWindow(
+                title: device.serialNumber,
+                snippet: device.status.isNotEmpty ? device.status : 'Unknown',
+              ),
             ),
-          ),
-        );
-      } else {
-        // Cluster marker
+          );
+        }
+      }
+    } else if (_zoom >= clusterZoom) {
+      // Medium zoom: Show smaller clusters with dynamic radius
+      final clusterRadius = (20 - _zoom) * 10; // Responsive cluster radius
+      final clusters = _createDynamicClusters(_allDevicesForMap, clusterRadius);
+
+      for (int i = 0; i < clusters.length; i++) {
+        final cluster = clusters[i];
+
+        if (cluster.devices.length == 1) {
+          // Single device
+          final device = cluster.devices.first;
+          final markerIcon = await _createDeviceMarkerIcon(device);
+
+          markers.add(
+            Marker(
+              markerId: MarkerId('device_${device.id}'),
+              position: cluster.center,
+              icon: markerIcon,
+              onTap: () => _onDeviceMarkerTapped(device),
+              infoWindow: InfoWindow(
+                title: device.serialNumber,
+                snippet: device.status.isNotEmpty ? device.status : 'Unknown',
+              ),
+            ),
+          );
+        } else {
+          // Cluster marker with enhanced styling
+          final clusterIcon = await _createClusterMarkerIcon(
+            cluster.devices.length,
+          );
+
+          markers.add(
+            Marker(
+              markerId: MarkerId('cluster_$i'),
+              position: cluster.center,
+              icon: clusterIcon,
+              onTap: () => _onClusterMarkerTapped(cluster),
+              infoWindow: InfoWindow(
+                title: '${cluster.devices.length} devices',
+                snippet: 'Tap to zoom in',
+              ),
+            ),
+          );
+        }
+      }
+    } else {
+      // Low zoom: Show large clusters using existing logic
+      for (int i = 0; i < _deviceClusters.length; i++) {
+        final cluster = _deviceClusters[i];
         final clusterIcon = await _createClusterMarkerIcon(
           cluster.devices.length,
         );
@@ -262,8 +314,8 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
             icon: clusterIcon,
             onTap: () => _onClusterMarkerTapped(cluster),
             infoWindow: InfoWindow(
-              title: '${cluster.devices.length} Devices',
-              snippet: 'Tap to see devices',
+              title: '${cluster.devices.length} devices',
+              snippet: 'Tap to zoom in',
             ),
           ),
         );
@@ -273,6 +325,54 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
     setState(() {
       _markers = markers;
     });
+  }
+
+  // Enhanced clustering method for dynamic zoom-responsive clustering
+  List<DeviceCluster> _createDynamicClusters(
+    List<Device> devices,
+    double radius,
+  ) {
+    final clusters = <DeviceCluster>[];
+    final processed = <bool>[];
+
+    for (int i = 0; i < devices.length; i++) {
+      processed.add(false);
+    }
+
+    for (int i = 0; i < devices.length; i++) {
+      if (processed[i] || devices[i].address?.latitude == null) continue;
+
+      final clusterDevices = <Device>[devices[i]];
+      processed[i] = true;
+
+      final centerLat = devices[i].address!.latitude!;
+      final centerLng = devices[i].address!.longitude!;
+
+      // Find nearby devices within radius
+      for (int j = i + 1; j < devices.length; j++) {
+        if (processed[j] || devices[j].address?.latitude == null) continue;
+
+        final distance = _calculateDistance(
+          LatLng(centerLat, centerLng),
+          LatLng(devices[j].address!.latitude!, devices[j].address!.longitude!),
+        );
+
+        if (distance * 1000 <= radius) {
+          // Convert km to meters
+          clusterDevices.add(devices[j]);
+          processed[j] = true;
+        }
+      }
+
+      clusters.add(
+        DeviceCluster(
+          center: _calculateClusterCenter(clusterDevices),
+          devices: clusterDevices,
+        ),
+      );
+    }
+
+    return clusters;
   }
 
   Future<BitmapDescriptor> _createDeviceMarkerIcon(Device device) async {
@@ -339,31 +439,84 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
   }
 
   Future<BitmapDescriptor> _createClusterMarkerIcon(int count) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final size = const Size(60, 60);
+    // Create the cluster marker widget similar to your sample
+    final clusterWidget = _buildClusterMarkerWidget(count);
 
-    // Draw cluster background
-    final paint = Paint()..color = AppColors.primary;
-    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 25, paint);
+    // Convert widget to BitmapDescriptor
+    return await _createBitmapFromWidget(clusterWidget);
+  }
 
-    // Draw white border
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 25, borderPaint);
+  Widget _buildClusterMarkerWidget(int count) {
+    // Determine if it's a large cluster (like your sample: count > 10)
+    final isLarge = count > 10;
+    final color = isLarge ? Colors.red : const Color(0xFF2F3CFE);
 
-    // Draw count text
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: count.toString(),
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 12,
+            spreadRadius: 4,
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          count > 99 ? '99+' : count.toString(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
         ),
       ),
+    );
+  }
+
+  // Helper method to convert widget to BitmapDescriptor
+  Future<BitmapDescriptor> _createBitmapFromWidget(Widget widget) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    const size = Size(40, 40);
+
+    // Paint the widget using canvas (simplified approach)
+    final clusterWidget = widget as Container;
+    final decoration = clusterWidget.decoration as BoxDecoration;
+    final color = decoration.color!;
+    final boxShadow = decoration.boxShadow?.first;
+
+    // Draw shadow if present
+    if (boxShadow != null) {
+      final shadowPaint = Paint()
+        ..color = boxShadow.color
+        ..maskFilter = ui.MaskFilter.blur(
+          ui.BlurStyle.normal,
+          boxShadow.blurRadius,
+        );
+      canvas.drawCircle(
+        Offset(size.width / 2, size.height / 2),
+        (size.width / 2) + boxShadow.spreadRadius,
+        shadowPaint,
+      );
+    }
+
+    // Draw main circle
+    final paint = Paint()..color = color;
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height / 2),
+      size.width / 2,
+      paint,
+    );
+
+    // Draw text
+    final textWidget = (clusterWidget.child as Center).child as Text;
+    final textPainter = TextPainter(
+      text: TextSpan(text: textWidget.data, style: textWidget.style),
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
@@ -402,9 +555,50 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
   }
 
   void _onClusterMarkerTapped(DeviceCluster cluster) {
-    // Zoom in on cluster
+    // Enhanced cluster tap behavior (similar to your sample)
+    if (cluster.devices.length == 1) {
+      // Single device, just center on it
+      _onDeviceMarkerTapped(cluster.devices.first);
+    } else {
+      // Multiple devices, fit bounds or zoom in strategically
+      if (_zoom < 15.0) {
+        // Zoom in to show more detail
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(cluster.center, _zoom + 3),
+        );
+      } else {
+        // Already zoomed in, fit bounds to show all devices in cluster
+        _fitBoundsToCluster(cluster);
+      }
+    }
+  }
+
+  void _fitBoundsToCluster(DeviceCluster cluster) {
+    if (cluster.devices.isEmpty) return;
+
+    double minLat = cluster.devices.first.address!.latitude!;
+    double maxLat = cluster.devices.first.address!.latitude!;
+    double minLng = cluster.devices.first.address!.longitude!;
+    double maxLng = cluster.devices.first.address!.longitude!;
+
+    for (final device in cluster.devices) {
+      if (device.address?.latitude != null &&
+          device.address?.longitude != null) {
+        minLat = math.min(minLat, device.address!.latitude!);
+        maxLat = math.max(maxLat, device.address!.latitude!);
+        minLng = math.min(minLng, device.address!.longitude!);
+        maxLng = math.max(maxLng, device.address!.longitude!);
+      }
+    }
+
     _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(cluster.center, _zoom + 2),
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        50.0, // padding
+      ),
     );
   }
 
@@ -457,15 +651,6 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
     _loadDeviceListPage();
   }
 
-  // Handle items per page change
-  void _onItemsPerPageChanged(int itemsPerPage) {
-    setState(() {
-      _itemsPerPage = itemsPerPage;
-      _currentPage = 1;
-    });
-    _loadDeviceListPage();
-  }
-
   @override
   Widget build(BuildContext context) {
     // Show loading if devices are being loaded for the first time
@@ -512,6 +697,9 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
 
     return Row(
       children: [
+        // Sidebar toggle button (always visible)
+        _buildSidebarToggle(),
+
         // Device list sidebar
         if (_showDeviceList) ...[
           _buildDeviceListSidebar(),
@@ -533,7 +721,22 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
                   // Apply custom map style here if needed
                 },
                 onCameraMove: (CameraPosition position) {
+                  double previousZoom = _zoom;
                   _zoom = position.zoom;
+
+                  // More responsive clustering (like your sample)
+                  // Update markers on significant zoom changes
+                  const double zoomSensitivity = 1.0;
+                  bool shouldRefreshMarkers =
+                      (previousZoom - _zoom).abs() > zoomSensitivity ||
+                      (_zoom >= 15.0 && previousZoom < 15.0) ||
+                      (_zoom < 15.0 && previousZoom >= 15.0) ||
+                      (_zoom >= 12.0 && previousZoom < 12.0) ||
+                      (_zoom < 12.0 && previousZoom >= 12.0);
+
+                  if (shouldRefreshMarkers) {
+                    _createMarkers();
+                  }
                 },
                 mapType: _getGoogleMapType(),
                 zoomControlsEnabled: false,
@@ -668,6 +871,7 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
                     ),
                   )
                 : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: _mapDevices.length,
                     itemBuilder: (context, index) {
                       final device = _mapDevices[index];
@@ -675,83 +879,95 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
 
                       return Container(
                         margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
+                          horizontal: 12,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.primary.withOpacity(0.1)
+                              ? AppColors.primary.withOpacity(0.08)
                               : null,
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.transparent,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
+                          border: isSelected
+                              ? Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                  width: 1,
+                                )
+                              : null,
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: ListTile(
+                          dense: true,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 4,
                           ),
                           leading: Container(
-                            width: 40,
-                            height: 40,
+                            width: 24,
+                            height: 24,
                             decoration: BoxDecoration(
-                              color: _getDeviceStatusColor(
-                                device.status,
-                              ).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.memory,
                               color: _getDeviceStatusColor(device.status),
-                              size: 20,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + (_currentPage - 1) * _itemsPerPage + 1}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                           title: Text(
                             device.serialNumber.isNotEmpty
                                 ? device.serialNumber
-                                : 'Device ${device.id.substring(0, 8)}',
-                            style: const TextStyle(
-                              fontSize: 14,
+                                : 'Device-${device.id.substring(0, 6)}',
+                            style: TextStyle(
+                              fontSize: 13,
                               fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.black87,
                             ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (device.name.isNotEmpty)
-                                Text(
-                                  device.name,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              const SizedBox(height: 4),
-                              StatusChip(
-                                text: device.status.isNotEmpty
-                                    ? device.status
-                                    : 'None',
-                                type: _getStatusChipType(device.status),
-                              ),
-                            ],
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(
-                                  Icons.center_focus_strong,
-                                  size: 18,
+                                icon: Icon(
+                                  Icons.my_location,
+                                  size: 16,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.grey[500],
                                 ),
                                 tooltip: 'Center on map',
                                 onPressed: () =>
                                     _onDeviceListItemTapped(device),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 28,
+                                  minHeight: 28,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.open_in_new, size: 18),
+                                icon: Icon(
+                                  Icons.info_outline,
+                                  size: 16,
+                                  color: Colors.grey[500],
+                                ),
                                 tooltip: 'Device details',
                                 onPressed: () =>
                                     widget.onDeviceSelected(device),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 28,
+                                  minHeight: 28,
+                                ),
                               ),
                             ],
                           ),
@@ -762,25 +978,18 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
                   ),
           ),
 
-          // Pagination
+          // Reusable pagination
           if (_totalPages > 1)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF8F9FA),
-                border: Border(top: BorderSide(color: Color(0xFFE1E5E9))),
-              ),
-              child: ResultsPagination(
-                currentPage: _currentPage,
-                totalPages: _totalPages,
-                totalItems: _totalItems,
-                itemsPerPage: _itemsPerPage,
-                startItem: (_currentPage - 1) * _itemsPerPage + 1,
-                endItem: (_currentPage * _itemsPerPage).clamp(1, _totalItems),
-                onPageChanged: _onPageChanged,
-                onItemsPerPageChanged: _onItemsPerPageChanged,
-                showItemsPerPageSelector: false, // Keep sidebar compact
-              ),
+            ResultsPagination(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              totalItems: _totalItems,
+              itemsPerPage: _itemsPerPage,
+              startItem: (_currentPage - 1) * _itemsPerPage + 1,
+              endItem: math.min(_currentPage * _itemsPerPage, _totalItems),
+              onPageChanged: _onPageChanged,
+              showItemsPerPageSelector: false,
+              itemLabel: 'devices',
             ),
         ],
       ),
@@ -1015,6 +1224,55 @@ class _AdvancedDeviceMapViewState extends State<AdvancedDeviceMapView> {
       default:
         return StatusChipType.secondary;
     }
+  }
+
+  Widget _buildSidebarToggle() {
+    return Container(
+      width: 48,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(1, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          IconButton(
+            icon: Icon(
+              _showDeviceList ? Icons.chevron_left : Icons.chevron_right,
+              color: AppColors.primary,
+            ),
+            onPressed: () {
+              setState(() {
+                _showDeviceList = !_showDeviceList;
+              });
+            },
+            tooltip: _showDeviceList ? 'Hide device list' : 'Show device list',
+          ),
+          const SizedBox(height: 8),
+          if (!_showDeviceList) ...[
+            RotatedBox(
+              quarterTurns: 3,
+              child: Text(
+                'Devices ($_totalItems)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

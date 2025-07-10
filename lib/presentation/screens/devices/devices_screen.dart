@@ -7,6 +7,7 @@ import '../../widgets/common/results_pagination.dart';
 import '../../widgets/devices/device_table_columns.dart';
 import '../../widgets/devices/device_kanban_view.dart';
 import '../../widgets/devices/advanced_device_map_view.dart';
+import '../../widgets/devices/flutter_map_device_view.dart';
 import '../../widgets/devices/device_filters_and_actions.dart';
 import 'create_edit_device_screen.dart';
 import 'device_360_details_screen.dart';
@@ -72,6 +73,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
   Device? _selectedBillingDevice;
   Map<String, dynamic>? _selectedBillingRecord;
   bool _showBillingReadings = false;
+
+  // Map implementation toggle
+  bool _useFlutterMap = false; // Toggle between Google Maps and Flutter Map
 
   @override
   void initState() {
@@ -277,59 +281,59 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  Widget _buildTableHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing16,
-        vertical: AppSizes.spacing12,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          const Text(
-            'Devices',
-            style: TextStyle(
-              fontSize: AppSizes.fontSizeMedium,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing8,
-              vertical: AppSizes.spacing4,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-            ),
-            child: Text(
-              '${_filteredDevices.length}',
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          if (_isLoading)
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildTableHeader() {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: AppSizes.spacing16,
+  //       vertical: AppSizes.spacing12,
+  //     ),
+  //     decoration: const BoxDecoration(
+  //       color: AppColors.surfaceVariant,
+  //       border: Border(bottom: BorderSide(color: AppColors.border)),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         const Text(
+  //           'Devices',
+  //           style: TextStyle(
+  //             fontSize: AppSizes.fontSizeMedium,
+  //             fontWeight: FontWeight.w600,
+  //             color: AppColors.textPrimary,
+  //           ),
+  //         ),
+  //         const SizedBox(width: AppSizes.spacing8),
+  //         Container(
+  //           padding: const EdgeInsets.symmetric(
+  //             horizontal: AppSizes.spacing8,
+  //             vertical: AppSizes.spacing4,
+  //           ),
+  //           decoration: BoxDecoration(
+  //             color: AppColors.primary.withOpacity(0.1),
+  //             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+  //           ),
+  //           child: Text(
+  //             '${_filteredDevices.length}',
+  //             style: const TextStyle(
+  //               fontSize: AppSizes.fontSizeSmall,
+  //               fontWeight: FontWeight.w600,
+  //               color: AppColors.primary,
+  //             ),
+  //           ),
+  //         ),
+  //         const SizedBox(width: AppSizes.spacing8),
+  //         if (_isLoading)
+  //           const SizedBox(
+  //             width: 16,
+  //             height: 16,
+  //             child: CircularProgressIndicator(
+  //               strokeWidth: 2,
+  //               valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildDeviceTable() {
     return BluNestDataTable<Device>(
@@ -719,7 +723,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          _buildTableHeader(),
+          //  _buildTableHeader(),
           if (_selectedDevices.isNotEmpty) _buildMultiSelectToolbar(),
           Expanded(child: _buildDeviceTable()),
           _buildPagination(),
@@ -738,11 +742,73 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildMapView() {
-    return AdvancedDeviceMapView(
-      devices: _filteredDevices, // Keep for fallback
-      onDeviceSelected: _viewDeviceDetails,
-      isLoading: _isLoading,
-      deviceService: _deviceService, // Pass the device service for API calls
+    return Column(
+      children: [
+        // Map implementation toggle
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: AppColors.border)),
+          ),
+          child: Row(
+            children: [
+              Text(
+                'Map Implementation:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text('Google Maps'),
+                    icon: Icon(Icons.map),
+                  ),
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text('Flutter Map'),
+                    icon: Icon(Icons.layers),
+                  ),
+                ],
+                selected: {_useFlutterMap},
+                onSelectionChanged: (Set<bool> newSelection) {
+                  setState(() {
+                    _useFlutterMap = newSelection.first;
+                  });
+                },
+              ),
+              const Spacer(),
+              Text(
+                _useFlutterMap
+                    ? 'Native clustering with OpenStreetMap'
+                    : 'Enhanced Google Maps with custom clustering',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+
+        // Map view based on selection
+        Expanded(
+          child: _useFlutterMap
+              ? FlutterMapDeviceView(
+                  devices: _filteredDevices,
+                  onDeviceSelected: _viewDeviceDetails,
+                  isLoading: _isLoading,
+                  deviceService: _deviceService,
+                )
+              : AdvancedDeviceMapView(
+                  devices: _filteredDevices,
+                  onDeviceSelected: _viewDeviceDetails,
+                  isLoading: _isLoading,
+                  deviceService: _deviceService,
+                ),
+        ),
+      ],
     );
   }
 

@@ -195,7 +195,7 @@ class DeviceTableColumns {
             ),
             elevation: 8,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(20),
             ),
             itemBuilder: (context) => [
               const PopupMenuItem<String>(
