@@ -178,26 +178,24 @@ class BillingTableColumns {
       BluNestTableColumn<Map<String, dynamic>>(
         key: 'actions',
         title: 'Actions',
-        flex: 2,
+        flex: 1,
         sortable: false,
         builder: (record) {
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: ElevatedButton(
-              onPressed: () => onRowTapped?.call(record),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                minimumSize: const Size(0, 28),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+            child: Center(
+              child: IconButton(
+                onPressed: () => onRowTapped?.call(record),
+                icon: const Icon(Icons.visibility, size: 20),
+                tooltip: 'View Billing Readings',
+                style: IconButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  padding: const EdgeInsets.all(8),
+                  minimumSize: const Size(32, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
-              child: const Text('View Details', style: TextStyle(fontSize: 12)),
             ),
           );
         },

@@ -11,6 +11,7 @@ import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/devices/device_location_map.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
 import '../../widgets/devices/billing_table_columns.dart';
+import '../../widgets/common/custom_date_range_picker.dart';
 import '../../routes/app_router.dart';
 
 class Device360DetailsScreen extends StatefulWidget {
@@ -1148,98 +1149,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   }
 
   Widget _buildDateFilter() {
-    // Define preset date ranges
-    final dateRanges = [
-      {'label': 'Last 7 days', 'days': 7},
-      {'label': 'Last 30 days', 'days': 30},
-      {'label': 'Last 90 days', 'days': 90},
-      {'label': 'Last 180 days', 'days': 180},
-      {'label': 'Last year', 'days': 365},
-    ];
-
     return Row(
       children: [
-        // Start Date Dropdown
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE1E5E9)),
-            borderRadius: BorderRadius.circular(6),
-            color: Colors.white,
-          ),
-          child: DropdownButton<int>(
-            value: null,
-            hint: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Color(0xFF64748b),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${_metricsStartDate.day}/${_metricsStartDate.month}/${_metricsStartDate.year}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF1e293b),
-                  ),
-                ),
-              ],
-            ),
-            underline: const SizedBox(),
-            icon: const Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: Color(0xFF64748b),
-            ),
-            items: dateRanges.map((range) {
-              return DropdownMenuItem<int>(
-                value: range['days'] as int,
-                child: Text(range['label'] as String),
-              );
-            }).toList(),
-            onChanged: (int? days) {
-              if (days != null) {
-                setState(() {
-                  _metricsEndDate = DateTime.now();
-                  _metricsStartDate = DateTime.now().subtract(
-                    Duration(days: days),
-                  );
-                  _metricsCurrentPage = 1;
-                });
-                _refreshMetricsData();
-              }
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text('-', style: TextStyle(color: Color(0xFF64748b))),
-        const SizedBox(width: 8),
-        // End Date Display (current date)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE1E5E9)),
-            borderRadius: BorderRadius.circular(6),
-            color: const Color(0xFFF8F9FA),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.today, size: 16, color: Color(0xFF64748b)),
-              const SizedBox(width: 8),
-              Text(
-                '${_metricsEndDate.day}/${_metricsEndDate.month}/${_metricsEndDate.year}',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF64748b)),
-              ),
-              const SizedBox(width: 4),
-              const Text(
-                '(Today)',
-                style: TextStyle(fontSize: 12, color: Color(0xFF64748b)),
-              ),
-            ],
-          ),
+        CustomDateRangePicker(
+          initialStartDate: _metricsStartDate,
+          initialEndDate: _metricsEndDate,
+          onDateRangeSelected: (startDate, endDate) {
+            setState(() {
+              _metricsStartDate = startDate;
+              _metricsEndDate = endDate;
+              _metricsCurrentPage = 1;
+            });
+            _refreshMetricsData();
+          },
+          hintText: 'Select date range',
+          enabled: true,
         ),
         const SizedBox(width: 12),
         // Refresh button
@@ -1866,6 +1790,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
               billingRecords: convertedRecords,
               onRowTapped: _navigateToBillingReadings,
             ),
+            onRowTap: _navigateToBillingReadings, // Enable row click
             sortBy: _billingSortBy,
             sortAscending: _billingSortAscending,
             onSort: _handleBillingSort,
