@@ -21,6 +21,8 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   String _selectedScreen = 'devices'; // Start with devices as per requirements
   bool _sidebarCollapsed = false;
+  List<String> _breadcrumbs = []; // Add breadcrumb state
+  Function(int)? _currentBreadcrumbNavigateHandler; // Store current handler
 
   @override
   Widget build(BuildContext context) {
@@ -63,34 +65,50 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildTopBar() {
     return Container(
-      height: AppSizes.appBarHeight,
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing24),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _getScreenTitle(),
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeXLarge,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          SizedBox(
+            height: AppSizes.appBarHeight,
+            child: Row(
+              children: [
+                Text(
+                  _getScreenTitle(),
+                  style: const TextStyle(
+                    fontSize: AppSizes.fontSizeXLarge,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.notifications_outlined),
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: AppSizes.spacing8),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.search),
+                  color: AppColors.textSecondary,
+                ),
+              ],
             ),
           ),
-          const Spacer(),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_outlined),
-            color: AppColors.textSecondary,
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search),
-            color: AppColors.textSecondary,
-          ),
+          // Breadcrumbs section
+          if (_breadcrumbs.isNotEmpty) ...[
+            //  const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildBreadcrumbs(),
+            ),
+          ],
         ],
       ),
     );
@@ -122,7 +140,11 @@ class _MainLayoutState extends State<MainLayout> {
       case 'dashboard':
         return const DashboardScreen();
       case 'devices':
-        return const DevicesScreen();
+        return DevicesScreen(
+          onBreadcrumbUpdate: _updateBreadcrumbs,
+          onBreadcrumbNavigate: _onBreadcrumbNavigate,
+          onSetBreadcrumbHandler: _setBreadcrumbNavigateHandler,
+        );
       case 'device-groups':
         return const DeviceGroupsScreen();
       case 'tou-management':
@@ -136,5 +158,54 @@ class _MainLayoutState extends State<MainLayout> {
       default:
         return const DevicesScreen();
     }
+  }
+
+  // Method to update breadcrumbs from child screens
+  void _updateBreadcrumbs(List<String> breadcrumbs) {
+    setState(() {
+      _breadcrumbs = breadcrumbs;
+    });
+  }
+
+  // Method to set the current breadcrumb navigation handler
+  void _setBreadcrumbNavigateHandler(Function(int)? handler) {
+    _currentBreadcrumbNavigateHandler = handler;
+  }
+
+  // Method to handle breadcrumb navigation
+  void _onBreadcrumbNavigate(int index) {
+    _currentBreadcrumbNavigateHandler?.call(index);
+  }
+
+  Widget _buildBreadcrumbs() {
+    return Row(
+      children: [
+        for (int i = 0; i < _breadcrumbs.length; i++) ...[
+          if (i > 0) ...[
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, size: 16, color: Color(0xFF64748b)),
+            const SizedBox(width: 8),
+          ],
+          GestureDetector(
+            onTap: i == _breadcrumbs.length - 1
+                ? null
+                : () => _onBreadcrumbNavigate(i),
+            child: Text(
+              _breadcrumbs[i],
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: i == _breadcrumbs.length - 1
+                    ? const Color(0xFF1e293b)
+                    : const Color(0xFF2563eb),
+                decoration: i == _breadcrumbs.length - 1
+                    ? null
+                    : TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }

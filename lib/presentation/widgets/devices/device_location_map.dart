@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../core/models/address.dart';
+import '../../../core/constants/app_colors.dart';
 
 class DeviceLocationMap extends StatefulWidget {
   final Address? address;
@@ -55,34 +57,35 @@ class _DeviceLocationMapState extends State<DeviceLocationMap> {
         borderRadius: BorderRadius.circular(8),
         child: kIsWeb
             ? _buildWebMapFallback()
-            : GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: position,
-                  zoom: 15,
-                ),
-                markers: {
-                  Marker(
-                    markerId: const MarkerId('device_location'),
-                    position: position,
-                    infoWindow: InfoWindow(
-                      title: 'Device Location',
-                      snippet: widget.address!.shortText.isNotEmpty
-                          ? widget.address!.shortText
-                          : widget.address!.longText.isNotEmpty
-                          ? widget.address!.longText
-                          : 'Device Location',
-                    ),
+            : FlutterMap(
+                options: MapOptions(
+                  initialCenter: position,
+                  initialZoom: 15,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
                   ),
-                },
-                myLocationEnabled: false,
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: true,
-                mapToolbarEnabled: false,
-                compassEnabled: true,
-                rotateGesturesEnabled: false,
-                scrollGesturesEnabled: true,
-                zoomGesturesEnabled: true,
-                tiltGesturesEnabled: false,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.mdms_clone',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: position,
+                        width: 40,
+                        height: 40,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: AppColors.primary,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
       ),
     );

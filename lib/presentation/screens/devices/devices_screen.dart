@@ -6,7 +6,6 @@ import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/devices/device_table_columns.dart';
 import '../../widgets/devices/device_kanban_view.dart';
-import '../../widgets/devices/advanced_device_map_view.dart';
 import '../../widgets/devices/flutter_map_device_view.dart';
 import '../../widgets/devices/device_filters_and_actions.dart';
 import 'create_edit_device_screen.dart';
@@ -20,8 +19,17 @@ import '../../../core/services/device_service.dart';
 
 class DevicesScreen extends StatefulWidget {
   final Function(Device)? onDeviceSelected;
+  final Function(List<String>)? onBreadcrumbUpdate;
+  final Function(int)? onBreadcrumbNavigate;
+  final Function(Function(int)?)? onSetBreadcrumbHandler;
 
-  const DevicesScreen({super.key, this.onDeviceSelected});
+  const DevicesScreen({
+    super.key,
+    this.onDeviceSelected,
+    this.onBreadcrumbUpdate,
+    this.onBreadcrumbNavigate,
+    this.onSetBreadcrumbHandler,
+  });
 
   @override
   State<DevicesScreen> createState() => _DevicesScreenState();
@@ -41,6 +49,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
   int _itemsPerPage = 25;
   String _errorMessage = '';
   Timer? _debounceTimer;
+
+  // Navigation state
+  String _currentView =
+      'devices_list'; // 'devices_list', 'device_details', 'billing_readings'
+  Device? _selectedDevice;
+  Map<String, dynamic>? _selectedBillingRecord;
 
   // View mode
   DeviceViewMode _currentViewMode = DeviceViewMode.table;
@@ -65,22 +79,14 @@ class _DevicesScreenState extends State<DevicesScreen> {
     'Actions',
   ];
 
-  // For Device 360-degree view
-  Device? _selectedDevice360;
-  bool _showDevice360 = false;
-
-  // For Billing Readings view
-  Device? _selectedBillingDevice;
-  Map<String, dynamic>? _selectedBillingRecord;
-  bool _showBillingReadings = false;
-
-  // Map implementation toggle
-  bool _useFlutterMap = false; // Toggle between Google Maps and Flutter Map
-
   @override
   void initState() {
     super.initState();
     _deviceService = DeviceService(ApiService());
+
+    // Set up breadcrumb navigation handler
+    widget.onSetBreadcrumbHandler?.call(_handleBreadcrumbNavigation);
+
     _loadDevices();
   }
 
@@ -204,45 +210,45 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // If Billing Readings view is selected, show it
-    if (_showBillingReadings &&
-        _selectedBillingDevice != null &&
-        _selectedBillingRecord != null) {
-      return DeviceBillingReadingsScreen(
-        device: _selectedBillingDevice!,
-        billingRecord: _selectedBillingRecord!,
-        onBack: () {
-          setState(() {
-            _showBillingReadings = false;
-            _selectedBillingDevice = null;
-            _selectedBillingRecord = null;
-          });
-        },
-      );
+    // Show different screens based on current view
+    switch (_currentView) {
+      case 'device_details':
+        // Update breadcrumbs for device details
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onBreadcrumbUpdate?.call([
+            'Devices',
+            _selectedDevice!.serialNumber,
+          ]);
+        });
+        return Device360DetailsScreen(
+          device: _selectedDevice!,
+          onBack: _navigateBackToDevices,
+          onNavigateToBillingReadings: _navigateToBillingReadings,
+        );
+      case 'billing_readings':
+        // Update breadcrumbs for billing readings
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onBreadcrumbUpdate?.call([
+            'Devices',
+            _selectedDevice!.serialNumber,
+            'Billing Readings',
+          ]);
+        });
+        return DeviceBillingReadingsScreen(
+          device: _selectedDevice!,
+          billingRecord: _selectedBillingRecord!,
+          onBack: _navigateBackToDeviceDetails,
+        );
+      default:
+        // Clear breadcrumbs for devices list
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onBreadcrumbUpdate?.call([]);
+        });
+        return _buildMainContent(context);
     }
+  }
 
-    // If Device 360 view is selected, show it
-    if (_showDevice360 && _selectedDevice360 != null) {
-      return Device360DetailsScreen(
-        device: _selectedDevice360!,
-        onBack: () {
-          setState(() {
-            _showDevice360 = false;
-            _selectedDevice360 = null;
-          });
-        },
-        onNavigateToBillingReadings: (device, billingRecord) {
-          setState(() {
-            _showDevice360 = false;
-            _selectedDevice360 = null;
-            _selectedBillingDevice = device;
-            _selectedBillingRecord = billingRecord;
-            _showBillingReadings = true;
-          });
-        },
-      );
-    }
-
+  Widget _buildMainContent(BuildContext context) {
     // Main devices view - optimized for maximum table space
     return Padding(
       padding: const EdgeInsets.all(
@@ -420,12 +426,38 @@ class _DevicesScreenState extends State<DevicesScreen> {
     if (widget.onDeviceSelected != null) {
       widget.onDeviceSelected!(device);
     } else {
-      // Use inline Device 360 view instead of navigation
+      // Navigate to device details internally
       setState(() {
-        _selectedDevice360 = device;
-        _showDevice360 = true;
+        _currentView = 'device_details';
+        _selectedDevice = device;
       });
     }
+  }
+
+  void _navigateToBillingReadings(
+    Device device,
+    Map<String, dynamic> billingRecord,
+  ) {
+    setState(() {
+      _currentView = 'billing_readings';
+      _selectedDevice = device;
+      _selectedBillingRecord = billingRecord;
+    });
+  }
+
+  void _navigateBackToDevices() {
+    setState(() {
+      _currentView = 'devices_list';
+      _selectedDevice = null;
+      _selectedBillingRecord = null;
+    });
+  }
+
+  void _navigateBackToDeviceDetails() {
+    setState(() {
+      _currentView = 'device_details';
+      _selectedBillingRecord = null;
+    });
   }
 
   void _editDevice(Device device) {
@@ -754,59 +786,24 @@ class _DevicesScreenState extends State<DevicesScreen> {
           child: Row(
             children: [
               Text(
-                'Map Implementation:',
+                'Device Map View - OpenStreetMap with clustering',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: 16),
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment<bool>(
-                    value: false,
-                    label: Text('Google Maps'),
-                    icon: Icon(Icons.map),
-                  ),
-                  ButtonSegment<bool>(
-                    value: true,
-                    label: Text('Flutter Map'),
-                    icon: Icon(Icons.layers),
-                  ),
-                ],
-                selected: {_useFlutterMap},
-                onSelectionChanged: (Set<bool> newSelection) {
-                  setState(() {
-                    _useFlutterMap = newSelection.first;
-                  });
-                },
-              ),
-              const Spacer(),
-              Text(
-                _useFlutterMap
-                    ? 'Native clustering with OpenStreetMap'
-                    : 'Enhanced Google Maps with custom clustering',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
             ],
           ),
         ),
 
-        // Map view based on selection
+        // Map view
         Expanded(
-          child: _useFlutterMap
-              ? FlutterMapDeviceView(
-                  devices: _filteredDevices,
-                  onDeviceSelected: _viewDeviceDetails,
-                  isLoading: _isLoading,
-                  deviceService: _deviceService,
-                )
-              : AdvancedDeviceMapView(
-                  devices: _filteredDevices,
-                  onDeviceSelected: _viewDeviceDetails,
-                  isLoading: _isLoading,
-                  deviceService: _deviceService,
-                ),
+          child: FlutterMapDeviceView(
+            devices: _filteredDevices,
+            onDeviceSelected: _viewDeviceDetails,
+            isLoading: _isLoading,
+            deviceService: _deviceService,
+          ),
         ),
       ],
     );
@@ -817,5 +814,20 @@ class _DevicesScreenState extends State<DevicesScreen> {
     _searchController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  // Handle breadcrumb navigation from MainLayout
+  void _handleBreadcrumbNavigation(int index) {
+    switch (index) {
+      case 0: // "Devices" clicked
+        _navigateBackToDevices();
+        break;
+      case 1: // Device serial number clicked (when in billing readings)
+        if (_currentView == 'billing_readings') {
+          _navigateBackToDeviceDetails();
+        }
+        break;
+      // No action needed for the last breadcrumb (current page)
+    }
   }
 }

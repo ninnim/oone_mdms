@@ -8,7 +8,7 @@ import '../../../core/services/api_service.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
-import '../../widgets/devices/google_maps_location_picker.dart';
+import '../../widgets/devices/flutter_map_location_picker.dart';
 
 class CreateEditDeviceDialog extends StatefulWidget {
   final Device? device;
@@ -531,12 +531,20 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
                 ),
                 const SizedBox(height: 24),
 
-                // Google Maps Location Picker
+                // Flutter Map Location Picker
                 SizedBox(
                   height: 500,
-                  child: GoogleMapsLocationPicker(
+                  child: FlutterMapLocationPicker(
                     initialAddress: _selectedAddress,
-                    onLocationSelected: _onMapLocationChanged,
+                    onLocationChanged: (lat, lng, address) {
+                      final newAddress = Address(
+                        latitude: lat,
+                        longitude: lng,
+                        longText: address,
+                        shortText: address,
+                      );
+                      _onMapLocationChanged(newAddress);
+                    },
                   ),
                 ),
               ],

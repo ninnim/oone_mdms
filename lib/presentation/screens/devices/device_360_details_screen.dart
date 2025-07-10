@@ -10,6 +10,8 @@ import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/devices/device_location_map.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
+import '../../widgets/devices/billing_table_columns.dart';
+import '../../routes/app_router.dart';
 
 class Device360DetailsScreen extends StatefulWidget {
   final Device device;
@@ -45,6 +47,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   bool _metricsLoaded = false;
   bool _billingLoaded = false;
   bool _locationLoaded = false;
+
+  // Billing-specific state
+  int _billingCurrentPage = 1;
+  int _billingItemsPerPage = 10;
+  String? _billingSortBy;
+  bool _billingSortAscending = true;
 
   // Tab-specific loading indicators
   bool _loadingOverview = false;
@@ -380,14 +388,14 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           ),
           child: Row(
             children: [
-              if (widget.onBack != null) ...[
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: widget.onBack,
-                  tooltip: 'Back to Devices',
-                ),
-                const SizedBox(width: 16),
-              ],
+              // if (widget.onBack != null) ...[
+              //   IconButton(
+              //     icon: const Icon(Icons.arrow_back),
+              //     onPressed: widget.onBack,
+              //     tooltip: 'Back to Devices',
+              //   ),
+              //   const SizedBox(width: 16),
+              // ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1741,19 +1749,25 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Device Billing Information',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
-            ),
+          // Header with title and actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Device Billing Information',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1e293b),
+                ),
+              ),
+              _buildBillingActions(),
+            ],
           ),
           const SizedBox(height: 16),
 
           if (_deviceBilling != null) ...[
-            // Try to extract billing records from different possible structures
-            _buildBillingRecordsTable(),
+            _buildBillingDataTable(),
           ] else
             const AppCard(
               child: Center(
@@ -1768,332 +1782,159 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
     );
   }
 
-  Widget _buildBillingRecordsTable() {
-    // Try to find billing records in the response
-    List<dynamic> billingRecords = [];
-
-    // Check different possible structures
-    if (_deviceBilling!['DeviceBilling'] != null &&
-        _deviceBilling!['DeviceBilling']['BillingRecords'] != null) {
-      billingRecords =
-          _deviceBilling!['DeviceBilling']['BillingRecords'] as List;
-    } else if (_deviceBilling!['BillingRecords'] != null) {
-      billingRecords = _deviceBilling!['BillingRecords'] as List;
-    } else if (_deviceBilling!['DeviceBilling'] is List) {
-      billingRecords = _deviceBilling!['DeviceBilling'] as List;
-    } else if (_deviceBilling! is List) {
-      billingRecords = _deviceBilling! as List;
-    }
-
-    print('Found ${billingRecords.length} billing records');
-
-    if (billingRecords.isEmpty) {
-      // Create sample data for testing
-      billingRecords = [
-        {
-          'DeviceId': widget.device.id,
-          'StartTime': '2024-12-01T00:00:00.000+07',
-          'EndTime': '2024-12-31T23:59:59.999+07',
-          'TimeOfUse': {'Name': 'Peak Hours', 'Id': 1},
-          'Status': 'Completed',
-          'Amount': 1250.50,
-        },
-        {
-          'DeviceId': widget.device.id,
-          'StartTime': '2024-11-01T00:00:00.000+07',
-          'EndTime': '2024-11-30T23:59:59.999+07',
-          'TimeOfUse': {'Name': 'Off-Peak Hours', 'Id': 2},
-          'Status': 'Completed',
-          'Amount': 980.25,
-        },
-        {
-          'DeviceId': widget.device.id,
-          'StartTime': '2024-10-01T00:00:00.000+07',
-          'EndTime': '2024-10-31T23:59:59.999+07',
-          'TimeOfUse': {'Name': 'Peak Hours', 'Id': 1},
-          'Status': 'Pending',
-          'Amount': 1340.75,
-        },
-      ];
-      print('Using sample billing records for testing');
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildBillingActions() {
+    return Row(
       children: [
-        const Text(
-          'Billing Records',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1e293b),
-          ),
-        ),
-        const SizedBox(height: 16),
-
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: const Color(0xFF2563eb),
+            borderRadius: BorderRadius.circular(6),
           ),
-          child: Column(
-            children: [
-              // Table Header
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF8F9FA),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-                  ),
-                ),
-                child: const Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Billing Period',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Time of Use',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Status',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Amount',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 80, child: Text('Actions')),
-                  ],
-                ),
-              ),
-
-              // Table Body
-              ...billingRecords.asMap().entries.map((entry) {
-                final index = entry.key;
-                final record = entry.value;
-                final isLast = index == billingRecords.length - 1;
-
-                return InkWell(
-                  onTap: () {
-                    print('Billing record clicked: $record');
-                    if (widget.onNavigateToBillingReadings != null) {
-                      widget.onNavigateToBillingReadings!(
-                        widget.device,
-                        record,
-                      );
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isLast
-                              ? Colors.transparent
-                              : const Color(0xFFE1E5E9),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _formatDateRange(
-                                  record['StartTime'],
-                                  record['EndTime'],
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF1e293b),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${_formatShortDate(record['StartTime'])} - ${_formatShortDate(record['EndTime'])}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF64748b),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            record['TimeOfUse']?['Name'] ?? 'N/A',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF1e293b),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getBillingStatusColor(
-                                record['Status'],
-                              ).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              record['Status'] ?? 'Unknown',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: _getBillingStatusColor(record['Status']),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            record['Amount'] != null
-                                ? '\$${(record['Amount'] as num).toStringAsFixed(2)}'
-                                : 'N/A',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF1e293b),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 80,
-                          child: IconButton(
-                            onPressed: () {
-                              if (widget.onNavigateToBillingReadings != null) {
-                                widget.onNavigateToBillingReadings!(
-                                  widget.device,
-                                  record,
-                                );
-                              }
-                            },
-                            icon: const Icon(
-                              Icons.visibility,
-                              size: 18,
-                              color: Color(0xFF2563eb),
-                            ),
-                            tooltip: 'View Readings',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ],
+          child: IconButton(
+            onPressed: _refreshBillingData,
+            icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+            tooltip: 'Refresh Data',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
         ),
       ],
     );
   }
 
-  Color _getBillingStatusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-        return const Color(0xFF10b981);
-      case 'pending':
-        return const Color(0xFFf59e0b);
-      case 'failed':
-        return const Color(0xFFef4444);
-      default:
-        return const Color(0xFF64748b);
+  Widget _buildBillingDataTable() {
+    // Extract billing records from the API response
+    List<dynamic> billingRecords = [];
+
+    if (_deviceBilling!['Billing'] != null) {
+      billingRecords = _deviceBilling!['Billing'] as List;
+    }
+
+    if (billingRecords.isEmpty) {
+      return const AppCard(
+        child: Center(
+          child: Text(
+            'No billing records found',
+            style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
+          ),
+        ),
+      );
+    }
+
+    // Convert to Map<String, dynamic> for compatibility
+    final convertedRecords = billingRecords
+        .map((record) => record as Map<String, dynamic>)
+        .toList();
+
+    // Apply sorting
+    if (_billingSortBy != null) {
+      convertedRecords.sort((a, b) {
+        dynamic aValue = a[_billingSortBy!];
+        dynamic bValue = b[_billingSortBy!];
+
+        // Handle DateTime sorting
+        if (_billingSortBy == 'StartTime' || _billingSortBy == 'EndTime') {
+          aValue =
+              DateTime.tryParse(aValue?.toString() ?? '') ?? DateTime.now();
+          bValue =
+              DateTime.tryParse(bValue?.toString() ?? '') ?? DateTime.now();
+        }
+
+        final comparison = aValue.toString().compareTo(bValue.toString());
+        return _billingSortAscending ? comparison : -comparison;
+      });
+    }
+
+    // Calculate pagination
+    final totalItems = convertedRecords.length;
+    final totalPages = (totalItems / _billingItemsPerPage).ceil();
+    final startIndex = (_billingCurrentPage - 1) * _billingItemsPerPage;
+    final endIndex = (startIndex + _billingItemsPerPage).clamp(0, totalItems);
+    final paginatedRecords = convertedRecords.sublist(startIndex, endIndex);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Table using BluNestDataTable
+        Container(
+          height: 500,
+          child: BluNestDataTable<Map<String, dynamic>>(
+            data: paginatedRecords,
+            columns: BillingTableColumns.getColumns(
+              currentPage: _billingCurrentPage,
+              itemsPerPage: _billingItemsPerPage,
+              billingRecords: convertedRecords,
+              onRowTapped: _navigateToBillingReadings,
+            ),
+            sortBy: _billingSortBy,
+            sortAscending: _billingSortAscending,
+            onSort: _handleBillingSort,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Pagination controls
+        _buildBillingPagination(totalPages, totalItems),
+      ],
+    );
+  }
+
+  void _handleBillingSort(String key, bool ascending) {
+    setState(() {
+      _billingSortBy = key;
+      _billingSortAscending = ascending;
+    });
+  }
+
+  void _navigateToBillingReadings(Map<String, dynamic> billingRecord) {
+    if (widget.onNavigateToBillingReadings != null) {
+      widget.onNavigateToBillingReadings!(widget.device, billingRecord);
+    } else {
+      // Use Go Router navigation
+      AppRouter.goToDeviceBillingReadings(
+        context,
+        widget.device,
+        billingRecord,
+      );
     }
   }
 
-  String _formatDateRange(String? startTime, String? endTime) {
-    if (startTime == null || endTime == null) return 'N/A';
-    try {
-      final start = DateTime.parse(startTime);
-      final end = DateTime.parse(endTime);
-      final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
+  Widget _buildBillingPagination(int totalPages, int totalItems) {
+    final startItem = (_billingCurrentPage - 1) * _billingItemsPerPage + 1;
+    final endItem = (_billingCurrentPage * _billingItemsPerPage) > totalItems
+        ? totalItems
+        : _billingCurrentPage * _billingItemsPerPage;
 
-      if (start.year == end.year && start.month == end.month) {
-        return '${months[start.month - 1]} ${start.year}';
-      } else {
-        return '${months[start.month - 1]} - ${months[end.month - 1]} ${end.year}';
-      }
-    } catch (e) {
-      return 'Invalid Date';
-    }
+    return ResultsPagination(
+      currentPage: _billingCurrentPage,
+      totalPages: totalPages,
+      totalItems: totalItems,
+      itemsPerPage: _billingItemsPerPage,
+      startItem: startItem,
+      endItem: endItem,
+      onPageChanged: (page) {
+        setState(() {
+          _billingCurrentPage = page;
+        });
+      },
+      onItemsPerPageChanged: (newItemsPerPage) {
+        setState(() {
+          _billingItemsPerPage = newItemsPerPage;
+          _billingCurrentPage = 1; // Reset to first page
+        });
+      },
+      itemLabel: 'billing records',
+      showItemsPerPageSelector: true,
+    );
   }
 
-  String _formatShortDate(String? dateTime) {
-    if (dateTime == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateTime);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return 'Invalid';
-    }
+  void _refreshBillingData() {
+    setState(() {
+      _billingLoaded = false;
+      _billingCurrentPage = 1;
+    });
+    _loadBillingData();
   }
 
   Widget _buildLocationTab() {
@@ -2273,8 +2114,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         case 'units':
           aValue =
               a['Labels']?['Units']?.toString() ?? a['Units']?.toString() ?? '';
-          bValue =
-              b['Labels']?['Units']?.toString() ?? b['Units']?.toString() ?? '';
+          bValue = b['Labels']?['Units']?.toString() ?? '';
           break;
         default:
           return 0;

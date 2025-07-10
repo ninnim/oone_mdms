@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
-import '../../widgets/common/location_picker.dart';
+import '../../widgets/devices/flutter_map_location_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
@@ -381,14 +381,57 @@ class _CreateDeviceModalState extends State<CreateDeviceModal> {
   void _showLocationPicker() {
     showDialog(
       context: context,
-      builder: (context) => LocationPicker(
-        initialAddress: _selectedAddress,
-        onLocationSelected: (address) {
-          setState(() {
-            _selectedAddress = address;
-            _addressController.text = address.getFormattedAddress();
-          });
-        },
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Select Location',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: FlutterMapLocationPicker(
+                  initialAddress: _selectedAddress,
+                  onLocationChanged: (lat, lng, address) {
+                    final newAddress = Address(
+                      latitude: lat,
+                      longitude: lng,
+                      longText: address,
+                      shortText: address,
+                    );
+                    setState(() {
+                      _selectedAddress = newAddress;
+                      _addressController.text = newAddress
+                          .getFormattedAddress();
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
