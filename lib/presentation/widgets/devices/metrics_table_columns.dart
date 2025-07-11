@@ -161,8 +161,7 @@ class MetricsTableColumns {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (changeIcon != null)
-                  Icon(changeIcon, size: 14, color: changeColor),
+                Icon(changeIcon, size: 14, color: changeColor),
                 const SizedBox(width: 4),
                 Text(
                   change.toStringAsFixed(2),

@@ -190,7 +190,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.none:
         return _StatusColors(
-          backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+          backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
           borderColor: colorScheme.outline.withOpacity(0.3),
           textColor: colorScheme.onSurfaceVariant,
         );

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../widgets/common/app_card.dart';
-import '../../widgets/common/app_button.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'time_bands_screen.dart';

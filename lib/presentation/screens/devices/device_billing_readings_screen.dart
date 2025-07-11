@@ -435,7 +435,7 @@ class _DeviceBillingReadingsScreenState
         const SizedBox(height: 16),
 
         // Table using BluNestDataTable
-        Container(
+        SizedBox(
           height: 500,
           child: BluNestDataTable<Map<String, dynamic>>(
             data: paginatedReadings,

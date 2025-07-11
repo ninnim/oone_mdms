@@ -90,12 +90,15 @@ class _TicketsScreenState extends State<TicketsScreen> {
       }
 
       if (_statusFilter != null && ticket.status != _statusFilter) return false;
-      if (_priorityFilter != null && ticket.priority != _priorityFilter)
+      if (_priorityFilter != null && ticket.priority != _priorityFilter) {
         return false;
-      if (_categoryFilter != null && ticket.category != _categoryFilter)
+      }
+      if (_categoryFilter != null && ticket.category != _categoryFilter) {
         return false;
-      if (_assigneeFilter != null && ticket.assignedTo != _assigneeFilter)
+      }
+      if (_assigneeFilter != null && ticket.assignedTo != _assigneeFilter) {
         return false;
+      }
 
       return true;
     }).toList();

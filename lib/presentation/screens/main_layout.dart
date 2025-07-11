@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../widgets/common/app_sidebar.dart';
-import '../widgets/common/app_card.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import 'devices/devices_screen.dart';

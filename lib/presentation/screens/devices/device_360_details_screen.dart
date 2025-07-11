@@ -1579,7 +1579,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         ),
 
         // Unified table using BluNestDataTable
-        Container(
+        SizedBox(
           height: 500,
           child: BluNestDataTable<Map<String, dynamic>>(
             data: paginatedMetrics,
@@ -1780,7 +1780,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Table using BluNestDataTable
-        Container(
+        SizedBox(
           height: 500,
           child: BluNestDataTable<Map<String, dynamic>>(
             data: paginatedRecords,

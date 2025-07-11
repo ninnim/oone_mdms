@@ -154,8 +154,8 @@ class AppTheme {
 
       // Data Table Theme
       dataTableTheme: DataTableThemeData(
-        headingRowColor: MaterialStateProperty.all(AppColors.surfaceVariant),
-        dataRowColor: MaterialStateProperty.all(AppColors.surface),
+        headingRowColor: WidgetStateProperty.all(AppColors.surfaceVariant),
+        dataRowColor: WidgetStateProperty.all(AppColors.surface),
         dividerThickness: 1,
         headingTextStyle: const TextStyle(
           color: AppColors.textPrimary,

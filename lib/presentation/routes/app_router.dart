@@ -152,6 +152,8 @@ class DevicesRouteWrapper extends StatelessWidget {
 
 // Wrapper to integrate existing DevicesScreen with routing
 class DevicesScreenWithRouter extends StatefulWidget {
+  const DevicesScreenWithRouter({super.key});
+
   @override
   State<DevicesScreenWithRouter> createState() =>
       _DevicesScreenWithRouterState();

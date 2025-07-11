@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/common/app_card.dart';
-import '../../widgets/common/app_button.dart';
-import '../../widgets/common/status_chip.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/models/device.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});

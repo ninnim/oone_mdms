@@ -46,7 +46,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalItems = 0;
-  int _itemsPerPage = 8;
+  final int _itemsPerPage = 8;
   String _searchQuery = '';
 
   @override

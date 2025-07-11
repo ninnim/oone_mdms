@@ -238,7 +238,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
+      child: SizedBox(
         width: 900,
         height: 700,
         child: Column(

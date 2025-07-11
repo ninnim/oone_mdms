@@ -108,7 +108,7 @@ class _AppInputFieldState extends State<AppInputField> {
             filled: true,
             fillColor: widget.enabled
                 ? colorScheme.surface
-                : colorScheme.surfaceVariant,
+                : colorScheme.surfaceContainerHighest,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               borderSide: BorderSide(color: colorScheme.outline),
@@ -220,7 +220,7 @@ class AppDropdownField<T> extends StatelessWidget {
             filled: true,
             fillColor: enabled
                 ? colorScheme.surface
-                : colorScheme.surfaceVariant,
+                : colorScheme.surfaceContainerHighest,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               borderSide: BorderSide(color: colorScheme.outline),

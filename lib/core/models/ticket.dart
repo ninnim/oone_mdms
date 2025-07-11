@@ -316,8 +316,9 @@ class Ticket {
 
   bool get isOverdue {
     if (dueDate == null) return false;
-    if (status == TicketStatus.resolved || status == TicketStatus.closed)
+    if (status == TicketStatus.resolved || status == TicketStatus.closed) {
       return false;
+    }
     return DateTime.now().isAfter(dueDate!);
   }
 
@@ -421,8 +422,9 @@ class TicketAttachment {
 
   String get formattedFileSize {
     if (fileSize < 1024) return '${fileSize}B';
-    if (fileSize < 1024 * 1024)
+    if (fileSize < 1024 * 1024) {
       return '${(fileSize / 1024).toStringAsFixed(1)}KB';
+    }
     return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB';
   }
 }

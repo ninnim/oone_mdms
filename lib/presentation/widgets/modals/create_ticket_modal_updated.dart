@@ -20,7 +20,7 @@ class _CreateTicketModalState extends State<CreateTicketModal> {
   String _selectedDevice = 'Azure House';
   String _selectedStatus = 'High';
   String _selectedTicketType = 'For service Technician';
-  List<String> _selectedAvailability = ['Sun', 'Thu', 'Fri'];
+  final List<String> _selectedAvailability = ['Sun', 'Thu', 'Fri'];
 
   @override
   void initState() {
@@ -120,7 +120,7 @@ class _CreateTicketModalState extends State<CreateTicketModal> {
             onPressed: () => Navigator.of(context).pop(),
             icon: Icon(Icons.close, color: colorScheme.onSurfaceVariant),
             style: IconButton.styleFrom(
-              backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+              backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               ),
