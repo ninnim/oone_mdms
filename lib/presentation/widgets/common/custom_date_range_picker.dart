@@ -439,7 +439,8 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
         Expanded(
           child: TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              // Navigator.of(context).pop();
+              Navigator.of(context, rootNavigator: true).pop();
               // Reset temp selections
               _tempStartDate = null;
               _tempEndDate = null;
@@ -473,7 +474,8 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                       _endDate = _tempEndDate;
                     });
                     widget.onDateRangeSelected(_startDate!, _endDate!);
-                    Navigator.of(context).pop();
+                    // Navigator.of(context).pop();
+                    Navigator.of(context, rootNavigator: true).pop();
                     _tempStartDate = null;
                     _tempEndDate = null;
                   }
@@ -488,7 +490,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
               elevation: 0,
             ),
             child: const Text(
-              'Apply',
+              'Applys',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),

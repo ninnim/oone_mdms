@@ -22,6 +22,8 @@ class DevicesScreen extends StatefulWidget {
   final Function(List<String>)? onBreadcrumbUpdate;
   final Function(int)? onBreadcrumbNavigate;
   final Function(Function(int)?)? onSetBreadcrumbHandler;
+  final Function(String?, String, {String? billingId})? onDeepLinkUpdate;
+  final VoidCallback? onDeepLinkClear;
 
   const DevicesScreen({
     super.key,
@@ -29,6 +31,8 @@ class DevicesScreen extends StatefulWidget {
     this.onBreadcrumbUpdate,
     this.onBreadcrumbNavigate,
     this.onSetBreadcrumbHandler,
+    this.onDeepLinkUpdate,
+    this.onDeepLinkClear,
   });
 
   @override
@@ -423,10 +427,13 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   void _viewDeviceDetails(Device device) {
-    if (widget.onDeviceSelected != null) {
+    // When using router system, always use the router navigation
+    if (widget.onDeepLinkUpdate != null) {
+      widget.onDeepLinkUpdate!(device.id, 'details');
+    } else if (widget.onDeviceSelected != null) {
       widget.onDeviceSelected!(device);
     } else {
-      // Navigate to device details internally
+      // Fallback to internal navigation only if no callbacks are provided
       setState(() {
         _currentView = 'device_details';
         _selectedDevice = device;
@@ -438,11 +445,22 @@ class _DevicesScreenState extends State<DevicesScreen> {
     Device device,
     Map<String, dynamic> billingRecord,
   ) {
-    setState(() {
-      _currentView = 'billing_readings';
-      _selectedDevice = device;
-      _selectedBillingRecord = billingRecord;
-    });
+    final billingId =
+        billingRecord['Id']?.toString() ??
+        billingRecord['id']?.toString() ??
+        'unknown';
+
+    // When using router system, always use the router navigation
+    if (widget.onDeepLinkUpdate != null) {
+      widget.onDeepLinkUpdate!(device.id, 'billing', billingId: billingId);
+    } else {
+      // Fallback to internal navigation
+      setState(() {
+        _currentView = 'billing_readings';
+        _selectedDevice = device;
+        _selectedBillingRecord = billingRecord;
+      });
+    }
   }
 
   void _navigateBackToDevices() {
@@ -451,6 +469,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
       _selectedDevice = null;
       _selectedBillingRecord = null;
     });
+
+    // Clear deep link context when back to list
+    widget.onDeepLinkClear?.call();
   }
 
   void _navigateBackToDeviceDetails() {
@@ -458,6 +479,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
       _currentView = 'device_details';
       _selectedBillingRecord = null;
     });
+
+    // Update deep link context back to device details
+    if (_selectedDevice != null) {
+      widget.onDeepLinkUpdate?.call(_selectedDevice!.id, 'details');
+    }
   }
 
   void _editDevice(Device device) {

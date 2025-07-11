@@ -20,13 +20,25 @@ class BreadcrumbNavigation extends StatelessWidget {
 
       // Convert path segments to readable names
       String title = _getReadableTitle(context, segment, pathSegments, i);
-      bool isLast = i == pathSegments.length - 1;
+
+      // Skip empty titles (IDs we don't want to show)
+      if (title.isEmpty) continue;
 
       // Build correct navigation path based on route structure
+      // Use the original path segments and index, not the filtered breadcrumbs
       String navigationPath = _buildNavigationPath(pathSegments, i);
 
       breadcrumbs.add(
-        BreadcrumbItem(title: title, path: navigationPath, isLast: isLast),
+        BreadcrumbItem(title: title, path: navigationPath, isLast: false),
+      );
+    }
+
+    // Mark the last breadcrumb as last
+    if (breadcrumbs.isNotEmpty) {
+      breadcrumbs.last = BreadcrumbItem(
+        title: breadcrumbs.last.title,
+        path: breadcrumbs.last.path,
+        isLast: true,
       );
     }
 
@@ -55,6 +67,8 @@ class BreadcrumbNavigation extends StatelessWidget {
         return 'Devices';
       case 'device-groups':
         return 'Device Groups';
+      case 'dashboard':
+        return 'Dashboard';
       case 'tou-management':
         return 'TOU Management';
       case 'tickets':
@@ -64,60 +78,86 @@ class BreadcrumbNavigation extends StatelessWidget {
       case 'settings':
         return 'Settings';
       case 'details':
-        return 'Device Details';
+        return 'Details';
       case 'billing':
-        return 'Billing Readings';
+        return 'Billing';
       default:
-        // For IDs, try to get more context
-        if (index > 0) {
-          final prevSegment = pathSegments[index - 1];
-          if (prevSegment == 'details') {
+        // For IDs, check context and return appropriate display name
+        if (index > 0 && pathSegments.length > index) {
+          final prevSegment = index > 0 ? pathSegments[index - 1] : '';
+          final nextSegment = index < pathSegments.length - 1
+              ? pathSegments[index + 1]
+              : '';
+
+          // Device ID in device details route - don't show ID, return null to skip
+          if (prevSegment == 'details' ||
+              nextSegment == 'details' ||
+              nextSegment == 'billing') {
             // Try to get device serial number from state if available
             final routeState = GoRouterState.of(context);
             final device = routeState.extra as Device?;
-            if (device != null) {
-              return device.serialNumber.isNotEmpty
-                  ? device.serialNumber
-                  : 'Device #$segment';
+            if (device != null && device.serialNumber.isNotEmpty) {
+              return device.serialNumber;
             }
-            return 'Device #$segment';
-          } else if (prevSegment == 'billing') {
-            return 'Billing #$segment';
+            // Don't show raw device ID - return null to skip this breadcrumb
+            return '';
+          }
+
+          // Billing ID in billing route - don't show ID
+          if (prevSegment == 'billing') {
+            return '';
           }
         }
+
+        // For other segments, capitalize first letter
+        if (segment.isNotEmpty) {
+          return segment[0].toUpperCase() + segment.substring(1).toLowerCase();
+        }
+
         return segment.toUpperCase();
     }
   }
 
   String _buildNavigationPath(List<String> pathSegments, int currentIndex) {
-    // Build path up to current index
-    List<String> pathParts = pathSegments.sublist(0, currentIndex + 1);
-
-    // Handle different route patterns
-    if (pathParts.length == 1 && pathParts[0] == 'devices') {
-      return '/devices';
-    } else if (pathParts.length >= 3 &&
-        pathParts[0] == 'devices' &&
-        pathParts[1] == 'details') {
+    // Special handling for device-related routes
+    if (pathSegments.isNotEmpty && pathSegments[0] == 'devices') {
+      // If clicking on "Devices" (index 0), always go to devices list
       if (currentIndex == 0) {
         return '/devices';
-      } else if (currentIndex == 1) {
-        return '/devices';
-      } else if (currentIndex == 2) {
-        // Device details level - device ID
-        return '/devices/details/${pathParts[2]}';
-      } else if (pathParts.length >= 4 && pathParts[3] == 'billing') {
-        if (currentIndex == 3) {
-          // Just the billing segment, go back to device details
-          return '/devices/details/${pathParts[2]}';
-        } else if (currentIndex >= 4) {
-          // Billing ID level
-          return '/devices/details/${pathParts[2]}/billing/${pathParts[4]}';
+      }
+
+      // For device details routes like /devices/details/device-id or /devices/details/device-id/billing/billing-id
+      if (pathSegments.length >= 3 && pathSegments[1] == 'details') {
+        final deviceId = pathSegments[2];
+
+        // If clicking on "Details" (index 1), go to device details
+        if (currentIndex == 1) {
+          return '/devices/details/$deviceId';
+        }
+
+        // If clicking on device ID (index 2), go to device details
+        if (currentIndex == 2) {
+          return '/devices/details/$deviceId';
+        }
+
+        // For billing routes
+        if (pathSegments.length >= 4 && pathSegments[3] == 'billing') {
+          // If clicking on "Billing" (index 3), go to device details (billing tab will be selected there)
+          if (currentIndex == 3) {
+            return '/devices/details/$deviceId';
+          }
+
+          // If clicking on billing ID (index 4), go to billing details
+          if (currentIndex >= 4 && pathSegments.length > 4) {
+            final billingId = pathSegments[4];
+            return '/devices/details/$deviceId/billing/$billingId';
+          }
         }
       }
     }
 
-    // Default: build path from segments
+    // Default fallback: build path from segments
+    List<String> pathParts = pathSegments.sublist(0, currentIndex + 1);
     return '/${pathParts.join('/')}';
   }
 

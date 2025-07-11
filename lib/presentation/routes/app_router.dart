@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
@@ -29,35 +30,30 @@ class AppRouter {
             path: '/devices',
             name: 'devices',
             builder: (context, state) => const DevicesRouteWrapper(),
-            routes: [
-              GoRoute(
-                path: 'details/:deviceId',
-                name: 'device-details',
-                builder: (context, state) {
-                  final deviceId = state.pathParameters['deviceId']!;
-                  final deviceData = state.extra as Device?;
-                  return DeviceDetailsRouteWrapper(
-                    deviceId: deviceId,
-                    device: deviceData,
-                  );
-                },
-                routes: [
-                  GoRoute(
-                    path: 'billing/:billingId',
-                    name: 'device-billing-readings',
-                    builder: (context, state) {
-                      final deviceId = state.pathParameters['deviceId']!;
-                      final billingId = state.pathParameters['billingId']!;
-
-                      return DeviceBillingReadingsRouteWrapper(
-                        deviceId: deviceId,
-                        billingId: billingId,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
+          ),
+          GoRoute(
+            path: '/devices/details/:deviceId',
+            name: 'device-details',
+            builder: (context, state) {
+              final deviceId = state.pathParameters['deviceId']!;
+              final deviceData = state.extra as Device?;
+              return DeviceDetailsRouteWrapper(
+                deviceId: deviceId,
+                device: deviceData,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/devices/details/:deviceId/billing/:billingId',
+            name: 'device-billing-readings',
+            builder: (context, state) {
+              final deviceId = state.pathParameters['deviceId']!;
+              final billingId = state.pathParameters['billingId']!;
+              return DeviceBillingReadingsRouteWrapper(
+                deviceId: deviceId,
+                billingId: billingId,
+              );
+            },
           ),
 
           // Device Groups Routes
@@ -113,12 +109,29 @@ class AppRouter {
     Device device,
     Map<String, dynamic> billingRecord,
   ) {
-    final billingId =
-        billingRecord['Id']?.toString() ??
-        billingRecord['id']?.toString() ??
-        'unknown';
+    // Create a unique identifier for the billing record since it doesn't have an ID field
+    // Using TimeOfUseId and StartTime to create a unique identifier
+    final timeOfUseId = billingRecord['TimeOfUseId']?.toString() ?? '';
+    final startTime = billingRecord['StartTime']?.toString() ?? '';
 
-    context.go('/devices/details/${device.id}/billing/$billingId');
+    // Create a composite billing ID
+    String billingId;
+    if (timeOfUseId.isNotEmpty && startTime.isNotEmpty) {
+      // Create a simple composite ID: timeOfUseId_startTime
+      final cleanStartTime = startTime.replaceAll(RegExp(r'[^\w\-]'), '_');
+      billingId = '${timeOfUseId}_$cleanStartTime';
+    } else {
+      // Fallback: try to find any unique identifier
+      billingId =
+          billingRecord['Id']?.toString() ??
+          billingRecord['id']?.toString() ??
+          (timeOfUseId.isNotEmpty
+              ? timeOfUseId
+              : 'record_${DateTime.now().millisecondsSinceEpoch}');
+    }
+
+    final url = '/devices/details/${device.id}/billing/$billingId';
+    context.go(url);
   }
 
   static void goBack(BuildContext context) {
@@ -162,11 +175,33 @@ class DevicesScreenWithRouter extends StatefulWidget {
 class _DevicesScreenWithRouterState extends State<DevicesScreenWithRouter> {
   @override
   Widget build(BuildContext context) {
-    return const DevicesScreen();
+    return DevicesScreen(
+      onBreadcrumbUpdate: (breadcrumbs) {
+        // Breadcrumbs are now handled by the router system
+      },
+      onBreadcrumbNavigate: (index) {
+        // Navigation handled by breadcrumb widget directly
+      },
+      onSetBreadcrumbHandler: (handler) {
+        // Not needed with router system
+      },
+      onDeepLinkUpdate: (deviceId, view, {billingId}) {
+        // Navigate using GoRouter when device context changes
+        if (view == 'details' && deviceId != null) {
+          context.go('/devices/details/$deviceId');
+        } else if (view == 'billing' && deviceId != null && billingId != null) {
+          context.go('/devices/details/$deviceId/billing/$billingId');
+        }
+      },
+      onDeepLinkClear: () {
+        // Navigate back to devices list
+        context.go('/devices');
+      },
+    );
   }
 }
 
-class DeviceDetailsRouteWrapper extends StatelessWidget {
+class DeviceDetailsRouteWrapper extends StatefulWidget {
   final String deviceId;
   final Device? device;
 
@@ -177,18 +212,97 @@ class DeviceDetailsRouteWrapper extends StatelessWidget {
   });
 
   @override
+  State<DeviceDetailsRouteWrapper> createState() =>
+      _DeviceDetailsRouteWrapperState();
+}
+
+class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
+  Device? _device;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.device != null) {
+      _device = widget.device;
+      _isLoading = false;
+    } else {
+      _loadDevice();
+    }
+  }
+
+  Future<void> _loadDevice() async {
+    try {
+      final deviceService = DeviceService(ApiService());
+      final response = await deviceService.getDeviceById(widget.deviceId);
+
+      if (response.success && response.data != null) {
+        setState(() {
+          _device = response.data;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Device not found';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load device: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (device == null) {
-      // If device is null, we need to fetch it by ID
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading device details...'),
+            ],
+          ),
+        ),
+      );
     }
 
-    return Device360DetailsScreen(
-      device: device!,
-      onBack: () => AppRouter.goToDevices(context),
-      onNavigateToBillingReadings: (device, billingRecord) {
-        AppRouter.goToDeviceBillingReadings(context, device, billingRecord);
-      },
+    if (_error != null || _device == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red),
+              SizedBox(height: 16),
+              Text(_error ?? 'Device not found'),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go('/devices'),
+                child: Text('Back to Devices'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Wrap the Device360DetailsScreen in a Scaffold to prevent layout overflow
+    return Scaffold(
+      body: Device360DetailsScreen(
+        device: _device!,
+        onBack: () => context.go('/devices'),
+        onNavigateToBillingReadings: (device, billingRecord) {
+          // Use the updated AppRouter method instead of the old logic
+          AppRouter.goToDeviceBillingReadings(context, device, billingRecord);
+        },
+      ),
     );
   }
 }
@@ -248,16 +362,43 @@ class _DeviceBillingReadingsRouteWrapperState
       }
 
       // Find the specific billing record by ID
-      final billingData = billingResponse.data!['DeviceBilling'];
+      // Check both possible data structures: DeviceBilling and Billing
+      final billingData =
+          billingResponse.data!['DeviceBilling'] ??
+          billingResponse.data!['Billing'];
       Map<String, dynamic>? foundBillingRecord;
 
       if (billingData != null && billingData is List) {
         try {
-          foundBillingRecord = billingData.firstWhere(
-            (record) =>
-                record['Id']?.toString() == widget.billingId ||
-                record['id']?.toString() == widget.billingId,
-          );
+          foundBillingRecord = billingData.firstWhere((record) {
+            // First try to match by original ID fields
+            if (record['Id']?.toString() == widget.billingId ||
+                record['id']?.toString() == widget.billingId) {
+              return true;
+            }
+
+            // Then try to match by our composite ID format
+            final timeOfUseId = record['TimeOfUseId']?.toString() ?? '';
+            final startTime = record['StartTime']?.toString() ?? '';
+
+            if (timeOfUseId.isNotEmpty && startTime.isNotEmpty) {
+              final cleanStartTime = startTime.replaceAll(
+                RegExp(r'[^\w\-]'),
+                '_',
+              );
+              final compositeId = '${timeOfUseId}_$cleanStartTime';
+              if (compositeId == widget.billingId) {
+                return true;
+              }
+            }
+
+            // Also try matching just the TimeOfUseId
+            if (timeOfUseId.isNotEmpty && timeOfUseId == widget.billingId) {
+              return true;
+            }
+
+            return false;
+          });
         } catch (e) {
           // Record not found
         }
@@ -329,10 +470,13 @@ class _DeviceBillingReadingsRouteWrapperState
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    return DeviceBillingReadingsScreen(
-      device: _device!,
-      billingRecord: _billingRecord!,
-      onBack: () => context.go('/devices/details/${widget.deviceId}'),
+    // Wrap in Scaffold to prevent layout issues
+    return Scaffold(
+      body: DeviceBillingReadingsScreen(
+        device: _device!,
+        billingRecord: _billingRecord!,
+        onBack: () => context.go('/devices/details/${widget.deviceId}'),
+      ),
     );
   }
 }
@@ -392,25 +536,40 @@ class SettingsRouteWrapper extends StatelessWidget {
   }
 }
 
-// Updated MainLayout to work with routing
-class MainLayoutWithRouter extends StatelessWidget {
+// Updated MainLayout to work with routing and hierarchical sidebar
+class MainLayoutWithRouter extends StatefulWidget {
   final Widget child;
 
   const MainLayoutWithRouter({super.key, required this.child});
 
   @override
+  State<MainLayoutWithRouter> createState() => _MainLayoutWithRouterState();
+}
+
+class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
+  bool _sidebarCollapsed = false;
+
+  // Track expanded state for each group
+  final Map<String, bool> _expandedGroups = {
+    'device-management':
+        true, // Start expanded by default since 'devices' is selected
+  };
+
+  @override
   Widget build(BuildContext context) {
+    final currentLocation = GoRouterState.of(context).uri.toString();
+    final selectedScreen = _getSelectedScreenFromLocation(currentLocation);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: Row(
         children: [
-          // Sidebar will be updated to use routing
-          _buildSidebar(context),
+          _buildSidebar(selectedScreen),
           Expanded(
             child: Column(
               children: [
                 _buildBreadcrumbHeader(context),
-                Expanded(child: child),
+                Expanded(child: widget.child),
               ],
             ),
           ),
@@ -419,105 +578,671 @@ class MainLayoutWithRouter extends StatelessWidget {
     );
   }
 
-  Widget _buildSidebar(BuildContext context) {
-    // Simplified sidebar for now - will be enhanced
+  String _getSelectedScreenFromLocation(String location) {
+    if (location.startsWith('/dashboard')) return 'dashboard';
+    if (location.startsWith('/devices')) return 'devices';
+    if (location.startsWith('/device-groups')) return 'device-groups';
+    if (location.startsWith('/tou-management')) return 'tou-management';
+    if (location.startsWith('/tickets')) return 'tickets';
+    if (location.startsWith('/analytics')) return 'analytics';
+    if (location.startsWith('/settings')) return 'settings';
+    return 'devices'; // default
+  }
+
+  Widget _buildSidebar(String selectedScreen) {
     return Container(
-      width: 250,
-      color: const Color(0xFF1e293b),
+      width: _sidebarCollapsed ? 80 : 280,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8FAFC),
+        border: Border(right: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+      ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: const Text(
-              'MDMS Clone',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          _buildSidebarItem(context, 'Devices', '/devices', Icons.devices),
-          _buildSidebarItem(
-            context,
-            'Device Groups',
-            '/device-groups',
-            Icons.group,
-          ),
-          _buildSidebarItem(
-            context,
-            'TOU Management',
-            '/tou-management',
-            Icons.schedule,
-          ),
-          _buildSidebarItem(context, 'Tickets', '/tickets', Icons.support),
-          _buildSidebarItem(
-            context,
-            'Analytics',
-            '/analytics',
-            Icons.analytics,
-          ),
-          _buildSidebarItem(context, 'Settings', '/settings', Icons.settings),
+          _buildSidebarHeader(),
+          Expanded(child: _buildSidebarMenu(selectedScreen)),
+          _buildSidebarFooter(),
         ],
       ),
     );
   }
 
-  Widget _buildSidebarItem(
-    BuildContext context,
-    String title,
-    String route,
-    IconData icon,
-  ) {
-    final currentLocation = GoRouterState.of(context).uri.toString();
-    final isActive = currentLocation.startsWith(route);
-
+  Widget _buildSidebarHeader() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: ListTile(
-        leading: Icon(icon, color: isActive ? Colors.white : Colors.grey),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.grey,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2563eb),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.electric_bolt,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          if (!_sidebarCollapsed) ...[
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'MDMS Clone',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1e293b),
+                ),
+              ),
+            ),
+          ],
+          // Remove the collapse button from here - it will be moved to the top bar
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarMenu(String selectedScreen) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      children: [
+        // Dashboard
+        _buildMenuItem(
+          'dashboard',
+          'Dashboard',
+          Icons.dashboard,
+          selectedScreen == 'dashboard',
+        ),
+
+        // Device Management Group
+        _buildGroupHeader(
+          'device-management',
+          'Device Management',
+          Icons.devices,
+          ['devices', 'device-groups'],
+          selectedScreen,
+        ),
+
+        if (_expandedGroups['device-management'] == true) ...[
+          _buildSubMenuItem(
+            'devices',
+            'Devices',
+            Icons.devices_other,
+            selectedScreen == 'devices',
+          ),
+          _buildSubMenuItem(
+            'device-groups',
+            'Device Groups',
+            Icons.group_work,
+            selectedScreen == 'device-groups',
+          ),
+        ],
+
+        // TOU Management
+        _buildMenuItem(
+          'tou-management',
+          'TOU Management',
+          Icons.schedule,
+          selectedScreen == 'tou-management',
+        ),
+
+        // Tickets
+        _buildMenuItem(
+          'tickets',
+          'Tickets',
+          Icons.support_agent,
+          selectedScreen == 'tickets',
+          badge: '3',
+        ),
+
+        // Analytics
+        _buildMenuItem(
+          'analytics',
+          'Analytics',
+          Icons.analytics,
+          selectedScreen == 'analytics',
+        ),
+
+        // Settings
+        _buildMenuItem(
+          'settings',
+          'Settings',
+          Icons.settings,
+          selectedScreen == 'settings',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupHeader(
+    String groupId,
+    String title,
+    IconData icon,
+    List<String> childIds,
+    String selectedScreen,
+  ) {
+    final isExpanded = _expandedGroups[groupId] ?? false;
+    final hasSelectedChild = childIds.contains(selectedScreen);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _expandedGroups[groupId] = !isExpanded;
+            });
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: hasSelectedChild
+                  ? const Color(0xFF2563eb).withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: hasSelectedChild
+                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.3))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: hasSelectedChild
+                      ? const Color(0xFF2563eb)
+                      : const Color(0xFF64748b),
+                  size: 20,
+                ),
+                if (!_sidebarCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: hasSelectedChild
+                            ? const Color(0xFF2563eb)
+                            : const Color(0xFF64748b),
+                        fontSize: 14,
+                        fontWeight: hasSelectedChild
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: hasSelectedChild
+                        ? const Color(0xFF2563eb)
+                        : const Color(0xFF64748b),
+                    size: 16,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
-        selected: isActive,
-        selectedTileColor: const Color(0xFF2563eb),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        onTap: () => context.go(route),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+    String id,
+    String title,
+    IconData icon,
+    bool isSelected, {
+    String? badge,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go('/$id'),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFF2563eb).withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: isSelected
+                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.3))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected
+                      ? const Color(0xFF2563eb)
+                      : const Color(0xFF64748b),
+                  size: 20,
+                ),
+                if (!_sidebarCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: isSelected
+                            ? const Color(0xFF2563eb)
+                            : const Color(0xFF64748b),
+                        fontSize: 14,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ],
+                if (!_sidebarCollapsed && badge != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFef4444),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      badge,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubMenuItem(
+    String id,
+    String title,
+    IconData icon,
+    bool isSelected,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          // Visual hierarchy indicator
+          if (!_sidebarCollapsed) ...[
+            const SizedBox(width: 20),
+            Container(
+              width: 12,
+              height: 20,
+              child: CustomPaint(painter: HierarchyLinePainter()),
+            ),
+            const SizedBox(width: 4),
+          ] else ...[
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => context.go('/$id'),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF2563eb).withOpacity(0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    border: isSelected
+                        ? Border.all(
+                            color: const Color(0xFF2563eb).withOpacity(0.3),
+                          )
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        icon,
+                        color: isSelected
+                            ? const Color(0xFF2563eb)
+                            : const Color(0xFF64748b),
+                        size: 16,
+                      ),
+                      if (!_sidebarCollapsed) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? const Color(0xFF2563eb)
+                                  : const Color(0xFF64748b),
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarFooter() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: const Color(0xFF2563eb),
+            child: Text(
+              'A',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (!_sidebarCollapsed) ...[
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Admin User',
+                    style: TextStyle(
+                      color: Color(0xFF1e293b),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'admin@mdms.com',
+                    style: TextStyle(color: Color(0xFF64748b), fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.more_vert, color: Color(0xFF64748b), size: 16),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildBreadcrumbHeader(BuildContext context) {
+    final currentLocation = GoRouterState.of(context).uri.toString();
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: BreadcrumbNavigation()),
+          // Top row with title and actions
           Row(
             children: [
+              // Collapse/Expand Sidebar Button
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _sidebarCollapsed = !_sidebarCollapsed;
+                  });
+                },
+                icon: Icon(
+                  _sidebarCollapsed ? Icons.menu : Icons.menu_open,
+                  color: const Color(0xFF64748b),
+                ),
+                tooltip: _sidebarCollapsed
+                    ? 'Expand Sidebar'
+                    : 'Collapse Sidebar',
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _getPageTitle(currentLocation),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1e293b),
+                ),
+              ),
+              const Spacer(),
+              // URL Display
+              // Container(
+              //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              //   decoration: BoxDecoration(
+              //     color: const Color(0xFFF1F5F9),
+              //     borderRadius: BorderRadius.circular(6),
+              //     border: Border.all(color: const Color(0xFFE1E5E9)),
+              //   ),
+              //   child: Row(
+              //     mainAxisSize: MainAxisSize.min,
+              //     children: [
+              //       const Icon(Icons.link, size: 16, color: Color(0xFF64748b)),
+              //       const SizedBox(width: 6),
+              //       Text(
+              //         currentLocation,
+              //         style: const TextStyle(
+              //           fontSize: 12,
+              //           color: Color(0xFF64748b),
+              //           fontFamily: 'monospace',
+              //         ),
+              //       ),
+              //       const SizedBox(width: 6),
+              //       GestureDetector(
+              //         onTap: () => _copyUrlToClipboard(context, currentLocation),
+              //         child: const Icon(Icons.copy, size: 14, color: Color(0xFF2563eb)),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              // const SizedBox(width: 16),
               IconButton(
                 onPressed: () {},
                 icon: const Icon(Icons.notifications_outlined),
                 color: const Color(0xFF64748b),
               ),
               const SizedBox(width: 8),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.search),
-                color: const Color(0xFF64748b),
+              // User Avatar with Dropdown
+              PopupMenuButton<String>(
+                offset: const Offset(0, 40),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: const Color(0xFF2563eb),
+                      child: Text(
+                        'A',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Color(0xFF64748b),
+                      size: 16,
+                    ),
+                  ],
+                ),
+                itemBuilder: (context) => [
+                  PopupMenuItem<String>(
+                    value: 'appearance',
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.palette_outlined,
+                          size: 18,
+                          color: Color(0xFF64748b),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Appearance'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.logout,
+                          size: 18,
+                          color: Color(0xFFef4444),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Logout',
+                          style: TextStyle(color: const Color(0xFFef4444)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  switch (value) {
+                    case 'appearance':
+                      // Handle appearance settings
+                      context.go('/settings');
+                      break;
+                    case 'logout':
+                      // Handle logout
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Logout functionality will be implemented',
+                          ),
+                          backgroundColor: Color(0xFF2563eb),
+                        ),
+                      );
+                      break;
+                  }
+                },
               ),
             ],
           ),
+          // Breadcrumb navigation row
+          if (_shouldShowBreadcrumbs(currentLocation)) ...[
+            const SizedBox(height: 12),
+            const BreadcrumbNavigation(),
+          ],
         ],
       ),
     );
   }
+
+  String _getPageTitle(String location) {
+    if (location.startsWith('/dashboard')) return 'Dashboard';
+    if (location.startsWith('/devices')) {
+      if (location.contains('/details') && location.contains('/billing')) {
+        return 'Device Billing Readings';
+      } else if (location.contains('/details')) {
+        return 'Device Details';
+      }
+      return 'Devices';
+    }
+    if (location.startsWith('/device-groups')) return 'Device Groups';
+    if (location.startsWith('/tou-management')) return 'TOU Management';
+    if (location.startsWith('/tickets')) return 'Tickets';
+    if (location.startsWith('/analytics')) return 'Analytics';
+    if (location.startsWith('/settings')) return 'Settings';
+    return 'MDMS Clone';
+  }
+
+  bool _shouldShowBreadcrumbs(String location) {
+    // Show breadcrumbs for detail pages and sub-pages
+    return location.contains('/details') ||
+        location.contains('/billing') ||
+        location.split('/').length > 2;
+  }
+
+  // void _copyUrlToClipboard(BuildContext context, String route) {
+  //   // Get the full URL with current domain
+  //   final fullUrl = 'http://localhost:8088$route';
+
+  //   // Copy to clipboard using Flutter's Clipboard
+  //   Clipboard.setData(ClipboardData(text: fullUrl))
+  //       .then((_) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('URL copied: $fullUrl'),
+  //             duration: const Duration(seconds: 2),
+  //             backgroundColor: const Color(0xFF10b981),
+  //           ),
+  //         );
+  //       })
+  //       .catchError((_) {
+  //         // Fallback if clipboard fails
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('URL: $fullUrl'),
+  //             duration: const Duration(seconds: 3),
+  //             backgroundColor: const Color(0xFF2563eb),
+  //           ),
+  //         );
+  //       });
+  // }
+}
+
+// Custom painter for hierarchy lines
+class HierarchyLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFE2E8F0)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    // Draw vertical line
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, size.height / 2),
+      paint,
+    );
+
+    // Draw horizontal line
+    canvas.drawLine(
+      Offset(size.width / 2, size.height / 2),
+      Offset(size.width, size.height / 2),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

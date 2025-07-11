@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/common/app_sidebar.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
@@ -23,6 +24,11 @@ class _MainLayoutState extends State<MainLayout> {
   List<String> _breadcrumbs = []; // Add breadcrumb state
   Function(int)? _currentBreadcrumbNavigateHandler; // Store current handler
 
+  // Deep link state tracking
+  String? _currentDeviceId;
+  String? _currentBillingId;
+  String _currentView = 'list'; // 'list', 'details', 'billing', etc.
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,6 +41,10 @@ class _MainLayoutState extends State<MainLayout> {
             onItemSelected: (itemId) {
               setState(() {
                 _selectedScreen = itemId;
+                // Clear device context when switching screens
+                if (itemId != 'devices') {
+                  _clearDeviceContext();
+                }
               });
             },
             collapsed: _sidebarCollapsed,
@@ -78,7 +88,8 @@ class _MainLayoutState extends State<MainLayout> {
             child: Row(
               children: [
                 Text(
-                  _getScreenTitle(),
+                  'dd',
+                  // _getScreenTitle(),
                   style: const TextStyle(
                     fontSize: AppSizes.fontSizeXLarge,
                     fontWeight: FontWeight.w600,
@@ -86,6 +97,7 @@ class _MainLayoutState extends State<MainLayout> {
                   ),
                 ),
                 const Spacer(),
+
                 IconButton(
                   onPressed: () {},
                   icon: const Icon(Icons.notifications_outlined),
@@ -143,6 +155,8 @@ class _MainLayoutState extends State<MainLayout> {
           onBreadcrumbUpdate: _updateBreadcrumbs,
           onBreadcrumbNavigate: _onBreadcrumbNavigate,
           onSetBreadcrumbHandler: _setBreadcrumbNavigateHandler,
+          onDeepLinkUpdate: _updateDeviceContext,
+          onDeepLinkClear: _clearDeviceContext,
         );
       case 'device-groups':
         return const DeviceGroupsScreen();
@@ -206,5 +220,96 @@ class _MainLayoutState extends State<MainLayout> {
         ],
       ],
     );
+  }
+
+  // Method to get current route path
+  String _getCurrentUrl() {
+    switch (_selectedScreen) {
+      case 'dashboard':
+        return '/dashboard';
+
+      case 'devices':
+        if (_currentDeviceId != null) {
+          // Device details page
+          if (_currentView == 'details') {
+            return '/devices/$_currentDeviceId/details';
+          } else if (_currentView == 'billing' && _currentBillingId != null) {
+            // Billing details page
+            return '/devices/$_currentDeviceId/billing/$_currentBillingId';
+          }
+        }
+        // Default devices list
+        return '/devices';
+
+      case 'device-groups':
+        return '/device-groups';
+
+      case 'tou-management':
+        return '/tou-management';
+
+      case 'tickets':
+        return '/tickets';
+
+      case 'analytics':
+        return '/analytics';
+
+      case 'settings':
+        return '/settings';
+
+      default:
+        return '/devices';
+    }
+  }
+
+  // Method to copy URL to clipboard
+  void _copyUrlToClipboard() async {
+    final url = _getCurrentUrl();
+
+    try {
+      await Clipboard.setData(ClipboardData(text: url));
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deep link copied: $url'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: const Color(0xFF10b981),
+          ),
+        );
+      }
+    } catch (e) {
+      // Fallback if clipboard fails
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('URL: $url'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: const Color(0xFF2563eb),
+          ),
+        );
+      }
+    }
+  }
+
+  // Methods to update deep link context
+  void _updateDeviceContext(
+    String? deviceId,
+    String view, {
+    String? billingId,
+  }) {
+    setState(() {
+      _currentDeviceId = deviceId;
+      _currentView = view;
+      _currentBillingId = billingId;
+    });
+  }
+
+  void _clearDeviceContext() {
+    setState(() {
+      _currentDeviceId = null;
+      _currentBillingId = null;
+      _currentView = 'list';
+    });
   }
 }
