@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
@@ -14,7 +15,6 @@ import 'device_billing_readings_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/services/device_service.dart';
 
 class DevicesScreen extends StatefulWidget {
@@ -86,7 +86,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   @override
   void initState() {
     super.initState();
-    _deviceService = DeviceService(ApiService());
+    _deviceService = Provider.of<DeviceService>(context, listen: false);
 
     // Set up breadcrumb navigation handler
     widget.onSetBreadcrumbHandler?.call(_handleBreadcrumbNavigation);

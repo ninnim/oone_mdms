@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
-import '../../../core/services/api_service.dart';
 import '../common/status_chip.dart';
 import '../common/results_pagination.dart';
 import 'dart:math' as math;
@@ -52,7 +52,9 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
   @override
   void initState() {
     super.initState();
-    _deviceService = widget.deviceService ?? DeviceService(ApiService());
+    _deviceService =
+        widget.deviceService ??
+        Provider.of<DeviceService>(context, listen: false);
     _loadDevicesForMap();
   }
 

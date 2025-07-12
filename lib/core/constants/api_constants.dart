@@ -5,6 +5,7 @@ class ApiConstants {
   // Headers
   static const String tokenHeader = '4)-g\$xR&M0siAov3Fl4O';
   static const String contentType = 'application/json';
+  static const String authorization='Bearer ';
   static const String accept = 'application/json';
   static const String tenant = 'x-hasura-tenant';
   static const String user = 'x-hasura-user';

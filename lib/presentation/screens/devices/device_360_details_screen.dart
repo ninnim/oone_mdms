@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
-import '../../../core/services/api_service.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/results_pagination.dart';
@@ -79,7 +79,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    _deviceService = DeviceService(ApiService());
+    _deviceService = Provider.of<DeviceService>(context, listen: false);
 
     // Load initial overview data
     _loadOverviewData();

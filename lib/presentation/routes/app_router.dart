@@ -1,162 +1,218 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'dart:html' as html;
+import 'dart:async';
 import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
+import '../screens/auth/simple_auth_redirect_screen.dart';
 import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
 import '../../core/services/device_service.dart';
-import '../../core/services/api_service.dart';
+import '../../core/services/keycloak_service.dart';
 
 class AppRouter {
-  static final GoRouter router = GoRouter(
-    initialLocation: '/devices',
-    routes: [
-      ShellRoute(
-        builder: (context, state, child) {
-          return MainLayoutWithRouter(child: child);
-        },
-        routes: [
-          // Dashboard Routes
-          GoRoute(
-            path: '/dashboard',
-            name: 'dashboard',
-            builder: (context, state) => const DashboardRouteWrapper(),
-          ),
+  static GoRouter getRouter(KeycloakService keycloakService) {
+    return GoRouter(
+      initialLocation: '/auth',
+      refreshListenable:
+          keycloakService, // Listen to authentication state changes
+      redirect: (context, state) {
+        final isAuthenticated = keycloakService.isAuthenticated;
+        final uri = state.uri;
+        final currentPath = uri.path;
+        final hasCode = uri.queryParameters.containsKey('code');
 
-          // Device Routes
-          GoRoute(
-            path: '/devices',
-            name: 'devices',
-            builder: (context, state) => const DevicesRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/devices/details/:deviceId',
-            name: 'device-details',
-            builder: (context, state) {
-              final deviceId = state.pathParameters['deviceId']!;
-              final deviceData = state.extra as Device?;
-              return DeviceDetailsRouteWrapper(
-                deviceId: deviceId,
-                device: deviceData,
-              );
-            },
-          ),
-          GoRoute(
-            path: '/devices/details/:deviceId/billing/:billingId',
-            name: 'device-billing-readings',
-            builder: (context, state) {
-              final deviceId = state.pathParameters['deviceId']!;
-              final billingId = state.pathParameters['billingId']!;
-              return DeviceBillingReadingsRouteWrapper(
-                deviceId: deviceId,
-                billingId: billingId,
-              );
-            },
-          ),
+        print(
+          'GoRouter redirect: isAuthenticated=$isAuthenticated, path=$currentPath',
+        );
+        print('GoRouter: Full URI: ${uri.toString()}');
+        print('GoRouter: Has authorization code: $hasCode');
 
-          // Device Groups Routes
-          GoRoute(
-            path: '/device-groups',
-            name: 'device-groups',
-            builder: (context, state) => const DeviceGroupsRouteWrapper(),
-          ),
+        // If we're on /auth/callback, redirect to /auth with the same query parameters
+        if (currentPath == '/auth/callback') {
+          final queryString = uri.query.isNotEmpty ? '?${uri.query}' : '';
+          print('GoRouter: Redirecting callback to /auth$queryString');
+          return '/auth$queryString';
+        }
 
-          // TOU Management Routes
-          GoRoute(
-            path: '/tou-management',
-            name: 'tou-management',
-            builder: (context, state) => const TouManagementRouteWrapper(),
-          ),
+        // If we have an authorization code, let the auth route handle the callback
+        if (hasCode && currentPath == '/auth') {
+          print('GoRouter: Allowing auth route to handle OAuth callback');
+          return null; // Let the auth route handle the callback
+        }
 
-          // Tickets Routes
-          GoRoute(
-            path: '/tickets',
-            name: 'tickets',
-            builder: (context, state) => const TicketsRouteWrapper(),
-          ),
+        // If not authenticated and not on auth route, redirect to auth
+        if (!isAuthenticated && currentPath != '/auth') {
+          print('GoRouter: Redirecting to /auth because not authenticated');
+          return '/auth';
+        }
 
-          // Analytics Routes
-          GoRoute(
-            path: '/analytics',
-            name: 'analytics',
-            builder: (context, state) => const AnalyticsRouteWrapper(),
-          ),
+        // If authenticated and on auth route (without code), redirect to dashboard
+        if (isAuthenticated && currentPath == '/auth' && !hasCode) {
+          print('GoRouter: Redirecting to /dashboard because authenticated');
+          return '/dashboard';
+        }
 
-          // Settings Routes Group
-          GoRoute(
-            path: '/settings',
-            name: 'settings',
-            builder: (context, state) => const SettingsRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/my-details',
-            name: 'my-details',
-            builder: (context, state) => const SettingsRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/my-profile',
-            name: 'my-profile',
-            builder: (context, state) => const SettingsRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/security',
-            name: 'security',
-            builder: (context, state) => const SettingsRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/integrations',
-            name: 'integrations',
-            builder: (context, state) => const SettingsRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/billing',
-            name: 'billing',
-            builder: (context, state) => const SettingsRouteWrapper(),
-          ),
+        // No redirect needed
+        return null;
+      },
+      routes: [
+        // Auth route - handles both login and callback
+        GoRoute(
+          path: '/auth',
+          name: 'auth',
+          builder: (context, state) => const SimpleAuthRedirectScreen(),
+        ),
 
-          // TOU Management Sub-routes
-          GoRoute(
-            path: '/time-of-use',
-            name: 'time-of-use',
-            builder: (context, state) => const TouManagementRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/time-bands',
-            name: 'time-bands',
-            builder: (context, state) => const TouManagementRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/special-days',
-            name: 'special-days',
-            builder: (context, state) => const TouManagementRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/seasons',
-            name: 'seasons',
-            builder: (context, state) => const TouManagementRouteWrapper(),
-          ),
+        // Protected routes (inside shell)
+        ShellRoute(
+          builder: (context, state, child) {
+            return MainLayoutWithRouter(child: child);
+          },
+          routes: [
+            // Dashboard Routes
+            GoRoute(
+              path: '/dashboard',
+              name: 'dashboard',
+              builder: (context, state) => const DashboardRouteWrapper(),
+            ),
 
-          // Analytics Sub-routes
-          GoRoute(
-            path: '/reports',
-            name: 'reports',
-            builder: (context, state) => const AnalyticsRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/dashboards',
-            name: 'dashboards',
-            builder: (context, state) => const AnalyticsRouteWrapper(),
-          ),
-          GoRoute(
-            path: '/insights',
-            name: 'insights',
-            builder: (context, state) => const AnalyticsRouteWrapper(),
-          ),
-        ],
-      ),
-    ],
-  );
+            // Device Routes
+            GoRoute(
+              path: '/devices',
+              name: 'devices',
+              builder: (context, state) => const DevicesRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/devices/details/:deviceId',
+              name: 'device-details',
+              builder: (context, state) {
+                final deviceId = state.pathParameters['deviceId']!;
+                final deviceData = state.extra as Device?;
+                return DeviceDetailsRouteWrapper(
+                  deviceId: deviceId,
+                  device: deviceData,
+                );
+              },
+            ),
+            GoRoute(
+              path: '/devices/details/:deviceId/billing/:billingId',
+              name: 'device-billing-readings',
+              builder: (context, state) {
+                final deviceId = state.pathParameters['deviceId']!;
+                final billingId = state.pathParameters['billingId']!;
+                return DeviceBillingReadingsRouteWrapper(
+                  deviceId: deviceId,
+                  billingId: billingId,
+                );
+              },
+            ),
+
+            // Device Groups Routes
+            GoRoute(
+              path: '/device-groups',
+              name: 'device-groups',
+              builder: (context, state) => const DeviceGroupsRouteWrapper(),
+            ),
+
+            // TOU Management Routes
+            GoRoute(
+              path: '/tou-management',
+              name: 'tou-management',
+              builder: (context, state) => const TouManagementRouteWrapper(),
+            ),
+
+            // Tickets Routes
+            GoRoute(
+              path: '/tickets',
+              name: 'tickets',
+              builder: (context, state) => const TicketsRouteWrapper(),
+            ),
+
+            // Analytics Routes
+            GoRoute(
+              path: '/analytics',
+              name: 'analytics',
+              builder: (context, state) => const AnalyticsRouteWrapper(),
+            ),
+
+            // Settings Routes Group
+            GoRoute(
+              path: '/settings',
+              name: 'settings',
+              builder: (context, state) => const SettingsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/my-details',
+              name: 'my-details',
+              builder: (context, state) => const SettingsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/my-profile',
+              name: 'my-profile',
+              builder: (context, state) => const SettingsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/security',
+              name: 'security',
+              builder: (context, state) => const SettingsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/integrations',
+              name: 'integrations',
+              builder: (context, state) => const SettingsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/billing',
+              name: 'billing',
+              builder: (context, state) => const SettingsRouteWrapper(),
+            ),
+
+            // TOU Management Sub-routes
+            GoRoute(
+              path: '/time-of-use',
+              name: 'time-of-use',
+              builder: (context, state) => const TouManagementRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/time-bands',
+              name: 'time-bands',
+              builder: (context, state) => const TouManagementRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/special-days',
+              name: 'special-days',
+              builder: (context, state) => const TouManagementRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/seasons',
+              name: 'seasons',
+              builder: (context, state) => const TouManagementRouteWrapper(),
+            ),
+
+            // Analytics Sub-routes
+            GoRoute(
+              path: '/reports',
+              name: 'reports',
+              builder: (context, state) => const AnalyticsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/dashboards',
+              name: 'dashboards',
+              builder: (context, state) => const AnalyticsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/insights',
+              name: 'insights',
+              builder: (context, state) => const AnalyticsRouteWrapper(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   // Helper methods for navigation
   static void goToDevices(BuildContext context) {
@@ -297,7 +353,7 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
 
   Future<void> _loadDevice() async {
     try {
-      final deviceService = DeviceService(ApiService());
+      final deviceService = Provider.of<DeviceService>(context, listen: false);
       final response = await deviceService.getDeviceById(widget.deviceId);
 
       if (response.success && response.data != null) {
@@ -400,7 +456,7 @@ class _DeviceBillingReadingsRouteWrapperState
 
   Future<void> _loadData() async {
     try {
-      final deviceService = DeviceService(ApiService());
+      final deviceService = Provider.of<DeviceService>(context, listen: false);
 
       // Load device data
       final deviceResponse = await deviceService.getDeviceById(widget.deviceId);
@@ -1957,4 +2013,216 @@ class HierarchyLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Authentication Screens
+class AuthRedirectScreen extends StatefulWidget {
+  const AuthRedirectScreen({super.key});
+
+  @override
+  State<AuthRedirectScreen> createState() => _AuthRedirectScreenState();
+}
+
+class _AuthRedirectScreenState extends State<AuthRedirectScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initiateLogin();
+  }
+
+  Future<void> _initiateLogin() async {
+    final keycloakService = Provider.of<KeycloakService>(
+      context,
+      listen: false,
+    );
+    await keycloakService.login();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Redirecting to login...'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AuthCallbackScreen extends StatefulWidget {
+  const AuthCallbackScreen({super.key});
+
+  @override
+  State<AuthCallbackScreen> createState() => _AuthCallbackScreenState();
+}
+
+class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _handleCallback();
+  }
+
+  Future<void> _handleCallback() async {
+    try {
+      print('AuthCallbackScreen: Starting callback handling...');
+      final keycloakService = Provider.of<KeycloakService>(
+        context,
+        listen: false,
+      );
+      final uri = Uri.parse(html.window.location.href);
+      print('AuthCallbackScreen: Current URL: ${uri.toString()}');
+      final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+
+      if (error != null) {
+        print('AuthCallbackScreen: OAuth error: $error');
+        if (mounted) {
+          context.go('/auth');
+        }
+        return;
+      }
+
+      if (code != null) {
+        print(
+          'AuthCallbackScreen: Authorization code found: ${code.substring(0, 10)}...',
+        );
+        final success = await keycloakService.handleCallback(code);
+        print('AuthCallbackScreen: Callback result: $success');
+
+        if (success) {
+          await Future.delayed(const Duration(milliseconds: 200));
+          final isAuthenticated = keycloakService.isAuthenticated;
+          print('AuthCallbackScreen: Authentication state: $isAuthenticated');
+
+          if (isAuthenticated && mounted) {
+            print('AuthCallbackScreen: Redirecting to dashboard...');
+            try {
+              context.go('/dashboard');
+            } catch (e) {
+              print('AuthCallbackScreen: Navigation failed: $e');
+              html.window.location.href =
+                  '${html.window.location.origin}/dashboard';
+            }
+          } else if (mounted) {
+            context.go('/auth');
+          }
+        } else if (mounted) {
+          context.go('/auth');
+        }
+      } else {
+        print('AuthCallbackScreen: No authorization code found');
+        if (mounted) {
+          context.go('/auth');
+        }
+      }
+    } catch (e) {
+      print('AuthCallbackScreen: Error during callback: $e');
+      if (mounted) {
+        context.go('/auth');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Processing login...'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CallbackHandlerWidget extends StatefulWidget {
+  @override
+  _CallbackHandlerWidgetState createState() => _CallbackHandlerWidgetState();
+}
+
+class _CallbackHandlerWidgetState extends State<_CallbackHandlerWidget> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleCallback();
+    });
+  }
+
+  Future<void> _handleCallback() async {
+    try {
+      // Get current URL and extract query parameters
+      final currentUrl = html.window.location.href;
+      final uri = Uri.parse(currentUrl);
+      final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+
+      print('Callback URL: $currentUrl');
+      print('Authorization code: $code');
+      print('Error: $error');
+
+      if (error != null) {
+        print('OAuth error: $error');
+        if (mounted) {
+          context.go('/auth');
+        }
+        return;
+      }
+
+      if (code == null) {
+        print('No authorization code found');
+        if (mounted) {
+          context.go('/auth');
+        }
+        return;
+      }
+
+      // Get the KeycloakService and handle the callback
+      final keycloakService = Provider.of<KeycloakService>(
+        context,
+        listen: false,
+      );
+      await keycloakService.handleCallback(code);
+
+      print('OAuth callback processed successfully');
+
+      // Redirect to dashboard
+      if (mounted) {
+        context.go('/dashboard');
+      }
+    } catch (e) {
+      print('Error processing OAuth callback: $e');
+      if (mounted) {
+        context.go('/auth');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Processing authentication...'),
+          ],
+        ),
+      ),
+    );
+  }
 }

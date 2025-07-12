@@ -39,6 +39,14 @@ dependencies:
   dio: ^5.4.0
   provider: ^6.1.1
   
+  # Authentication
+  oauth2: ^2.0.2
+  flutter_secure_storage: ^9.0.0
+  jwt_decoder: ^2.0.1
+  
+  # Web support
+  js: ^0.6.7
+  
   # UI Components
   flutter_svg: ^2.0.9
   cached_network_image: ^3.3.0
