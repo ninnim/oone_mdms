@@ -3,6 +3,7 @@ import '../models/device_group.dart';
 import '../models/response_models.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
+import 'error_translation_service.dart';
 
 class DeviceService {
   final ApiService _apiService;
@@ -28,7 +29,9 @@ class DeviceService {
 
       return ApiResponse.success(devices, paging: listResponse.paging);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch devices: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_list');
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -42,7 +45,9 @@ class DeviceService {
 
       return ApiResponse.success(device);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch device: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_detail');
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -78,7 +83,9 @@ class DeviceService {
 
       return ApiResponse.success(createdDevice);
     } catch (e) {
-      return ApiResponse.error('Failed to create device: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_create');
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -129,7 +136,9 @@ class DeviceService {
 
       return ApiResponse.success(updatedDevice);
     } catch (e) {
-      return ApiResponse.error('Failed to update device: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_update');
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -139,7 +148,9 @@ class DeviceService {
       await _apiService.delete('${ApiConstants.devices}/$id');
       return ApiResponse.success(true);
     } catch (e) {
-      return ApiResponse.error('Failed to delete device: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_delete');
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -166,7 +177,9 @@ class DeviceService {
 
       return ApiResponse.success(devices, paging: listResponse.paging);
     } catch (e) {
-      return ApiResponse.error('Failed to filter devices: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_filter');
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -179,7 +192,12 @@ class DeviceService {
 
       return ApiResponse.success(true);
     } catch (e) {
-      return ApiResponse.error('Failed to link device to HES: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_link_hes',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -208,7 +226,12 @@ class DeviceService {
 
       return ApiResponse.success(deviceGroups, paging: listResponse.paging);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch device groups: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_group_list',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -226,7 +249,12 @@ class DeviceService {
       final deviceGroup = DeviceGroup.fromJson(response.data['DeviceGroup']);
       return ApiResponse.success(deviceGroup);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch device group: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_group_detail',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -241,7 +269,12 @@ class DeviceService {
       final message = response.data['Message'] ?? 'Device linked successfully';
       return ApiResponse.success(message);
     } catch (e) {
-      return ApiResponse.error('Failed to link device to HES: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_link_hes',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -276,7 +309,12 @@ class DeviceService {
 
       return ApiResponse.success(response.data);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch device metrics: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_metrics',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -295,7 +333,12 @@ class DeviceService {
 
       return ApiResponse.success(response.data);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch device billing: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_billing',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -317,7 +360,12 @@ class DeviceService {
 
       return ApiResponse.success(response.data);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch device billing readings: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_billing_readings',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -329,7 +377,9 @@ class DeviceService {
 
       return ApiResponse.success(response.data);
     } catch (e) {
-      return ApiResponse.error('Failed to ping device: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_ping');
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -346,7 +396,12 @@ class DeviceService {
 
       return ApiResponse.success(response.data);
     } catch (e) {
-      return ApiResponse.error('Failed to commission device: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_commission',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -362,7 +417,12 @@ class DeviceService {
 
       return ApiResponse.success(response.data);
     } catch (e) {
-      return ApiResponse.error('Failed to link device to HES: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_link_hes',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 
@@ -392,7 +452,12 @@ class DeviceService {
 
       return ApiResponse.success(devices, paging: listResponse.paging);
     } catch (e) {
-      return ApiResponse.error('Failed to fetch devices for map: $e');
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_map_clustering',
+          );
+      return ApiResponse.error(userFriendlyMessage);
     }
   }
 }

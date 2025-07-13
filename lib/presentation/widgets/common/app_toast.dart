@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/services/error_translation_service.dart';
 
-enum ToastType {
-  success,
-  warning,
-  error,
-  info,
-}
+enum ToastType { success, warning, error, info }
 
 class ToastData {
   final String title;
@@ -51,6 +47,7 @@ class AppToast {
         child: ToastWidget(
           data: toastData,
           onDismiss: () => _currentToast?.remove(),
+          //  onDismiss: () => _currentToast?.mounted,
         ),
       ),
     );
@@ -64,60 +61,70 @@ class AppToast {
     });
   }
 
+  /// Shows a success toast with a friendly message
   static void showSuccess(
     BuildContext context, {
-    required String title,
     required String message,
-    Duration duration = const Duration(seconds: 4),
+    String? title,
+    Duration duration = const Duration(seconds: 3),
   }) {
     show(
       context,
-      title: title,
+      title: title ?? 'Success',
       message: message,
       type: ToastType.success,
       duration: duration,
     );
   }
 
+  /// Shows an error toast with user-friendly translated message
+  static void showError(
+    BuildContext context, {
+    required dynamic error,
+    String? title,
+    String? errorContext,
+    Duration duration = const Duration(seconds: 5),
+  }) {
+    final userFriendlyMessage = ErrorTranslationService.translateError(
+      error,
+      context: errorContext,
+    );
+
+    show(
+      context,
+      title: title ?? 'Error',
+      message: userFriendlyMessage,
+      type: ToastType.error,
+      duration: duration,
+    );
+  }
+
+  /// Shows a warning toast
   static void showWarning(
     BuildContext context, {
-    required String title,
     required String message,
+    String? title,
     Duration duration = const Duration(seconds: 4),
   }) {
     show(
       context,
-      title: title,
+      title: title ?? 'Warning',
       message: message,
       type: ToastType.warning,
       duration: duration,
     );
   }
 
-  static void showError(
-    BuildContext context, {
-    required String title,
-    required String message,
-    Duration duration = const Duration(seconds: 4),
-  }) {
-    show(
-      context,
-      title: title,
-      message: message,
-      type: ToastType.error,
-      duration: duration,
-    );
-  }
-
+  /// Shows an info toast
   static void showInfo(
     BuildContext context, {
-    required String title,
     required String message,
-    Duration duration = const Duration(seconds: 4),
+    String? title,
+    Duration duration = const Duration(seconds: 3),
   }) {
     show(
       context,
-      title: title,
+      title: title ?? 'Info',
       message: message,
       type: ToastType.info,
       duration: duration,
@@ -134,11 +141,7 @@ class ToastWidget extends StatefulWidget {
   final ToastData data;
   final VoidCallback onDismiss;
 
-  const ToastWidget({
-    super.key,
-    required this.data,
-    required this.onDismiss,
-  });
+  const ToastWidget({super.key, required this.data, required this.onDismiss});
 
   @override
   State<ToastWidget> createState() => _ToastWidgetState();
@@ -160,26 +163,19 @@ class _ToastWidgetState extends State<ToastWidget>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     // Progress animation
     _progressController = AnimationController(
       duration: widget.data.duration,
       vsync: this,
     );
-    _progressAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _progressController,
-      curve: Curves.linear,
-    ));
+    _progressAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _progressController, curve: Curves.linear),
+    );
 
     // Start animations
     _slideController.forward();
@@ -201,7 +197,7 @@ class _ToastWidgetState extends State<ToastWidget>
   }
 
   void _dismiss() async {
-    await _slideController.reverse();
+    _slideController.forward();
     widget.onDismiss();
   }
 
@@ -295,7 +291,9 @@ class _ToastWidgetState extends State<ToastWidget>
                       height: 32,
                       decoration: BoxDecoration(
                         color: _getIconColor().withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                        borderRadius: BorderRadius.circular(
+                          AppSizes.radiusSmall,
+                        ),
                       ),
                       child: Icon(
                         _getIcon(),
@@ -330,13 +328,16 @@ class _ToastWidgetState extends State<ToastWidget>
                     ),
                     // Close button
                     GestureDetector(
+                      //onTap: dispose,
                       onTap: _dismiss,
                       child: Container(
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
                           color: AppColors.textTertiary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusSmall,
+                          ),
                         ),
                         child: const Icon(
                           Icons.close,
@@ -363,7 +364,9 @@ class _ToastWidgetState extends State<ToastWidget>
                     child: LinearProgressIndicator(
                       value: _progressAnimation.value,
                       backgroundColor: Colors.transparent,
-                      valueColor: AlwaysStoppedAnimation<Color>(_getProgressColor()),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _getProgressColor(),
+                      ),
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(AppSizes.radiusLarge),
                         bottomRight: Radius.circular(AppSizes.radiusLarge),

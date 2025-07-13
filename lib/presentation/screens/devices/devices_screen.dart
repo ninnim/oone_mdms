@@ -506,7 +506,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final confirmed = await AppConfirmDialog.show(
       context,
       title: 'Delete Device',
-      message: 'Are you sure you want to delete device "$serialNumber"? This action cannot be undone.',
+      message:
+          'Are you sure you want to delete device "$serialNumber"? This action cannot be undone.',
       confirmText: 'Delete',
       cancelText: 'Cancel',
       confirmType: AppButtonType.danger,
@@ -517,22 +518,23 @@ class _DevicesScreenState extends State<DevicesScreen> {
       try {
         // TODO: Implement actual delete functionality
         // await _deviceService.deleteDevice(device.id);
-        
+
         // Show success toast
         AppToast.showSuccess(
           context,
           title: 'Device Deleted',
           message: 'Device "$serialNumber" has been successfully deleted.',
         );
-        
+
         // Refresh the devices list
         await _loadDevices();
       } catch (e) {
         // Show error toast
         AppToast.showError(
           context,
+          error: e,
           title: 'Delete Failed',
-          message: 'Failed to delete device: $e',
+          errorContext: 'device_delete',
         );
       }
     }
@@ -627,7 +629,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final confirmed = await AppConfirmDialog.show(
       context,
       title: 'Delete Selected Devices',
-      message: 'Are you sure you want to delete $deviceCount selected device${deviceCount == 1 ? '' : 's'}? This action cannot be undone.',
+      message:
+          'Are you sure you want to delete $deviceCount selected device${deviceCount == 1 ? '' : 's'}? This action cannot be undone.',
       confirmText: 'Delete All',
       cancelText: 'Cancel',
       confirmType: AppButtonType.danger,
@@ -638,7 +641,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       try {
         // TODO: Implement actual bulk delete functionality
         // await _deviceService.bulkDeleteDevices(_selectedDevices.map((d) => d.id).toList());
-        
+
         // Simulate bulk delete for now
         setState(() {
           for (var device in _selectedDevices) {
@@ -653,14 +656,16 @@ class _DevicesScreenState extends State<DevicesScreen> {
         AppToast.showSuccess(
           context,
           title: 'Devices Deleted',
-          message: '$deviceCount device${deviceCount == 1 ? '' : 's'} deleted successfully.',
+          message:
+              '$deviceCount device${deviceCount == 1 ? '' : 's'} deleted successfully.',
         );
       } catch (e) {
         // Show error toast
         AppToast.showError(
           context,
+          error: e,
           title: 'Bulk Delete Failed',
-          message: 'Failed to delete selected devices: $e',
+          errorContext: 'device_delete',
         );
       }
     }

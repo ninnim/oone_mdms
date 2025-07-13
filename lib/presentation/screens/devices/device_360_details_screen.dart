@@ -434,10 +434,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border(
-              bottom: BorderSide(
-                color: AppColors.border,
-                width: 1.0,
-              ),
+              bottom: BorderSide(color: AppColors.border, width: 1.0),
             ),
           ),
           child: TabBar(
@@ -457,10 +454,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             indicator: BoxDecoration(
               color: Colors.transparent,
               border: Border(
-                bottom: BorderSide(
-                  color: AppColors.primary,
-                  width: 3.0,
-                ),
+                bottom: BorderSide(color: AppColors.primary, width: 3.0),
               ),
             ),
             labelPadding: EdgeInsets.symmetric(
@@ -766,7 +760,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         AppToast.showError(
           context,
           title: 'Ping Failed',
-          message: 'Ping failed: ${response.message}',
+          error: 'Ping failed: ${response.message}',
         );
       }
     } catch (e) {
@@ -774,7 +768,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         AppToast.showError(
           context,
           title: 'Error',
-          message: 'Error pinging device: $e',
+          error: 'Error pinging device: $e',
         );
       }
     }
@@ -796,7 +790,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         AppToast.showError(
           context,
           title: 'Link Failed',
-          message: 'Failed to link device: ${response.message}',
+          error: 'Failed to link device: ${response.message}',
         );
       }
     } catch (e) {
@@ -804,7 +798,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         AppToast.showError(
           context,
           title: 'Error',
-          message: 'Error linking device: $e',
+          error: 'Error linking device: $e',
         );
       }
     }
@@ -814,7 +808,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
     final confirmed = await AppConfirmDialog.show(
       context,
       title: 'Commission Device',
-      message: 'Are you sure you want to commission device ${widget.device.serialNumber}?\n\nThis action will make the device active and ready for operation.',
+      message:
+          'Are you sure you want to commission device ${widget.device.serialNumber}?\n\nThis action will make the device active and ready for operation.',
       confirmText: 'Commission',
       confirmColor: AppColors.warning,
     );
@@ -837,7 +832,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           AppToast.showError(
             context,
             title: 'Commission Failed',
-            message: 'Failed to commission device: ${response.message}',
+            error: 'Failed to commission device: ${response.message}',
           );
         }
       } catch (e) {
@@ -845,7 +840,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           AppToast.showError(
             context,
             title: 'Error',
-            message: 'Error commissioning device: $e',
+            error: 'Error commerrorissioning device: $e',
           );
         }
       }

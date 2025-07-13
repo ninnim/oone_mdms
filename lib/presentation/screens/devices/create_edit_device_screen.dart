@@ -211,7 +211,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
           AppToast.showError(
             context,
             title: 'Error',
-            message: 'Error: ${response.message}',
+            error: 'Error: ${response.message}',
           );
         }
       }
@@ -220,7 +220,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
         AppToast.showError(
           context,
           title: 'Error',
-          message: 'Error saving device: $e',
+          error: 'Error saving device: $e',
         );
       }
     } finally {
