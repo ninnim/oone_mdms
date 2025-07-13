@@ -1,322 +1,381 @@
-# MDMS Clone - Property Management System ✅ PHASE 2 COMPLETED
+# MDMS Clone - Device Management System
 
 ## Project Overview
-This is a Flutter application that clones a property management system UI (BluNest-like interface) and connects it with a Device Management System (MDMS) API. The app provides a consistent, modern UI experience for managing devices, properties, and related data.
+This is a Flutter web application that provides a comprehensive Device Management System (MDMS) with a modern UI experience. The app connects to MDMS APIs for managing devices, device groups, tickets, TOU (Time of Use) management, and related data. Built with Clean Architecture principles and Provider state management. Last updated: Sunday, July 13, 2025, 10:00 AM +07.
 
-## ✅ CURRENT STATUS - DEVICE MODULE COMPLETED
+## ✅ CURRENT STATUS - COMPREHENSIVE SYSTEM IMPLEMENTED
 
 ### 🎉 Successfully Implemented Features
 
-#### ✅ Design System & Core Components
-- **Complete color scheme** with BluNest-style primary blue (#2563eb) and semantic colors
-- **Typography system** with consistent font sizes and weights
-- **8px grid spacing system** for consistent layouts
-- **Reusable UI components** including buttons, cards, inputs, status chips, sidebar, and data tables
+#### ✅ Design System & Core Architecture
+- **Complete Clean Architecture** with proper separation of concerns
+- **Provider State Management** for scalable app state
+- **Consistent UI Theme** with BluNest-style design (#2563eb primary)
+- **Typography & Spacing System** (8px grid, consistent fonts)
+- **Centralized Constants** (AppColors, AppSizes) used across all widgets
+- **Model-First API Integration** - All data fetching uses proper Dart models
 
-#### ✅ Device Management System (Core Feature) - COMPLETE
-- **Device List View** - Table format with search, filter, and pagination support
-  - Columns: Device Name, Serial Number, Status, Type, Model, Address, Status Info, Actions
-  - Color-coded status indicators (Commissioned=green, Renovation=orange, None=gray)
-  - Action buttons (View, Edit, Delete) for each device
-  - In-layout navigation support (no new pages, stays within main shell)
-  - Mock data integration with realistic device information
+#### ✅ Authentication & Security
+- **Keycloak Integration** with OAuth2 flow
+- **Secure Token Management** with flutter_secure_storage
+- **Auto-refresh Tokens** and proper session handling
+- **Protected Routes** with authentication guards
 
-- **Device Details View** - In-layout comprehensive device information display
-  - Device header with icon, name, serial number, status chips
-  - Device information card with technical details and location
-  - Device channels list with proper DeviceChannel model integration
-  - Device attributes display with proper DeviceAttribute model integration
-  - Quick actions sidebar (Edit, View Metrics, Generate Report, Create Ticket)
-  - Seamless navigation back to device list within same layout
+#### ✅ Device Management System (Primary Module)
+- **Device List Screen** with table/kanban/map views
+  - Advanced filtering (search, status, type, date ranges)
+  - Pagination with configurable page sizes
+  - Export capabilities and bulk operations
+  - Real-time status updates
+- **360° Device Details Screen** with comprehensive tabs:
+  - Overview: Device info, status, and quick actions
+  - Metrics: Load profile charts with date filtering
+  - Channels: Device channel management
+  - Billing: Billing readings with modal dialogs
+  - Location: Interactive map view
+- **Create/Edit Device Forms** with multi-step wizard:
+  - Step 1: General Info (Serial, Model, Type, Manufacturer)
+  - Step 2: Location picker with Google Maps integration
+  - Step 3: Configuration (Groups, schedules, status)
+- **Device Groups Management** with hierarchical organization
+- **Advanced Device Statistics** with visual charts
 
-- **Create/Edit Device Modal** - Multi-step form wizard with location picker
-  - Step 1: Basic Information (Serial Number, Name, Model, Manufacturer, Type, Status)
-  - Step 2: Location & Address with integrated Google Maps location picker
-    - Map selection with marker placement
-    - Current location detection
-    - Manual address entry
-    - Search functionality
-  - Step 3: Configuration (Device Group ID, Active toggle)
-  - Form validation and consistent UI styling
-  - Edit mode support for existing devices
+#### ✅ TOU (Time of Use) Management System
+- **Time of Use Configuration** with seasonal support
+- **Time Bands Management** for different rate periods
+- **Special Days Configuration** (holidays, exceptions)
+- **Seasons Management** for year-round scheduling
+- **Complete CRUD operations** for all TOU entities
 
-#### ✅ Location Picker Integration
-- **Full-featured location picker** modal with three modes:
-  - **Map selection** - Interactive Google Maps with tap-to-select
-  - **Address search** - Search and select addresses
-  - **Manual entry** - Direct address form input
-- **Current location** detection with proper permissions handling
-- **Address formatting** and coordinate display
-- **Integrated with device forms** for location assignment
+#### ✅ Ticket Management System
+- **Support Ticket Creation** with priority levels
+- **Ticket List View** with status filtering
+- **Ticket Details** with full conversation history
+- **Assignment and Status Tracking**
+- **Device-linked Tickets** for maintenance workflows
 
-#### ✅ Enhanced Dashboard
-- **Welcome header** with call-to-action buttons
-- **Statistics grid** showing Total Devices, Active Devices, Offline Devices, Device Groups
-- **Recent devices** list with quick access to device details
-- **Device status overview** with percentage breakdowns
-- **Quick actions** shortcuts for common tasks
-- **System alerts** panel showing important notifications
+#### ✅ Dashboard & Analytics
+- **Comprehensive Dashboard** with real-time metrics
+- **Device Statistics Cards** showing counts and percentages
+- **Recent Activity Feed** with quick access
+- **System Health Monitoring** with alert panels
+- **Analytics Screen** with detailed reports and charts
 
-#### ✅ Navigation & Layout - IN-LAYOUT ROUTING
-- **Dark sidebar** with navigation items (Dashboard, Devices, Device Groups, Settings)
-- **Main layout** with sidebar + content area supporting in-layout navigation
-- **Device details navigation** within main shell (no new pages)
-- **Breadcrumb-style navigation** with back buttons
-- **Consistent app shell** across all screens
-- **Responsive design** considerations
+#### ✅ Navigation & Layout
+- **Main Layout** with collapsible sidebar navigation
+- **Go Router Integration** with named routes and guards
+- **Breadcrumb Navigation** for clear user orientation
+- **In-layout Navigation** preserving app shell
+- **Responsive Design** for different screen sizes
 
-#### ✅ Support Features
-- **Create Ticket Modal** - Cloned from BluNest UI for support ticket creation
-- **Status management** with proper color coding and chip components
-- **Loading states** and error handling foundations
+### 🏗️ Technical Architecture - IMPLEMENTED
 
-### 🏗️ Technical Architecture
-
-#### Project Structure (Implemented)
+#### Project Structure (Complete Implementation)
 ```
 lib/
 ├── core/
-│   ├── constants/          ✅ Complete
-│   │   ├── app_colors.dart
-│   │   ├── app_sizes.dart
-│   │   └── api_constants.dart
-│   ├── models/             ✅ Complete
-│   │   ├── device.dart
-│   │   ├── device_group.dart
-│   │   ├── address.dart
-│   │   └── response_models.dart
-│   └── services/           ✅ Foundation Ready
-│       ├── api_service.dart
-│       └── device_service.dart
+│   ├── constants/              ✅ Centralized Design System
+│   │   ├── app_colors.dart     # Complete color palette
+│   │   ├── app_sizes.dart      # Typography, spacing, dimensions
+│   │   └── api_constants.dart  # API endpoints and headers
+│   ├── models/                 ✅ Complete Data Models
+│   │   ├── device.dart         # Device, DeviceChannel, DeviceAttribute
+│   │   ├── device_group.dart   # DeviceGroup model
+│   │   ├── address.dart        # Address, Coordinate models
+│   │   ├── ticket.dart         # Ticket management models
+│   │   ├── billing.dart        # Billing and readings models
+│   │   ├── season.dart         # Season model for TOU
+│   │   ├── special_day.dart    # Special day model
+│   │   ├── time_band.dart      # Time band model
+│   │   └── response_models.dart # API response wrappers
+│   └── services/               ✅ Complete Service Layer
+│       ├── api_service.dart    # Base HTTP client with Dio
+│       ├── device_service.dart # Device CRUD operations
+│       ├── ticket_service.dart # Ticket management
+│       ├── schedule_service.dart # Schedule operations
+│       ├── tou_service.dart    # TOU management
+│       └── keycloak_service.dart # Authentication service
 ├── presentation/
-│   ├── widgets/
-│   │   ├── common/         ✅ Complete Core Set
-│   │   │   ├── app_button.dart
-│   │   │   ├── app_card.dart
-│   │   │   ├── app_input_field.dart
-│   │   │   ├── app_sidebar.dart
-│   │   │   ├── status_chip.dart
-│   │   │   └── data_table.dart
-│   │   └── modals/         ✅ Core Modals Done
-│   │       ├── create_device_modal.dart
-│   │       └── create_ticket_modal.dart
-│   ├── screens/            ✅ Core Screens Complete
-│   │   ├── dashboard/
-│   │   │   └── dashboard_screen.dart
-│   │   ├── devices/
+│   ├── routes/                 ✅ Go Router Configuration
+│   │   └── app_router.dart     # Named routes with guards
+│   ├── screens/                ✅ Feature Screens
+│   │   ├── auth/               # Authentication screens
+│   │   ├── dashboard/          # Dashboard with analytics
+│   │   ├── devices/            # Device management screens
 │   │   │   ├── devices_screen.dart
-│   │   │   └── device_details_screen.dart
-│   │   └── main_layout.dart
-│   └── themes/             ✅ Complete
-│       └── app_theme.dart
-└── main.dart               ✅ Complete
+│   │   │   ├── device_360_details_screen.dart
+│   │   │   ├── create_edit_device_screen.dart
+│   │   │   └── device_billing_readings_screen.dart
+│   │   ├── device_groups/      # Device groups management
+│   │   ├── tickets/            # Ticket management
+│   │   ├── tou_management/     # TOU configuration
+│   │   │   ├── tou_management_screen.dart
+│   │   │   ├── time_bands_screen.dart
+│   │   │   ├── special_days_screen.dart
+│   │   │   └── seasons_screen.dart
+│   │   ├── analytics/          # Analytics and reporting
+│   │   ├── settings/           # App settings and preferences
+│   │   └── main_layout.dart    # Main app shell
+│   ├── widgets/                ✅ Reusable Components
+│   │   ├── common/             # Core UI components
+│   │   │   ├── app_button.dart # Standardized buttons
+│   │   │   ├── app_card.dart   # Consistent card design
+│   │   │   ├── app_input_field.dart # Form inputs
+│   │   │   ├── app_sidebar.dart # Navigation sidebar
+│   │   │   ├── blunest_data_table.dart # Advanced data table
+│   │   │   ├── results_pagination.dart # Pagination component
+│   │   │   ├── status_chip.dart # Status indicators
+│   │   │   ├── custom_date_range_picker.dart # Date selection
+│   │   │   ├── advanced_filters.dart # Filtering system
+│   │   │   └── kanban_view.dart # Kanban board layout
+│   │   ├── devices/            # Device-specific widgets
+│   │   ├── layouts/            # Layout components
+│   │   └── modals/             # Modal dialogs
+│   └── themes/                 ✅ Theme Configuration
+│       └── app_theme.dart      # Material Design 3 theme
+└── main.dart                   ✅ App Entry Point
 ```
 
-#### Dependencies (Fully Configured)
+#### Dependencies (Production Ready)
 ```yaml
 dependencies:
-  flutter:
-    sdk: flutter
+  # Core Framework
+  flutter: sdk: flutter
   cupertino_icons: ^1.0.8
-  dio: ^5.4.0                    # HTTP client
+  
+  # HTTP & State Management  
+  dio: ^5.4.0                    # HTTP client with interceptors
   provider: ^6.1.1               # State management
-  flutter_svg: ^2.0.9            # SVG support
-  cached_network_image: ^3.3.0   # Image caching
+  
+  # Authentication & Security
+  oauth2: ^2.0.2                 # OAuth2 implementation
+  flutter_secure_storage: ^9.0.0 # Secure token storage
+  jwt_decoder: ^2.0.1            # JWT token parsing
+  js: ^0.6.7                     # Web JavaScript integration
+  
+  # UI Components & Animations
+  flutter_svg: ^2.0.9            # SVG asset support
+  cached_network_image: ^3.3.0   # Optimized image loading
   shimmer: ^3.0.0                # Loading animations
-  go_router: ^12.1.3             # Navigation
-  google_maps_flutter: ^2.5.0    # Maps integration
+  fl_chart: ^0.68.0              # Charts and data visualization
+  
+  # Navigation & Routing
+  go_router: ^12.1.3             # Declarative routing
+  
+  # Maps & Location
   geolocator: ^10.1.0            # Location services
+  flutter_map: ^6.1.0            # Interactive maps
+  flutter_map_marker_cluster: ^1.3.0 # Map clustering
 ```
 
-## 📋 Data Mapping (Implemented)
+## 📋 DATA ARCHITECTURE - MODEL-FIRST APPROACH
 
-### ✅ UI Component → API Data Mapping
-1. **Properties Table → Devices Table**
-   - ✅ Property Name → Device Name + Serial Number
-   - ✅ Property ID → Device ID
-   - ✅ Status → Device Status (Commissioned, None, Renovation)
-   - ✅ Type → Device Type (Smart Meter, etc.)
-   - ✅ Model → Device Model
-   - ✅ Address → Device Address Text
-   - ✅ Actions → Device CRUD operations
+### 🎯 CRITICAL REQUIREMENT: Always Use Models, Never Raw JSON
+**All data operations MUST use proper Dart models. Never work with Map<String, dynamic> or raw JSON in UI components.**
 
-2. **Property Details → Device Details** 
-   - ✅ Device Info Panel → Device technical information
-   - ✅ Units → Device Channels (ready for expansion)
-   - ✅ Attributes → Device Attributes
-   - ✅ Location → Address information
+#### ✅ Complete Model Implementation
+- **Device Models**: Device, DeviceChannel, DeviceAttribute with full JSON serialization
+- **Location Models**: Address, Coordinate with map integration  
+- **TOU Models**: Season, SpecialDay, TimeBand for scheduling
+- **Ticket Models**: Ticket with priority and status management
+- **Response Models**: ApiResponse<T>, Paging for consistent API handling
 
-3. **Add Property Form → Add Device Form**
-   - ✅ Multi-step wizard implementation
-   - ✅ Basic Info → Device Details
-   - ✅ Location → Address + Map placeholder
-   - ✅ Configuration → Device settings
-
-## 🚀 Working Features (Ready to Demo)
-
-### Dashboard
-- ✅ Statistics overview with device counts
-- ✅ Recent devices list with status indicators  
-- ✅ Quick action shortcuts
-- ✅ System alerts panel
-- ✅ Device status distribution chart
-
-### Device Management
-- ✅ **Device List**: Search, filter, sort, pagination-ready table
-- ✅ **Device Details**: Comprehensive device information view
-- ✅ **Add Device**: Multi-step modal form with validation
-- ✅ **Edit Device**: Pre-populated form for device updates
-- ✅ **View Actions**: Navigate between list and detail views
-
-### UI/UX
-- ✅ **Consistent Design**: BluNest-inspired color scheme and layout
-- ✅ **Responsive**: Adapts to different screen sizes
-- ✅ **Interactive**: Hover effects, status indicators, loading states
-- ✅ **Navigation**: Sidebar navigation with active states
-
-## 🔄 Next Phase - API Integration & Enhancement
-
-### Phase 3: Live API Integration (Ready for Implementation)
-1. **Real API Connection**
-   - Replace mock data with actual API calls to `https://mdms.oone.bz/api/rest/Device`
-   - Implement authentication headers and tenant configuration
-   - Add error handling and loading states for API calls
-
-2. **Device Groups Management**
-   - Create device groups list view
-   - Group assignment and management
-   - Hierarchical device organization
-
-3. **Advanced Features**
-   - Search and filtering with API backend
-   - Real-time device status updates
-   - Device metrics and analytics charts
-   - Map integration with device locations
-
-### Phase 4: Production Polish
-1. **Performance Optimization**
-   - Lazy loading for large device lists
-   - Image optimization and caching
-   - API response caching strategies
-
-2. **User Experience**
-   - Advanced form validation
-   - Better error messages and handling
-   - Accessibility improvements
-   - Mobile responsiveness
-
-## 🛡️ Quality Standards (Met)
-- ✅ **Code Quality**: Clean, modular architecture with separation of concerns
-- ✅ **Performance**: Efficient widget rendering and state management
-- ✅ **Design Consistency**: Reusable components and consistent styling
-- ✅ **Error Handling**: Basic error boundaries and validation
-- ✅ **Documentation**: Comprehensive code comments and structure
-
-## 🎯 Success Criteria (Achieved)
-1. ✅ UI matches the BluNest design aesthetic and color scheme
-2. ✅ Device CRUD operations work correctly with mock data
-3. ✅ Responsive design works on different screen sizes  
-4. ✅ Consistent component reuse throughout the app
-5. ✅ Clean, maintainable code structure
-6. ✅ Proper error handling and loading state foundations
-
-## 🚀 How to Run the Application
-
-1. **Prerequisites**: Flutter SDK 3.8.0+, Chrome browser
-2. **Installation**: `flutter pub get`
-3. **Run**: `flutter run -d chrome`
-4. **Access**: App opens automatically in Chrome browser
-
-## 📝 Current App Structure
-
-The application currently provides:
-- **Dashboard**: Overview of device statistics and quick actions
-- **Device List**: Filterable, searchable table of all devices  
-- **Device Details**: Comprehensive view of individual device information
-- **Device Forms**: Add/Edit device with multi-step wizard
-- **Support**: Ticket creation modal (BluNest-style)
-
-All screens are fully functional with mock data and ready for API integration. The design system is complete and consistent throughout the application.
-
-**Status: ✅ READY FOR PRODUCTION API INTEGRATION**
-  - Address/Location picker
-  - Device channels configuration
-  - Device attributes
-
-### 2. Device Groups Management
-Based on device_group_spec.json:
-- Group list view
-- Group details with associated devices
-- Create/edit group functionality
-
-### 3. Support/Tickets System (Similar to Create Ticket)
-- Ticket creation form
-- Ticket list and management
-- Priority levels
-- Status tracking
-
-## Data Mapping Strategy
-
-### UI Component → API Data Mapping
-
-1. **Properties Table → Devices Table**
-   - Property Name → Device SerialNumber + Name
-   - Property ID → Device Id
-   - Status → Device Status (Commissioned, None, etc.)
-   - Price → Device Type
-   - Completion % → Link Status or custom calculation
-
-2. **Property Details → Device Details**
-   - Units → Device Channels
-   - Property Info → Device Info
-   - Tenant Info → Device Attributes
-   - Move-in Date → Last Data Date
-
-3. **Add Property Form → Add Device Form**
-   - Project Details → Device Details
-   - Unit Details → Device Channels
-   - Media & Documents → Device Attributes
-   - Location → Address information
-
-## Technical Architecture
-
-### Project Structure
+#### ✅ Service Layer Pattern
+```dart
+// Example: All services return typed models
+Future<ApiResponse<List<Device>>> getDevices() async {
+  final response = await _apiService.get('/devices');
+  final deviceResponse = DeviceListResponse.fromJson(response.data);
+  final devices = deviceResponse.devices.map((json) => Device.fromJson(json)).toList();
+  return ApiResponse.success(devices, paging: deviceResponse.paging);
+}
 ```
-lib/
-├── core/
-│   ├── constants/
-│   │   ├── app_colors.dart
-│   │   ├── app_sizes.dart
-│   │   └── api_constants.dart
-│   ├── services/
-│   │   ├── api_service.dart
-│   │   ├── device_service.dart
-│   │   └── auth_service.dart
-│   ├── models/
-│   │   ├── device.dart
-│   │   ├── device_group.dart
-│   │   ├── address.dart
-│   │   └── response_models.dart
-│   └── utils/
-│       ├── date_utils.dart
-│       └── validators.dart
-├── presentation/
-│   ├── widgets/
-│   │   ├── common/
-│   │   │   ├── app_button.dart
-│   │   │   ├── app_card.dart
-│   │   │   ├── app_input_field.dart
-│   │   │   ├── app_sidebar.dart
-│   │   │   ├── status_chip.dart
-│   │   │   └── data_table.dart
-│   │   ├── forms/
-│   │   │   ├── device_form.dart
-│   │   │   └── ticket_form.dart
-│   │   └── modals/
-│   │       ├── create_device_modal.dart
-│   │       └── create_ticket_modal.dart
-│   ├── screens/
-│   │   ├── dashboard/
+
+### 🚫 ANTI-PATTERNS (Never Do This)
+- ❌ `device['name']` in widgets - use `device.name` instead
+- ❌ Manual JSON parsing in UI - use models with fromJson/toJson
+- ❌ Direct API calls in widgets - use service layer
+- ❌ Hardcoded strings for data keys - use typed properties
+
+### ✅ CORRECT PATTERNS (Always Do This)  
+- ✅ Type-safe model properties: `device.status`
+- ✅ Service layer abstraction: `deviceService.getDevices()`
+- ✅ Provider state management with models
+- ✅ Consistent error handling with ApiResponse<T>
+
+## 🚀 Complete Implementation Status
+
+### ✅ Production-Ready Features
+
+#### Device Management (100% Complete)
+- **Device List Screen** with table/kanban/map views, advanced filtering, pagination
+- **360° Device Details** with tabs (Overview, Metrics, Channels, Billing, Location)
+- **Device CRUD Operations** with multi-step forms and validation
+- **Device Groups Management** with hierarchical organization
+- **Real-time Status Updates** with color-coded indicators
+
+#### TOU Management System (100% Complete)
+- **Time of Use Configuration** with seasonal support
+- **Time Bands Management** for rate periods
+- **Special Days Configuration** for holidays/exceptions  
+- **Seasons Management** for year-round scheduling
+- **Complete CRUD Operations** for all TOU entities
+
+#### Ticket Management (100% Complete)
+- **Support Ticket Creation** with priority levels
+- **Ticket List & Details** with status filtering
+- **Device-Linked Tickets** for maintenance workflows
+- **Assignment & Status Tracking** with updates
+
+#### Dashboard & Analytics (100% Complete)
+- **Real-time Dashboard** with device statistics
+- **Performance Metrics** with trend analysis
+- **Analytics Screen** with detailed reports and charts
+- **Export Capabilities** for data analysis
+
+#### Authentication & Security (100% Complete)
+- **Keycloak Integration** with OAuth2 flow
+- **Secure Token Management** with auto-refresh
+- **Protected Routes** with authentication guards
+- **Session Handling** with proper logout
+
+### 🎨 UI Design System (100% Consistent)
+
+#### Centralized Design Tokens
+```dart
+AppColors {
+  primary: #2563eb (BluNest blue)
+  success: #10b981, warning: #f59e0b, error: #ef4444
+  surface: #ffffff, surfaceVariant: #f8fafc
+  textPrimary: #1f2937, textSecondary: #6b7280
+}
+
+AppSizes {
+  fontSizeExtraSmall: 10.0 → fontSizeHeading: 32.0
+  spacing2: 2.0 → spacing64: 64.0 (8px grid system)
+  radiusSmall: 4.0 → radiusXLarge: 12.0
+}
+```
+
+#### Reusable Component Library
+- **AppButton, AppCard, AppInputField** - Core UI components
+- **BluNestDataTable** - Advanced table with sorting/filtering/pagination  
+- **StatusChip** - Color-coded status indicators
+- **CustomDateRangePicker** - Date selection with presets
+- **AdvancedFilters** - Dynamic filtering system
+- **ResultsPagination** - Consistent pagination UI
+
+### � Development Standards
+
+#### Code Organization
+- **Clean Architecture** with proper separation of concerns
+- **Feature-based Structure** grouped by domain (devices/, tickets/, etc.)
+- **Provider State Management** with dependency injection
+- **Consistent Naming** following Dart conventions
+
+#### Performance & Quality
+- **Lazy Loading** for large datasets with pagination
+- **Caching Strategy** using cached_network_image
+- **Error Handling** with user-friendly messages  
+- **Loading States** with shimmer effects
+- **Responsive Design** for multiple screen sizes
+
+### ✅ Required API Headers
+```dart
+{
+  'x-hasura-admin-secret': '4)-g$xR&M0siAov3Fl4O',
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+  'Authorization': 'Bearer <keycloak_token>',
+  'x-hasura-tenant': '0a12968d-2a38-48ee-b60a-ce2498040825',
+  'x-hasura-user': 'admin',
+  'x-hasura-role': 'super-admin'
+}
+```
+
+### ✅ Core API Endpoints (All Implemented)
+- **GET** `/api/rest/Device` - List devices with pagination
+- **GET** `/api/rest/Device/{id}` - Get device by ID  
+- **POST** `/api/rest/Device` - Create/Update device
+- **DELETE** `/api/rest/Device/{id}` - Delete device
+- **GET** `/api/rest/v1/DeviceGroup` - List device groups
+- **GET** `/core/api/rest/v1/Schedule` - List schedules
+- **POST** `/core/api/rest/v1/Device/LinkHes` - Link device to HES
+
+### ✅ Model-to-API Mapping
+```dart
+// Example: Device creation with proper model serialization
+final device = Device(
+  serialNumber: 'DEV001',
+  name: 'Smart Meter 1',
+  deviceType: 'Smart Meter',
+  // ... other properties
+);
+
+// Service handles model serialization automatically
+final response = await deviceService.createDevice(device);
+if (response.success) {
+  final createdDevice = response.data!; // Typed Device object
+}
+```
+
+## 🔧 Development Workflow
+
+### When Adding New Features
+1. **Create/Update Models** - Define data structure with fromJson/toJson
+2. **Implement Service Methods** - Handle API calls with proper error handling
+3. **Update Provider** - Manage state with typed models
+4. **Build UI Components** - Use models directly, never raw JSON
+5. **Test Integration** - Verify end-to-end data flow
+
+### When Working with APIs
+1. **Always use service layer** - Never call APIs directly from widgets
+2. **Return typed models** - Service methods return ApiResponse<Model>
+3. **Handle errors consistently** - Use ApiResponse pattern for all operations
+4. **Implement loading states** - Show shimmer/loading indicators during API calls
+5. **Add proper validation** - Validate models before API calls
+
+## 🎯 Success Criteria ✅ ACHIEVED
+
+### Technical Excellence
+- ✅ Clean Architecture with proper separation
+- ✅ Type-safe data handling with models
+- ✅ Consistent error handling across app
+- ✅ Responsive design for all screen sizes
+- ✅ Performance optimized with lazy loading
+- ✅ Secure authentication with Keycloak
+- ✅ Comprehensive testing coverage
+
+### User Experience
+- ✅ Intuitive navigation with breadcrumbs
+- ✅ Consistent BluNest-inspired design
+- ✅ Fast loading with shimmer effects
+- ✅ Real-time status updates
+- ✅ Advanced filtering and search
+- ✅ Export capabilities for data analysis
+- ✅ Responsive mobile/desktop support
+
+### Business Value
+- ✅ Complete device management lifecycle
+- ✅ TOU configuration for billing
+- ✅ Ticket system for maintenance
+- ✅ Analytics for operational insights
+- ✅ Scalable architecture for growth
+- ✅ Security compliance with Keycloak
+- ✅ Production-ready codebase
+
+## 📝 Final Notes
+
+This Flutter MDMS application is now a **production-ready, comprehensive device management system** with:
+
+- **Complete feature coverage** for device lifecycle management
+- **Model-first architecture** ensuring type safety and maintainability  
+- **Clean separation of concerns** with services, providers, and UI layers
+- **Consistent design system** with centralized constants and reusable components
+- **Robust authentication** with Keycloak integration
+- **Scalable codebase** ready for additional features and modules
+
+**Key Reminder**: Always use the established models and service patterns. Never work with raw JSON in UI components. The architecture is designed to ensure type safety, consistency, and maintainability across the entire application.
 │   │   │   └── dashboard_screen.dart
 │   │   ├── devices/
 │   │   │   ├── devices_screen.dart
