@@ -200,7 +200,7 @@ class KeycloakService extends ChangeNotifier {
 
         // Verify authentication state
         print(
-          'KeycloakService: Final authentication state: ${isAuthenticated}',
+          'KeycloakService: Final authentication state: $isAuthenticated',
         );
 
         // Notify listeners that authentication state has changed

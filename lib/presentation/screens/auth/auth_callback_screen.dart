@@ -8,8 +8,7 @@ class AuthCallbackScreen extends StatefulWidget {
   final String? state;
   final String? error;
 
-  const AuthCallbackScreen({Key? key, this.code, this.state, this.error})
-    : super(key: key);
+  const AuthCallbackScreen({super.key, this.code, this.state, this.error});
 
   @override
   State<AuthCallbackScreen> createState() => _AuthCallbackScreenState();

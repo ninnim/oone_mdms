@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../../widgets/common/app_card.dart';
@@ -13,6 +14,8 @@ import '../../widgets/devices/device_location_map.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
 import '../../widgets/devices/billing_table_columns.dart';
 import '../../widgets/common/custom_date_range_picker.dart';
+import '../../widgets/common/app_toast.dart';
+import '../../widgets/common/app_confirm_dialog.dart';
 import '../../routes/app_router.dart';
 
 class Device360DetailsScreen extends StatefulWidget {
@@ -428,24 +431,126 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
 
         // Tabs section
         Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             border: Border(
-              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+              bottom: BorderSide(
+                color: AppColors.border,
+                width: 1.0,
+              ),
             ),
           ),
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
+            labelStyle: const TextStyle(
+              fontSize: AppSizes.fontSizeMedium,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: AppSizes.fontSizeMedium,
+              fontWeight: FontWeight.w500,
+            ),
             indicatorColor: AppColors.primary,
+            indicatorWeight: 3.0,
+            indicator: BoxDecoration(
+              color: Colors.transparent,
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.primary,
+                  width: 3.0,
+                ),
+              ),
+            ),
+            labelPadding: EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing16,
+              vertical: AppSizes.spacing12,
+            ),
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            splashFactory: NoSplash.splashFactory,
             isScrollable: true,
-            tabs: const [
-              Tab(icon: Icon(Icons.dashboard), text: 'Overview'),
-              Tab(icon: Icon(Icons.device_hub), text: 'Channels'),
-              Tab(icon: Icon(Icons.analytics), text: 'Metrics'),
-              Tab(icon: Icon(Icons.receipt), text: 'Billing'),
-              Tab(icon: Icon(Icons.location_on), text: 'Location'),
+            tabs: [
+              Tab(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing8,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.dashboard, size: AppSizes.iconSmall),
+                      SizedBox(width: AppSizes.spacing8),
+                      Text('Overview'),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing8,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.device_hub, size: AppSizes.iconSmall),
+                      SizedBox(width: AppSizes.spacing8),
+                      Text('Channels'),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing8,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.analytics, size: AppSizes.iconSmall),
+                      SizedBox(width: AppSizes.spacing8),
+                      Text('Metrics'),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing8,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.receipt, size: AppSizes.iconSmall),
+                      SizedBox(width: AppSizes.spacing8),
+                      Text('Billing'),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing8,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.location_on, size: AppSizes.iconSmall),
+                      SizedBox(width: AppSizes.spacing8),
+                      Text('Location'),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -642,66 +747,34 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   }
 
   Future<void> _pingDevice() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 12),
-            Text('Pinging device...'),
-          ],
-        ),
-        duration: Duration(seconds: 2),
-      ),
+    AppToast.showInfo(
+      context,
+      title: 'Device Ping',
+      message: 'Pinging device...',
     );
 
     try {
       final response = await _deviceService.pingDevice(widget.device.id);
 
       if (response.success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Device ping successful - Device is online'),
-              ],
-            ),
-            backgroundColor: Color(0xFF10b981),
-          ),
+        AppToast.showSuccess(
+          context,
+          title: 'Ping Success',
+          message: 'Device ping successful - Device is online',
         );
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 8),
-                Text('Ping failed: ${response.message}'),
-              ],
-            ),
-            backgroundColor: const Color(0xFFef4444),
-          ),
+        AppToast.showError(
+          context,
+          title: 'Ping Failed',
+          message: 'Ping failed: ${response.message}',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 8),
-                Text('Error pinging device: $e'),
-              ],
-            ),
-            backgroundColor: const Color(0xFFef4444),
-          ),
+        AppToast.showError(
+          context,
+          title: 'Error',
+          message: 'Error pinging device: $e',
         );
       }
     }
@@ -712,76 +785,38 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       final response = await _deviceService.linkDeviceToHES(widget.device.id);
 
       if (response.success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Device linked to HES successfully'),
-              ],
-            ),
-            backgroundColor: Color(0xFF10b981),
-          ),
+        AppToast.showSuccess(
+          context,
+          title: 'Link Success',
+          message: 'Device linked to HES successfully',
         );
         // Refresh device data
         await _refreshCurrentTabData();
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 8),
-                Text('Failed to link device: ${response.message}'),
-              ],
-            ),
-            backgroundColor: const Color(0xFFef4444),
-          ),
+        AppToast.showError(
+          context,
+          title: 'Link Failed',
+          message: 'Failed to link device: ${response.message}',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 8),
-                Text('Error linking device: $e'),
-              ],
-            ),
-            backgroundColor: const Color(0xFFef4444),
-          ),
+        AppToast.showError(
+          context,
+          title: 'Error',
+          message: 'Error linking device: $e',
         );
       }
     }
   }
 
   Future<void> _commissionDevice() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Commission Device'),
-          content: Text(
-            'Are you sure you want to commission device ${widget.device.serialNumber}?\n\nThis action will make the device active and ready for operation.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFf59e0b),
-              ),
-              child: const Text('Commission'),
-            ),
-          ],
-        );
-      },
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Commission Device',
+      message: 'Are you sure you want to commission device ${widget.device.serialNumber}?\n\nThis action will make the device active and ready for operation.',
+      confirmText: 'Commission',
+      confirmColor: AppColors.warning,
     );
 
     if (confirmed == true) {
@@ -791,47 +826,26 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         );
 
         if (response.success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Device commissioned successfully'),
-                ],
-              ),
-              backgroundColor: Color(0xFF10b981),
-            ),
+          AppToast.showSuccess(
+            context,
+            title: 'Commission Success',
+            message: 'Device commissioned successfully',
           );
           // Refresh device data
           await _refreshCurrentTabData();
         } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text('Failed to commission device: ${response.message}'),
-                ],
-              ),
-              backgroundColor: const Color(0xFFef4444),
-            ),
+          AppToast.showError(
+            context,
+            title: 'Commission Failed',
+            message: 'Failed to commission device: ${response.message}',
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text('Error commissioning device: $e'),
-                ],
-              ),
-              backgroundColor: const Color(0xFFef4444),
-            ),
+          AppToast.showError(
+            context,
+            title: 'Error',
+            message: 'Error commissioning device: $e',
           );
         }
       }
@@ -839,23 +853,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   }
 
   void _exportDeviceData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.download, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Exporting device data...'),
-          ],
-        ),
-        backgroundColor: Color(0xFF2563eb),
-      ),
+    AppToast.showInfo(
+      context,
+      title: 'Export',
+      message: 'Exporting device data...',
     );
   }
 
   void _showDeviceSettings() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Device settings will be available soon')),
+    AppToast.showInfo(
+      context,
+      title: 'Settings',
+      message: 'Device settings will be available soon',
     );
   }
 

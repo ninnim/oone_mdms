@@ -5,6 +5,8 @@ import 'dart:html' as html;
 import '../../../core/services/keycloak_service.dart';
 
 class SimpleAuthCallbackScreen extends StatefulWidget {
+  const SimpleAuthCallbackScreen({super.key});
+
   @override
   _SimpleAuthCallbackScreenState createState() =>
       _SimpleAuthCallbackScreenState();

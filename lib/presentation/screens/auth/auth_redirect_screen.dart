@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/services/keycloak_service.dart';
 
 class AuthRedirectScreen extends StatefulWidget {
-  const AuthRedirectScreen({Key? key}) : super(key: key);
+  const AuthRedirectScreen({super.key});
 
   @override
   State<AuthRedirectScreen> createState() => _AuthRedirectScreenState();

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import '../../../core/models/device.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
+import '../../../core/services/device_service.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/blunest_data_table.dart';
@@ -12,10 +16,8 @@ import '../../widgets/devices/device_filters_and_actions.dart';
 import 'create_edit_device_screen.dart';
 import 'device_360_details_screen.dart';
 import 'device_billing_readings_screen.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/models/device.dart';
-import '../../../core/services/device_service.dart';
+import '../../widgets/common/app_toast.dart';
+import '../../widgets/common/app_confirm_dialog.dart';
 
 class DevicesScreen extends StatefulWidget {
   final Function(Device)? onDeviceSelected;
@@ -181,7 +183,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         border: Border.all(color: AppColors.error),
       ),
@@ -499,32 +501,41 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  void _deleteDevice(Device device) {
-    // TODO: Show delete confirmation dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Device'),
-        content: Text(
-          'Are you sure you want to delete ${device.serialNumber}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          AppButton(
-            text: 'Delete',
-            type: AppButtonType.danger,
-            size: AppButtonSize.small,
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Implement delete functionality
-            },
-          ),
-        ],
-      ),
+  Future<void> _deleteDevice(Device device) async {
+    final serialNumber = device.serialNumber;
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Delete Device',
+      message: 'Are you sure you want to delete device "$serialNumber"? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      confirmType: AppButtonType.danger,
+      icon: Icons.delete_outline,
     );
+
+    if (confirmed == true && mounted) {
+      try {
+        // TODO: Implement actual delete functionality
+        // await _deviceService.deleteDevice(device.id);
+        
+        // Show success toast
+        AppToast.showSuccess(
+          context,
+          title: 'Device Deleted',
+          message: 'Device "$serialNumber" has been successfully deleted.',
+        );
+        
+        // Refresh the devices list
+        await _loadDevices();
+      } catch (e) {
+        // Show error toast
+        AppToast.showError(
+          context,
+          title: 'Delete Failed',
+          message: 'Failed to delete device: $e',
+        );
+      }
+    }
   }
 
   Widget _buildMultiSelectToolbar() {
@@ -554,11 +565,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
           TextButton.icon(
             onPressed: () {
               // Bulk edit functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Bulk edit ${_selectedDevices.length} devices'),
-                  backgroundColor: AppColors.success,
-                ),
+              AppToast.showInfo(
+                context,
+                title: 'Bulk Edit',
+                message: 'Bulk edit ${_selectedDevices.length} devices',
               );
             },
             icon: const Icon(
@@ -591,11 +601,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
           TextButton.icon(
             onPressed: () {
               // Export selected devices
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Export ${_selectedDevices.length} devices'),
-                  backgroundColor: AppColors.success,
-                ),
+              AppToast.showInfo(
+                context,
+                title: 'Export',
+                message: 'Export ${_selectedDevices.length} devices',
               );
             },
             icon: const Icon(
@@ -613,44 +622,48 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  void _showBulkDeleteConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Selected Devices'),
-        content: Text(
-          'Are you sure you want to delete ${_selectedDevices.length} selected device${_selectedDevices.length == 1 ? '' : 's'}? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Perform bulk delete
-              setState(() {
-                for (var device in _selectedDevices) {
-                  _devices.remove(device);
-                }
-                _selectedDevices.clear();
-                _totalItems = _devices.length;
-                _totalPages = (_totalItems / _itemsPerPage).ceil();
-              });
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Selected devices deleted successfully'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+  Future<void> _showBulkDeleteConfirmation() async {
+    final deviceCount = _selectedDevices.length;
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Delete Selected Devices',
+      message: 'Are you sure you want to delete $deviceCount selected device${deviceCount == 1 ? '' : 's'}? This action cannot be undone.',
+      confirmText: 'Delete All',
+      cancelText: 'Cancel',
+      confirmType: AppButtonType.danger,
+      icon: Icons.delete_sweep,
     );
+
+    if (confirmed == true && mounted) {
+      try {
+        // TODO: Implement actual bulk delete functionality
+        // await _deviceService.bulkDeleteDevices(_selectedDevices.map((d) => d.id).toList());
+        
+        // Simulate bulk delete for now
+        setState(() {
+          for (var device in _selectedDevices) {
+            _devices.remove(device);
+          }
+          _selectedDevices.clear();
+          _totalItems = _devices.length;
+          _totalPages = (_totalItems / _itemsPerPage).ceil();
+        });
+
+        // Show success toast
+        AppToast.showSuccess(
+          context,
+          title: 'Devices Deleted',
+          message: '$deviceCount device${deviceCount == 1 ? '' : 's'} deleted successfully.',
+        );
+      } catch (e) {
+        // Show error toast
+        AppToast.showError(
+          context,
+          title: 'Bulk Delete Failed',
+          message: 'Failed to delete selected devices: $e',
+        );
+      }
+    }
   }
 
   void _onStatusFilterChanged(String? status) {
@@ -688,21 +701,19 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   void _exportDevices() {
     // TODO: Implement export functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export functionality coming soon'),
-        backgroundColor: AppColors.info,
-      ),
+    AppToast.showInfo(
+      context,
+      title: 'Export',
+      message: 'Export functionality coming soon',
     );
   }
 
   void _importDevices() {
     // TODO: Implement import functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Import functionality coming soon'),
-        backgroundColor: AppColors.info,
-      ),
+    AppToast.showInfo(
+      context,
+      title: 'Import',
+      message: 'Import functionality coming soon',
     );
   }
 

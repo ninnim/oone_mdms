@@ -9,11 +9,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mdms_clone/main.dart';
+import 'package:mdms_clone/core/services/keycloak_service.dart';
+import 'package:mdms_clone/core/services/api_service.dart';
+import 'package:mdms_clone/core/services/device_service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Create mock services for testing
+    final keycloakService = KeycloakService();
+    final apiService = ApiService(keycloakService);
+    final deviceService = DeviceService(apiService);
+    
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(
+      keycloakService: keycloakService,
+      deviceService: deviceService,
+    ));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

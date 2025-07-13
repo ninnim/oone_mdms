@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
@@ -10,6 +8,7 @@ import '../../../core/services/api_service.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
+import '../../widgets/common/app_toast.dart';
 import '../../widgets/devices/flutter_map_location_picker.dart';
 
 class CreateEditDeviceDialog extends StatefulWidget {
@@ -196,15 +195,12 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.device == null
-                    ? 'Device created successfully'
-                    : 'Device updated successfully',
-              ),
-              backgroundColor: AppColors.success,
-            ),
+          AppToast.showSuccess(
+            context,
+            title: widget.device == null ? 'Device Created' : 'Device Updated',
+            message: widget.device == null
+                ? 'Device created successfully'
+                : 'Device updated successfully',
           );
 
           widget.onSaved?.call();
@@ -212,21 +208,19 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${response.message}'),
-              backgroundColor: AppColors.error,
-            ),
+          AppToast.showError(
+            context,
+            title: 'Error',
+            message: 'Error: ${response.message}',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving device: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppToast.showError(
+          context,
+          title: 'Error',
+          message: 'Error saving device: $e',
         );
       }
     } finally {

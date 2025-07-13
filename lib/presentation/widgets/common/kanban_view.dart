@@ -145,12 +145,13 @@ class _KanbanViewState<T extends Object> extends State<KanbanView<T>> {
           _buildColumnHeader(context, column, columnItems.length),
           Expanded(
             child: DragTarget<T>(
-              onWillAccept: (item) => widget.enableDragDrop && item != null,
-              onAccept: (item) {
+              onWillAcceptWithDetails: (item) =>
+                  widget.enableDragDrop && item != null,
+              onAcceptWithDetails: (item) {
                 if (widget.onItemMoved != null) {
-                  final fromColumn = widget.getItemColumn(item);
+                  final fromColumn = widget.getItemColumn(item as T);
                   if (fromColumn != column.id) {
-                    widget.onItemMoved!(item, fromColumn, column.id);
+                    widget.onItemMoved!(item as T, fromColumn, column.id);
                   }
                 }
               },
