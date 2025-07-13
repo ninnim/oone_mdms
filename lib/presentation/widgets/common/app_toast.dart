@@ -30,7 +30,7 @@ class AppToast {
     Duration duration = const Duration(seconds: 4),
   }) {
     // Remove existing toast if any
-    _currentToast?.remove();
+    _safeRemoveCurrentToast();
 
     final overlay = Overlay.of(context);
     final toastData = ToastData(
@@ -46,8 +46,9 @@ class AppToast {
         right: AppSizes.spacing16,
         child: ToastWidget(
           data: toastData,
-          onDismiss: () => _currentToast?.remove(),
-          //  onDismiss: () => _currentToast?.mounted,
+          onDismiss: () {
+            _safeRemoveCurrentToast();
+          },
         ),
       ),
     );
@@ -56,9 +57,43 @@ class AppToast {
 
     // Auto-remove after duration
     Future.delayed(duration, () {
-      _currentToast?.remove();
-      _currentToast = null;
+      _safeRemoveCurrentToast();
     });
+  }
+
+  /// Safely removes the current toast and cleans up the reference
+  static void _safeRemoveCurrentToast() {
+    if (_currentToast != null) {
+      try {
+        if (_currentToast!.mounted) {
+          _currentToast!.remove();
+        }
+      } catch (e) {
+        // Ignore errors if the overlay is already removed
+      } finally {
+        _currentToast = null;
+      }
+    }
+  }
+
+  /// Check if a toast is currently showing
+  static bool get isShowing => _currentToast != null && _currentToast!.mounted;
+
+  /// Force show a new toast even if one is already showing
+  static void forceShow(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required ToastType type,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    show(
+      context,
+      title: title,
+      message: message,
+      type: type,
+      duration: duration,
+    );
   }
 
   /// Shows a success toast with a friendly message
@@ -132,8 +167,7 @@ class AppToast {
   }
 
   static void dismiss() {
-    _currentToast?.remove();
-    _currentToast = null;
+    _safeRemoveCurrentToast();
   }
 }
 
@@ -183,7 +217,7 @@ class _ToastWidgetState extends State<ToastWidget>
 
     // Auto dismiss when progress completes
     _progressController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+      if (status == AnimationStatus.completed && mounted) {
         _dismiss();
       }
     });
@@ -197,8 +231,26 @@ class _ToastWidgetState extends State<ToastWidget>
   }
 
   void _dismiss() async {
-    _slideController.forward();
-    widget.onDismiss();
+    // Prevent multiple dismissals
+    if (!mounted || _slideController.isDismissed) return;
+
+    // Stop the progress animation
+    _progressController.stop();
+
+    try {
+      // Animate out
+      await _slideController.reverse();
+
+      // Call the dismiss callback if still mounted
+      if (mounted) {
+        widget.onDismiss();
+      }
+    } catch (e) {
+      // If animation fails, just call dismiss
+      if (mounted) {
+        widget.onDismiss();
+      }
+    }
   }
 
   Color _getBackgroundColor() {
