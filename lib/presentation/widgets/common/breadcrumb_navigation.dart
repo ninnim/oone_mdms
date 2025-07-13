@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 
 class BreadcrumbNavigation extends StatelessWidget {
@@ -47,7 +49,11 @@ class BreadcrumbNavigation extends StatelessWidget {
         for (int i = 0; i < breadcrumbs.length; i++) ...[
           if (i > 0) ...[
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, size: 16, color: Color(0xFF64748b)),
+            const Icon(
+              Icons.chevron_right,
+              size: AppSizes.iconSmall,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(width: 8),
           ],
           _buildBreadcrumbItem(context, breadcrumbs[i]),
@@ -167,11 +173,9 @@ class BreadcrumbNavigation extends StatelessWidget {
       child: Text(
         item.title,
         style: TextStyle(
-          fontSize: 14, // Reduced from 18 to 14
-          fontWeight: FontWeight.w500, // Reduced from w600 to w500
-          color: item.isLast
-              ? const Color(0xFF1e293b)
-              : const Color(0xFF2563eb),
+          fontSize: AppSizes.fontSizeMedium,
+          fontWeight: FontWeight.w500,
+          color: item.isLast ? AppColors.textPrimary : AppColors.primary,
           decoration: item.isLast ? null : TextDecoration.underline,
         ),
       ),

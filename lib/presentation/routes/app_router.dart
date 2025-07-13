@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
 import 'dart:async';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_sizes.dart';
 import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
@@ -398,7 +400,11 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.red),
+              Icon(
+                Icons.error_outline,
+                size: AppSizes.iconLarge,
+                color: AppColors.error,
+              ),
               SizedBox(height: 16),
               Text(_error ?? 'Device not found'),
               SizedBox(height: 16),
@@ -567,7 +573,11 @@ class _DeviceBillingReadingsRouteWrapperState
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              Icon(
+                Icons.error_outline,
+                size: AppSizes.spacing64,
+                color: AppColors.error,
+              ),
               SizedBox(height: 16),
               Text('Error: $_error'),
               SizedBox(height: 16),
@@ -682,7 +692,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     final selectedScreen = _getSelectedScreenFromLocation(currentLocation);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       body: Row(
         children: [
           _buildSidebar(selectedScreen),
@@ -734,8 +744,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       width: _sidebarCollapsed ? 80 : 280,
       height: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0xFFF8FAFC),
-        border: Border(right: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+        color: AppColors.background,
+        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Column(
         children: [
@@ -778,7 +788,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     }
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing12,
+        vertical: AppSizes.spacing16,
+      ),
       children: [
         // Dashboard
         _buildCollapsedMenuItem(
@@ -934,7 +947,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     final hasSelectedChild = childIds.contains(selectedScreen);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing4),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -943,22 +956,22 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               _expandedGroups[groupId] = !isExpanded;
             });
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
           child: Container(
             width: 56,
             height: 56,
             decoration: BoxDecoration(
               color: hasSelectedChild
-                  ? const Color(0xFF2563eb).withOpacity(0.15)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+                  ? AppColors.primary.withOpacity(0.15)
+                  : AppColors.surface,
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               border: hasSelectedChild
-                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.3))
-                  : Border.all(color: const Color(0xFFE1E5E9)),
+                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
+                  : Border.all(color: AppColors.border),
               boxShadow: [
                 BoxShadow(
                   color: hasSelectedChild
-                      ? const Color(0xFF2563eb).withOpacity(0.1)
+                      ? AppColors.primary.withOpacity(0.1)
                       : Colors.black.withOpacity(0.04),
                   blurRadius: hasSelectedChild ? 8 : 4,
                   offset: const Offset(0, 2),
@@ -971,9 +984,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   child: Icon(
                     icon,
                     color: hasSelectedChild
-                        ? const Color(0xFF2563eb)
-                        : const Color(0xFF64748b),
-                    size: 24,
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    size: AppSizes.iconLarge,
                   ),
                 ),
                 Positioned(
@@ -984,8 +997,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                     height: 16,
                     decoration: BoxDecoration(
                       color: hasSelectedChild
-                          ? const Color(0xFF2563eb)
-                          : const Color(0xFF64748b),
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -1005,27 +1018,30 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildCollapsedSubMenuItem(String id, IconData icon, bool isSelected) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 4, left: 8),
+      margin: const EdgeInsets.only(
+        bottom: AppSizes.spacing4,
+        left: AppSizes.spacing8,
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => context.go('/$id'),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           child: Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF2563eb).withOpacity(0.15)
-                  : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(10),
+                  ? AppColors.primary.withOpacity(0.15)
+                  : AppColors.background,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
               border: isSelected
-                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.3))
-                  : Border.all(color: const Color(0xFFE1E5E9).withOpacity(0.5)),
+                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
+                  : Border.all(color: AppColors.border.withOpacity(0.5)),
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? const Color(0xFF2563eb).withOpacity(0.1)
+                      ? AppColors.primary.withOpacity(0.1)
                       : Colors.black.withOpacity(0.02),
                   blurRadius: isSelected ? 6 : 2,
                   offset: const Offset(0, 1),
@@ -1035,10 +1051,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             child: Center(
               child: Icon(
                 icon,
-                color: isSelected
-                    ? const Color(0xFF2563eb)
-                    : const Color(0xFF64748b),
-                size: 20,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                size: AppSizes.iconMedium,
               ),
             ),
           ),
@@ -1054,7 +1068,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     String? badge,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -1065,16 +1079,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             height: 56,
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF2563eb).withOpacity(0.15)
+                  ? AppColors.primary.withOpacity(0.15)
                   : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               border: isSelected
-                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.3))
-                  : Border.all(color: const Color(0xFFE1E5E9)),
+                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
+                  : Border.all(color: AppColors.border),
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? const Color(0xFF2563eb).withOpacity(0.1)
+                      ? AppColors.primary.withOpacity(0.1)
                       : Colors.black.withOpacity(0.04),
                   blurRadius: isSelected ? 8 : 4,
                   offset: const Offset(0, 2),
@@ -1087,9 +1101,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   child: Icon(
                     icon,
                     color: isSelected
-                        ? const Color(0xFF2563eb)
-                        : const Color(0xFF64748b),
-                    size: 24,
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    size: AppSizes.iconLarge,
                   ),
                 ),
                 if (badge != null)
@@ -1097,9 +1111,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(AppSizes.spacing4),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFef4444),
+                        color: AppColors.error,
                         shape: BoxShape.circle,
                       ),
                       constraints: const BoxConstraints(
@@ -1110,7 +1124,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                         badge,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: AppSizes.fontSizeExtraSmall,
                           fontWeight: FontWeight.w600,
                         ),
                         textAlign: TextAlign.center,
@@ -1127,9 +1141,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildSidebarHeader() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Row(
         children: [
@@ -1137,7 +1151,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFF2563eb),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -1152,9 +1166,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               child: Text(
                 'MDMS Clone',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: AppSizes.fontSizeXLarge,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1e293b),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -1233,7 +1247,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     }
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing24,
+      ),
       children: [
         // Dashboard
         _buildMenuItem(
@@ -1422,15 +1439,18 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               _expandedGroups[groupId] = !isExpanded;
             });
           },
-          borderRadius: BorderRadius.circular(8),
-          hoverColor: const Color(0xFF2563eb).withOpacity(0.05),
+          borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+          hoverColor: AppColors.primary.withOpacity(0.05),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing12,
+              vertical: AppSizes.spacing12,
+            ),
             decoration: BoxDecoration(
               color: hasSelectedChild
-                  ? const Color(0xFF2563eb).withOpacity(0.15)
+                  ? AppColors.primary.withOpacity(0.15)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               border: hasSelectedChild
                   ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.5))
                   : null,
@@ -1494,7 +1514,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     String? badge,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: AppSizes.spacing4),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -1502,7 +1522,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           borderRadius: BorderRadius.circular(8),
           hoverColor: const Color(0xFF2563eb).withOpacity(0.05),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing12,
+              vertical: AppSizes.spacing12,
+            ),
             decoration: BoxDecoration(
               color: isSelected
                   ? const Color(0xFF2563eb).withOpacity(0.15)
@@ -1591,7 +1614,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           borderRadius: BorderRadius.circular(8),
           hoverColor: const Color(0xFF2563eb).withOpacity(0.05),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing12,
+              vertical: AppSizes.spacing8,
+            ),
             decoration: BoxDecoration(
               color: isSelected
                   ? const Color(0xFF2563eb).withOpacity(0.15)
@@ -1671,7 +1697,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildSidebarFooter() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
       ),
@@ -1721,7 +1747,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     final currentLocation = GoRouterState.of(context).uri.toString();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing24,
+        vertical: AppSizes.spacing16,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
@@ -1751,7 +1780,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               Text(
                 _getPageTitle(currentLocation),
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: AppSizes.fontSizeXXLarge,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF1e293b),
                 ),

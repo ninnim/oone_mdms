@@ -240,7 +240,7 @@ class _AppSidebarState extends State<AppSidebar> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             border: isSelected
-                ? Border.all(color: AppColors.primary.withOpacity(0.3))
+                ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
                 : null,
           ),
           child: Row(
@@ -322,11 +322,11 @@ class _AppSidebarState extends State<AppSidebar> {
             ),
             decoration: BoxDecoration(
               color: hasSelectedChild
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               border: hasSelectedChild
-                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
+                  ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
                   : null,
             ),
             child: Row(

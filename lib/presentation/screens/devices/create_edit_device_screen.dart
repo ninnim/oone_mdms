@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
@@ -201,7 +203,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
                     ? 'Device created successfully'
                     : 'Device updated successfully',
               ),
-              backgroundColor: const Color(0xFF10b981),
+              backgroundColor: AppColors.success,
             ),
           );
 
@@ -213,7 +215,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: ${response.message}'),
-              backgroundColor: const Color(0xFFef4444),
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -223,7 +225,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving device: $e'),
-            backgroundColor: const Color(0xFFef4444),
+            backgroundColor: AppColors.error,
           ),
         );
       }

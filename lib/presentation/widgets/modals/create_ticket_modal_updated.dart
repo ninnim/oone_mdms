@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/constants/app_colors.dart';
 
 class CreateTicketModal extends StatefulWidget {
   const CreateTicketModal({super.key});
@@ -120,7 +121,9 @@ class _CreateTicketModalState extends State<CreateTicketModal> {
             onPressed: () => Navigator.of(context).pop(),
             icon: Icon(Icons.close, color: colorScheme.onSurfaceVariant),
             style: IconButton.styleFrom(
-              backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(
+                0.5,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               ),
@@ -248,7 +251,7 @@ class _CreateTicketModalState extends State<CreateTicketModal> {
                         Text(
                           'Property Location',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppSizes.fontSizeExtraSmall,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -271,7 +274,7 @@ class _CreateTicketModalState extends State<CreateTicketModal> {
   Widget _buildPrioritySelector(ColorScheme colorScheme) {
     final priorities = [
       ('High', colorScheme.error),
-      ('Medium', Colors.orange),
+      ('Medium', AppColors.warning),
       ('Low', colorScheme.outline),
     ];
 

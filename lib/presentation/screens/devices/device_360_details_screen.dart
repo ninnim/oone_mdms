@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../../widgets/common/app_card.dart';
@@ -435,9 +436,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           ),
           child: TabBar(
             controller: _tabController,
-            labelColor: const Color(0xFF2563eb),
-            unselectedLabelColor: const Color(0xFF64748b),
-            indicatorColor: const Color(0xFF2563eb),
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
             isScrollable: true,
             tabs: const [
               Tab(icon: Icon(Icons.dashboard), text: 'Overview'),

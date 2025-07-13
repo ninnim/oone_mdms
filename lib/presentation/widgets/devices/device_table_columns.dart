@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../common/blunest_data_table.dart';
-import '../../../core/constants/app_colors.dart';
 
 class DeviceTableColumns {
   static List<BluNestTableColumn<Device>> getColumns({
@@ -23,13 +24,14 @@ class DeviceTableColumns {
           final index = devices?.indexOf(device) ?? 0;
           final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
           return Container(
-            //   alignment: Alignment.center,
+            height: AppSizes.spacing40,
+            alignment: Alignment.centerLeft,
             child: Text(
               '$rowNumber',
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF6B7280),
+                color: AppColors.textSecondary,
               ),
             ),
           );
@@ -43,13 +45,14 @@ class DeviceTableColumns {
         flex: 2,
         sortable: true,
         builder: (device) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          height: AppSizes.spacing40,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: Text(
             device.serialNumber.isNotEmpty ? device.serialNumber : 'N/A',
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppSizes.fontSizeSmall,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
+              color: AppColors.textPrimary,
               fontFamily: 'monospace',
             ),
           ),
@@ -63,10 +66,14 @@ class DeviceTableColumns {
         flex: 2,
         sortable: true,
         builder: (device) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          height: AppSizes.spacing40,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: Text(
             device.model.isNotEmpty ? device.model : 'N/A',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF374151)),
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
       ),
@@ -78,7 +85,8 @@ class DeviceTableColumns {
         flex: 2,
         sortable: true,
         builder: (device) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          height: AppSizes.spacing40,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: Text(
             device.manufacturer.isNotEmpty ? device.manufacturer : 'N/A',
             style: const TextStyle(fontSize: 13, color: Color(0xFF374151)),
@@ -93,7 +101,8 @@ class DeviceTableColumns {
         flex: 2,
         sortable: true,
         builder: (device) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          height: AppSizes.spacing40,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: Row(
             children: [
               Container(
@@ -137,7 +146,12 @@ class DeviceTableColumns {
         title: 'Status',
         flex: 2,
         sortable: true,
-        builder: (device) => _buildStatusChip(device.status),
+
+        builder: (device) => Container(
+          alignment: Alignment.centerLeft,
+          height: AppSizes.spacing40,
+          child: _buildStatusChip(device.status),
+        ),
       ),
 
       // Link Status
@@ -146,7 +160,11 @@ class DeviceTableColumns {
         title: 'Link Status',
         flex: 2,
         sortable: true,
-        builder: (device) => _buildLinkStatusChip(device.linkStatus),
+        builder: (device) => Container(
+          alignment: Alignment.centerLeft,
+          height: AppSizes.spacing40,
+          child: _buildLinkStatusChip(device.linkStatus),
+        ),
       ),
 
       // Address
@@ -156,7 +174,8 @@ class DeviceTableColumns {
         flex: 3,
         sortable: true,
         builder: (device) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          height: AppSizes.spacing40,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: Row(
             children: [
               const Icon(Icons.location_on, size: 16, color: Color(0xFF6B7280)),
@@ -170,7 +189,7 @@ class DeviceTableColumns {
                     fontSize: 13,
                     color: Color(0xFF374151),
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -186,16 +205,17 @@ class DeviceTableColumns {
         flex: 1,
         sortable: false,
         builder: (device) => Container(
-          //  padding: const EdgeInsets.symmetric(vertical: 8),
+          height: AppSizes.spacing40,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing2),
           child: PopupMenuButton<String>(
             icon: const Icon(
               Icons.more_vert,
               color: Color(0xFF9CA3AF),
-              size: 20,
+              size: 16,
             ),
             elevation: 8,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(10),
             ),
             itemBuilder: (context) => [
               const PopupMenuItem<String>(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 
@@ -112,7 +113,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.renovation:
         // Orange for renovation
-        final renovationColor = const Color(0xFFf59e0b);
+        final renovationColor = AppColors.warning;
         return _StatusColors(
           backgroundColor: renovationColor.withOpacity(0.1),
           borderColor: renovationColor.withOpacity(0.3),
@@ -120,7 +121,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.vacant:
         // Blue for vacant
-        final vacantColor = const Color(0xFF3b82f6);
+        final vacantColor = AppColors.info;
         return _StatusColors(
           backgroundColor: vacantColor.withOpacity(0.1),
           borderColor: vacantColor.withOpacity(0.3),
@@ -128,7 +129,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.occupied:
         // Purple for occupied
-        final occupiedColor = const Color(0xFF8b5cf6);
+        final occupiedColor = AppColors.primary;
         return _StatusColors(
           backgroundColor: occupiedColor.withOpacity(0.1),
           borderColor: occupiedColor.withOpacity(0.3),
@@ -136,7 +137,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.construction:
         // Amber for construction
-        final constructionColor = const Color(0xFFf59e0b);
+        final constructionColor = AppColors.warning;
         return _StatusColors(
           backgroundColor: constructionColor.withOpacity(0.1),
           borderColor: constructionColor.withOpacity(0.3),
@@ -144,7 +145,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.success:
         // Green for success
-        final successColor = const Color(0xFF10b981);
+        final successColor = AppColors.success;
         return _StatusColors(
           backgroundColor: successColor.withOpacity(0.1),
           borderColor: successColor.withOpacity(0.3),
@@ -152,7 +153,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.warning:
         // Orange for warning
-        final warningColor = const Color(0xFFf59e0b);
+        final warningColor = AppColors.warning;
         return _StatusColors(
           backgroundColor: warningColor.withOpacity(0.1),
           borderColor: warningColor.withOpacity(0.3),
@@ -174,7 +175,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.secondary:
         // Gray for secondary
-        final secondaryColor = const Color(0xFF64748b);
+        final secondaryColor = AppColors.secondary;
         return _StatusColors(
           backgroundColor: secondaryColor.withOpacity(0.1),
           borderColor: secondaryColor.withOpacity(0.3),
@@ -182,7 +183,7 @@ class StatusChip extends StatelessWidget {
         );
       case StatusChipType.danger:
         // Red for danger
-        final dangerColor = const Color(0xFFef4444);
+        final dangerColor = AppColors.error;
         return _StatusColors(
           backgroundColor: dangerColor.withOpacity(0.1),
           borderColor: dangerColor.withOpacity(0.3),
@@ -243,7 +244,7 @@ class ProgressChip extends StatelessWidget {
             height: compact ? 4 : 6,
             decoration: BoxDecoration(
               color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
@@ -251,7 +252,7 @@ class ProgressChip extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 ),
               ),
             ),
@@ -275,8 +276,8 @@ class ProgressChip extends StatelessWidget {
   Color _getColorForPercentage(BuildContext context, double percentage) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (percentage >= 80) return const Color(0xFF10b981); // Success green
-    if (percentage >= 60) return const Color(0xFFf59e0b); // Warning orange
+    if (percentage >= 80) return AppColors.success;
+    if (percentage >= 60) return AppColors.warning;
     if (percentage >= 40) return const Color(0xFFf59e0b); // Warning orange
     return colorScheme.error; // Error red
   }

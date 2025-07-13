@@ -72,7 +72,7 @@ class ResultsPagination extends StatelessWidget {
     return Text(
       'Results: $startItem - $endItem of $totalItems',
       style: TextStyle(
-        fontSize: 14,
+        fontSize: AppSizes.fontSizeMedium,
         color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
         fontWeight: FontWeight.w400,
       ),
@@ -85,12 +85,12 @@ class ResultsPagination extends StatelessWidget {
       children: [
         Container(
           height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
           decoration: BoxDecoration(
             border: Border.all(
               color: theme.dividerColor.withValues(alpha: 0.3),
             ),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             color: theme.cardColor,
           ),
           child: DropdownButtonHideUnderline(
@@ -98,13 +98,13 @@ class ResultsPagination extends StatelessWidget {
               value: itemsPerPage,
               isDense: true,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppSizes.fontSizeMedium,
                 color: theme.textTheme.bodyMedium?.color,
                 fontWeight: FontWeight.w400,
               ),
               icon: Icon(
                 Icons.keyboard_arrow_down,
-                size: 16,
+                size: AppSizes.iconSmall,
                 color: theme.textTheme.bodyMedium?.color?.withValues(
                   alpha: 0.6,
                 ),
@@ -149,7 +149,7 @@ class ResultsPagination extends StatelessWidget {
         // Ellipsis
         pageButtons.add(
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing4),
             child: Text(
               '...',
               style: TextStyle(

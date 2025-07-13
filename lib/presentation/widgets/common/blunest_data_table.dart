@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 
 class BluNestDataTable<T> extends StatefulWidget {
   final List<BluNestTableColumn<T>> columns;
@@ -72,8 +74,8 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
   Widget _buildTable() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXLarge),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -86,15 +88,18 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
         children: [
           // Table Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing24,
+              vertical: AppSizes.spacing16,
+            ),
             decoration: const BoxDecoration(
-              color: Color(0xFFF8F9FA),
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(AppSizes.radiusXLarge),
+                topRight: Radius.circular(AppSizes.radiusXLarge),
               ),
               border: Border(
-                bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+                bottom: BorderSide(color: AppColors.border, width: 1),
               ),
             ),
             child: Row(
@@ -120,12 +125,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                         },
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
-                        activeColor: const Color(0xFF2563EB),
-                        checkColor: Colors.white,
-                        side: const BorderSide(
-                          color: Color(0xFFD1D5DB),
-                          width: 1.5,
-                        ),
+                        activeColor: AppColors.primary,
+                        checkColor: AppColors.textInverse,
+                        side: BorderSide(color: AppColors.border, width: 1.5),
                       ),
                     ),
                   ),
@@ -143,15 +145,17 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                             }
                           : null,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.spacing4,
+                        ),
                         child: Row(
                           children: [
                             Text(
                               column.title,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppSizes.fontSizeSmall,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF374151),
+                                color: AppColors.textPrimary,
                                 letterSpacing: 0.25,
                               ),
                             ),
@@ -163,10 +167,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                           ? Icons.keyboard_arrow_up
                                           : Icons.keyboard_arrow_down)
                                     : Icons.unfold_more,
-                                size: 16,
+                                size: AppSizes.iconSmall,
                                 color: widget.sortBy == column.key
-                                    ? const Color(0xFF2563EB)
-                                    : const Color(0xFF9CA3AF),
+                                    ? AppColors.primary
+                                    : AppColors.textTertiary,
                               ),
                             ],
                           ],
@@ -190,10 +194,15 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 return Container(
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFFF0F9FF)
-                        : (isEven ? Colors.white : const Color(0xFFFAFBFC)),
-                    border: const Border(
-                      bottom: BorderSide(color: Color(0xFFF1F3F4), width: 1),
+                        ? AppColors.primary.withValues(alpha: 0.1)
+                        : (isEven
+                              ? AppColors.surface
+                              : AppColors.surfaceVariant),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: AppColors.borderLight,
+                        width: 1,
+                      ),
                     ),
                   ),
                   child: Material(
@@ -246,10 +255,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                     materialTapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
                                     visualDensity: VisualDensity.compact,
-                                    activeColor: const Color(0xFF2563EB),
-                                    checkColor: Colors.white,
-                                    side: const BorderSide(
-                                      color: Color(0xFFD1D5DB),
+                                    activeColor: AppColors.primary,
+                                    checkColor: AppColors.textInverse,
+                                    side: BorderSide(
+                                      color: AppColors.border,
                                       width: 1.5,
                                     ),
                                   ),
@@ -277,10 +286,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
 
   Widget _buildTableControls() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: const BoxDecoration(
-        color: Color(0xFFF8F9FA),
-        border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9))),
+        color: AppColors.surfaceVariant,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -288,9 +297,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
             Text(
               '${widget.selectedItems.length} selected',
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: AppSizes.fontSizeMedium,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF374151),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: 16),
@@ -302,10 +311,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 icon: const Icon(Icons.clear, size: 16),
                 label: const Text('Clear'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF6B7280),
+                  foregroundColor: AppColors.textSecondary,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: AppSizes.spacing12,
+                    vertical: AppSizes.spacing8,
                   ),
                 ),
               ),
@@ -317,10 +326,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 icon: const Icon(Icons.select_all, size: 16),
                 label: const Text('Select All'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF2563EB),
+                  foregroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: AppSizes.spacing12,
+                    vertical: AppSizes.spacing8,
                   ),
                 ),
               ),
@@ -329,15 +338,15 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
           const Spacer(),
           if (widget.onColumnVisibilityChanged != null)
             PopupMenuButton<String>(
-              icon: const Icon(
+              icon: Icon(
                 Icons.view_column,
-                size: 20,
-                color: Color(0xFF6B7280),
+                size: AppSizes.iconMedium,
+                color: AppColors.textSecondary,
               ),
               tooltip: 'Show/Hide Columns',
               elevation: 8,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               ),
               itemBuilder: (context) => widget.columns
                   .map(
@@ -353,13 +362,18 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                 _toggleColumnVisibility(col.key);
                                 Navigator.pop(context);
                               },
-                              activeColor: const Color(0xFF2563EB),
+                              activeColor: AppColors.primary,
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(col.title, style: const TextStyle(fontSize: 14)),
+                          const SizedBox(width: AppSizes.spacing8),
+                          Text(
+                            col.title,
+                            style: const TextStyle(
+                              fontSize: AppSizes.fontSizeMedium,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -401,12 +415,15 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: AppSizes.spacing16),
             Text(
               'Loading...',
-              style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: AppSizes.fontSizeLarge,
+              ),
             ),
           ],
         ),
@@ -432,20 +449,27 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: Color(0xFF9CA3AF)),
-            SizedBox(height: 16),
+            Icon(
+              Icons.inbox_outlined,
+              size: AppSizes.spacing64,
+              color: AppColors.textTertiary,
+            ),
+            SizedBox(height: AppSizes.spacing16),
             Text(
               'No data available',
               style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 18,
+                color: AppColors.textSecondary,
+                fontSize: AppSizes.fontSizeXLarge,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: AppSizes.spacing8),
             Text(
               'There are no items to display at the moment.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+              style: TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: AppSizes.fontSizeMedium,
+              ),
             ),
           ],
         ),
