@@ -7,11 +7,7 @@ class AppTab {
   final Widget? icon;
   final Widget content;
 
-  const AppTab({
-    required this.label,
-    this.icon,
-    required this.content,
-  });
+  const AppTab({required this.label, this.icon, required this.content});
 }
 
 class AppTabsWidget extends StatefulWidget {
@@ -76,17 +72,15 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border(
-              bottom: BorderSide(
-                color: AppColors.border,
-                width: 1.0,
-              ),
+              bottom: BorderSide(color: AppColors.border, width: 1.0),
             ),
           ),
           child: TabBar(
             controller: _tabController,
             isScrollable: widget.isScrollable,
             labelColor: widget.selectedTabColor ?? AppColors.primary,
-            unselectedLabelColor: widget.unselectedTabColor ?? AppColors.textSecondary,
+            unselectedLabelColor:
+                widget.unselectedTabColor ?? AppColors.textSecondary,
             labelStyle: const TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
@@ -103,14 +97,16 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
               border: Border(
                 bottom: BorderSide(
                   color: widget.indicatorColor ?? AppColors.primary,
-                  width: 3.0,
+                  width: 50.0,
                 ),
               ),
             ),
-            labelPadding: widget.tabPadding ?? EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing16,
-              vertical: AppSizes.spacing12,
-            ),
+            labelPadding:
+                widget.tabPadding ??
+                EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing16,
+                  vertical: AppSizes.spacing12,
+                ),
             overlayColor: WidgetStateProperty.all(Colors.transparent),
             splashFactory: NoSplash.splashFactory,
             tabs: widget.tabs.map((tab) {
@@ -135,7 +131,7 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
             }).toList(),
           ),
         ),
-        
+
         // Tab Content
         Expanded(
           child: TabBarView(
@@ -217,7 +213,9 @@ class _AppPillTabsState extends State<AppPillTabs> {
                       color: isSelected
                           ? (widget.selectedColor ?? AppColors.primary)
                           : (widget.unselectedColor ?? Colors.transparent),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppSizes.radiusMedium,
+                      ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
@@ -233,6 +231,7 @@ class _AppPillTabsState extends State<AppPillTabs> {
                       children: [
                         if (tab.icon != null) ...[
                           tab.icon!,
+
                           SizedBox(width: AppSizes.spacing8),
                         ],
                         Text(
@@ -241,8 +240,10 @@ class _AppPillTabsState extends State<AppPillTabs> {
                             fontSize: AppSizes.fontSizeMedium,
                             fontWeight: FontWeight.w600,
                             color: isSelected
-                                ? (widget.selectedTextColor ?? AppColors.onPrimary)
-                                : (widget.unselectedTextColor ?? AppColors.textSecondary),
+                                ? (widget.selectedTextColor ??
+                                      AppColors.onPrimary)
+                                : (widget.unselectedTextColor ??
+                                      AppColors.textSecondary),
                           ),
                         ),
                       ],
@@ -253,13 +254,11 @@ class _AppPillTabsState extends State<AppPillTabs> {
             }).toList(),
           ),
         ),
-        
+
         SizedBox(height: AppSizes.spacing16),
-        
+
         // Tab Content
-        Expanded(
-          child: widget.tabs[selectedIndex].content,
-        ),
+        Expanded(child: widget.tabs[selectedIndex].content),
       ],
     );
   }

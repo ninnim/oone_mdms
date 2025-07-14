@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_tabs.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
@@ -34,10 +35,9 @@ class Device360DetailsScreen extends StatefulWidget {
   State<Device360DetailsScreen> createState() => _Device360DetailsScreenState();
 }
 
-class _Device360DetailsScreenState extends State<Device360DetailsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   late DeviceService _deviceService;
+  int _currentTabIndex = 0;
 
   Device? _deviceDetails;
   List<DeviceChannel>? _deviceChannels;
@@ -82,22 +82,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
     _deviceService = Provider.of<DeviceService>(context, listen: false);
 
     // Load initial overview data
     _loadOverviewData();
-
-    // Listen to tab changes to trigger lazy loading
-    _tabController.addListener(_onTabChanged);
   }
 
-  void _onTabChanged() {
-    if (!_tabController.indexIsChanging) return;
+  void _onTabChanged(int index) {
+    setState(() {
+      _currentTabIndex = index;
+    });
 
-    final int tabIndex = _tabController.index;
-
-    switch (tabIndex) {
+    switch (index) {
       case 0: // Overview
         if (!_overviewLoaded) _loadOverviewData();
         break;
@@ -118,8 +114,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -336,7 +330,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
 
   // Refresh current tab data
   Future<void> _refreshCurrentTabData() async {
-    final int tabIndex = _tabController.index;
+    final int tabIndex = _currentTabIndex;
     print('Refreshing tab data for index: $tabIndex');
 
     switch (tabIndex) {
@@ -429,127 +423,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           ),
         ),
 
-        // Tabs section
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            border: Border(
-              bottom: BorderSide(color: AppColors.border, width: 1.0),
-            ),
-          ),
-          child: TabBar(
-            controller: _tabController,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            labelStyle: const TextStyle(
-              fontSize: AppSizes.fontSizeMedium,
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: AppSizes.fontSizeMedium,
-              fontWeight: FontWeight.w500,
-            ),
-            indicatorColor: AppColors.primary,
-            indicatorWeight: 3.0,
-            indicator: BoxDecoration(
-              color: Colors.transparent,
-              border: Border(
-                bottom: BorderSide(color: AppColors.primary, width: 3.0),
-              ),
-            ),
-            labelPadding: EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing16,
-              vertical: AppSizes.spacing12,
-            ),
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            splashFactory: NoSplash.splashFactory,
-            isScrollable: true,
-            tabs: [
-              Tab(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing8,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.dashboard, size: AppSizes.iconSmall),
-                      SizedBox(width: AppSizes.spacing8),
-                      Text('Overview'),
-                    ],
-                  ),
-                ),
-              ),
-              Tab(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing8,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.device_hub, size: AppSizes.iconSmall),
-                      SizedBox(width: AppSizes.spacing8),
-                      Text('Channels'),
-                    ],
-                  ),
-                ),
-              ),
-              Tab(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing8,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.analytics, size: AppSizes.iconSmall),
-                      SizedBox(width: AppSizes.spacing8),
-                      Text('Metrics'),
-                    ],
-                  ),
-                ),
-              ),
-              Tab(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing8,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.receipt, size: AppSizes.iconSmall),
-                      SizedBox(width: AppSizes.spacing8),
-                      Text('Billing'),
-                    ],
-                  ),
-                ),
-              ),
-              Tab(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing8,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.location_on, size: AppSizes.iconSmall),
-                      SizedBox(width: AppSizes.spacing8),
-                      Text('Location'),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Content section
+        // Content section with AppTabs
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -576,7 +450,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                       ElevatedButton(
                         onPressed: () {
                           // Retry loading current tab data
-                          final int tabIndex = _tabController.index;
+                          final int tabIndex = _currentTabIndex;
                           switch (tabIndex) {
                             case 0:
                               setState(() {
@@ -620,14 +494,36 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                     ],
                   ),
                 )
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildOverviewTab(),
-                    _buildChannelsTab(),
-                    _buildMetricsTab(),
-                    _buildBillingTab(),
-                    _buildLocationTab(),
+              : AppPillTabs(
+                  initialIndex: _currentTabIndex,
+                  onTabChanged: _onTabChanged,
+                  //  isScrollable: true,
+                  tabs: [
+                    AppTab(
+                      label: 'Overview',
+                      icon: Icon(Icons.dashboard, size: AppSizes.iconSmall),
+                      content: _buildOverviewTab(),
+                    ),
+                    AppTab(
+                      label: 'Channels',
+                      icon: Icon(Icons.device_hub, size: AppSizes.iconSmall),
+                      content: _buildChannelsTab(),
+                    ),
+                    AppTab(
+                      label: 'Metrics',
+                      icon: Icon(Icons.analytics, size: AppSizes.iconSmall),
+                      content: _buildMetricsTab(),
+                    ),
+                    AppTab(
+                      label: 'Billing',
+                      icon: Icon(Icons.receipt, size: AppSizes.iconSmall),
+                      content: _buildBillingTab(),
+                    ),
+                    AppTab(
+                      label: 'Location',
+                      icon: Icon(Icons.location_on, size: AppSizes.iconSmall),
+                      content: _buildLocationTab(),
+                    ),
                   ],
                 ),
         ),

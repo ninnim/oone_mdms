@@ -85,17 +85,15 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           _buildHeader(),
           const SizedBox(height: AppSizes.spacing24),
           _buildErrorMessage(),
-          Expanded(
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  _buildTableHeader(),
-                  if (_selectedGroups.isNotEmpty) _buildMultiSelectToolbar(),
-                  Expanded(child: _buildDeviceGroupTable()),
-                  _buildPagination(),
-                ],
-              ),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _buildTableHeader(),
+                if (_selectedGroups.isNotEmpty) _buildMultiSelectToolbar(),
+                Expanded(child: _buildDeviceGroupTable()),
+                _buildPagination(),
+              ],
             ),
           ),
         ],
