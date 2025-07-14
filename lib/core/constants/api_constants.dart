@@ -3,16 +3,19 @@ class ApiConstants {
   static const String baseUrl = 'https://mdms.oone.bz';
 
   // Headers
-  static const String tokenHeader = '4)-g\$xR&M0siAov3Fl4O';
+  static const String tokenHeader =
+      '4)-g\$xR&M0siAov3Fl4O'; // x-hasura-admin-secret
   static const String contentType = 'application/json';
-  static const String authorization='Bearer ';
+  static const String authorization = 'Bearer ';
   static const String accept = 'application/json';
   static const String tenant = 'x-hasura-tenant';
   static const String user = 'x-hasura-user';
   static const String role = 'x-hasura-role';
+  static const String allowedRoles = 'x-hasura-allowed-roles';
 
-  // Default header values
-  static const String defaultTenant = '0a12968d-2a38-48ee-b60a-ce2498040825';
+  // Default header values (used as fallbacks when token parsing fails)
+  static const String defaultTenant =
+      '025aa4a1-8617-4e24-b890-2e69a09180ee'; // Updated from your token
   static const String defaultUser = 'admin';
   static const String defaultRole = 'super-admin';
 

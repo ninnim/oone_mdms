@@ -146,7 +146,7 @@ class _KanbanViewState<T extends Object> extends State<KanbanView<T>> {
           Expanded(
             child: DragTarget<T>(
               onWillAcceptWithDetails: (item) =>
-                  widget.enableDragDrop && item != null,
+                  widget.enableDragDrop,
               onAcceptWithDetails: (item) {
                 if (widget.onItemMoved != null) {
                   final fromColumn = widget.getItemColumn(item as T);

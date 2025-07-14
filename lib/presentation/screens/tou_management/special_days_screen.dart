@@ -8,7 +8,7 @@ import '../../widgets/common/results_pagination.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/services/service_locator.dart';
 import '../../../core/services/tou_service.dart';
 
 class SpecialDaysScreen extends StatefulWidget {
@@ -34,7 +34,11 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
   @override
   void initState() {
     super.initState();
-    _touService = TouService(ApiService());
+
+    // Use ServiceLocator to get properly configured API service
+    final serviceLocator = ServiceLocator();
+    final apiService = serviceLocator.apiService;
+    _touService = TouService(apiService);
     _loadSpecialDays();
   }
 

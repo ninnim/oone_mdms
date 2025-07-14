@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/services/service_locator.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
@@ -42,7 +42,11 @@ class _DeviceBillingReadingsScreenState
   @override
   void initState() {
     super.initState();
-    _deviceService = DeviceService(ApiService());
+
+    // Use ServiceLocator to get properly configured API service
+    final serviceLocator = ServiceLocator();
+    final apiService = serviceLocator.apiService;
+    _deviceService = DeviceService(apiService);
     _loadBillingReadings();
   }
 

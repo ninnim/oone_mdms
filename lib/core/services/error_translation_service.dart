@@ -160,18 +160,24 @@ class ErrorTranslationService {
     // Device-specific error patterns
     if (lowerMessage.contains('device')) {
       if (lowerMessage.contains('not found')) return AppMessages.deviceNotFound;
-      if (lowerMessage.contains('already exists'))
+      if (lowerMessage.contains('already exists')) {
         return AppMessages.deviceAlreadyExists;
-      if (lowerMessage.contains('commission'))
+      }
+      if (lowerMessage.contains('commission')) {
         return AppMessages.deviceCommissionFailed;
-      if (lowerMessage.contains('decommission'))
+      }
+      if (lowerMessage.contains('decommission')) {
         return AppMessages.deviceDecommissionFailed;
-      if (lowerMessage.contains('update'))
+      }
+      if (lowerMessage.contains('update')) {
         return AppMessages.deviceUpdateFailed;
-      if (lowerMessage.contains('delete'))
+      }
+      if (lowerMessage.contains('delete')) {
         return AppMessages.deviceDeleteFailed;
-      if (lowerMessage.contains('link') || lowerMessage.contains('hes'))
+      }
+      if (lowerMessage.contains('link') || lowerMessage.contains('hes')) {
         return AppMessages.deviceLinkHesFailed;
+      }
       if (lowerMessage.contains('ping')) return AppMessages.devicePingFailed;
     }
 

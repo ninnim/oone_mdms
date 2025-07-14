@@ -4,7 +4,7 @@ import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/services/service_locator.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
@@ -69,8 +69,12 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _deviceService = DeviceService(ApiService());
-    _scheduleService = ScheduleService(ApiService());
+
+    // Use ServiceLocator to get properly configured API service
+    final serviceLocator = ServiceLocator();
+    final apiService = serviceLocator.apiService;
+    _deviceService = DeviceService(apiService);
+    _scheduleService = ScheduleService(apiService);
 
     if (widget.device != null) {
       _populateFields();

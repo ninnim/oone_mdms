@@ -46,6 +46,7 @@ class KeycloakService extends ChangeNotifier {
   String? _accessToken;
 
   // Public getters
+  String? get selectRoles => getCurrentRole();
   bool get isAuthenticated => _oauthClient != null && _accessToken != null;
   Map<String, dynamic>? get currentUser => _currentUser;
   String? get accessToken {
@@ -199,9 +200,7 @@ class KeycloakService extends ChangeNotifier {
         print('KeycloakService: User info loaded');
 
         // Verify authentication state
-        print(
-          'KeycloakService: Final authentication state: $isAuthenticated',
-        );
+        print('KeycloakService: Final authentication state: $isAuthenticated');
 
         // Notify listeners that authentication state has changed
         print('KeycloakService: Notifying listeners...');
@@ -355,6 +354,18 @@ class KeycloakService extends ChangeNotifier {
       await getUserInfo();
     } catch (e) {
       print('KeycloakService: Error loading user info: $e');
+    }
+  }
+
+  /// Refresh the access token using the stored refresh token
+  /// Returns true if refresh was successful, false otherwise
+  Future<bool> refreshToken() async {
+    try {
+      await _refreshTokens();
+      return _accessToken != null;
+    } catch (e) {
+      print('KeycloakService: Failed to refresh token: $e');
+      return false;
     }
   }
 
@@ -545,6 +556,24 @@ class KeycloakService extends ChangeNotifier {
   }
 
   /// Gets the user's roles from the token
+  ///
+  String getCurrentRole() {
+    if (_accessToken == null) return 'getField';
+
+    try {
+      final decodedToken = JwtDecoder.decode(_accessToken!);
+      final hasuraClaims = decodedToken['https://hasura.io/jwt/claims'];
+      final hasuraRoles =
+          hasuraClaims?['x-hasura-allowed-roles'] as List<dynamic>?;
+      final selectRoles = hasuraClaims.isNotEmpty ? hasuraRoles?.last : null;
+      debugPrint('getRole: $selectRoles');
+      return selectRoles?.toString() ?? '';
+    } catch (e) {
+      print('KeycloakService: Error getting current role: $e');
+      return '';
+    }
+  }
+
   List<String> getUserRoles() {
     if (_accessToken == null) return [];
 
@@ -552,6 +581,10 @@ class KeycloakService extends ChangeNotifier {
       final decodedToken = JwtDecoder.decode(_accessToken!);
       final realmAccess = decodedToken['realm_access'] as Map<String, dynamic>?;
       final roles = realmAccess?['roles'] as List<dynamic>?;
+      final hasuraClaims = decodedToken['https://hasura.io/jwt/claims'];
+      final hasuraRoles =
+          hasuraClaims?['x-hasura-allowed-roles'] as List<dynamic>?;
+      final selectRoles = hasuraClaims.isNotEmpty ? hasuraRoles?.last : null;
       return roles?.map((role) => role.toString()).toList() ?? [];
     } catch (e) {
       print('KeycloakService: Error getting user roles: $e');

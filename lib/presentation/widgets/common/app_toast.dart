@@ -256,11 +256,11 @@ class _ToastWidgetState extends State<ToastWidget>
   Color _getBackgroundColor() {
     switch (widget.data.type) {
       case ToastType.success:
-        return AppColors.background;
+        return AppColors.surface;
       case ToastType.warning:
-        return AppColors.warning.withValues(alpha: 0.1);
+        return AppColors.surface;
       case ToastType.error:
-        return AppColors.error.withValues(alpha: 0.1);
+        return AppColors.surface;
       case ToastType.info:
         return AppColors.surface;
     }

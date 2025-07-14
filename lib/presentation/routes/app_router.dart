@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
 import 'dart:async';
@@ -9,6 +10,8 @@ import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
 import '../screens/auth/simple_auth_redirect_screen.dart';
+import '../screens/settings/token_management_test_screen.dart';
+import '../screens/test/token_test_screen.dart';
 import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
 import '../../core/services/device_service.dart';
@@ -171,6 +174,16 @@ class AppRouter {
               name: 'billing',
               builder: (context, state) => const SettingsRouteWrapper(),
             ),
+            GoRoute(
+              path: '/token-management-test',
+              name: 'token-management-test',
+              builder: (context, state) => const TokenManagementTestScreen(),
+            ),
+            GoRoute(
+              path: '/token-test',
+              name: 'token-test',
+              builder: (context, state) => const TokenTestScreen(),
+            ),
 
             // TOU Management Sub-routes
             GoRoute(
@@ -269,9 +282,10 @@ class DashboardRouteWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // We'll update this when we need to implement it
-    return const Scaffold(
-      body: Center(child: Text('Dashboard Route - To be implemented')),
-    );
+    return DashboardScreen();
+    // return const Scaffold(
+    //   body: Center(child: Text('Dashboard Route - To be implemented')),
+    // );
   }
 }
 
@@ -735,6 +749,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/security')) return 'security';
     if (location.startsWith('/integrations')) return 'integrations';
     if (location.startsWith('/billing')) return 'billing';
+    if (location.startsWith('/token-management-test')) {
+      return 'token-management-test';
+    }
+    if (location.startsWith('/token-test')) return 'token-test';
 
     return 'devices'; // default
   }
@@ -783,6 +801,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       'security',
       'integrations',
       'billing',
+      'token-management-test',
+      'token-test',
     ].contains(selectedScreen)) {
       _expandedGroups['settings'] = true;
     }
@@ -903,6 +923,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           'security',
           'integrations',
           'billing',
+          'token-management-test',
+          'token-test',
         ], selectedScreen),
 
         if (_expandedGroups['settings'] == true) ...[
@@ -931,6 +953,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             'billing',
             Icons.receipt_long,
             selectedScreen == 'billing',
+          ),
+          _buildCollapsedSubMenuItem(
+            'token-management-test',
+            Icons.vpn_key,
+            selectedScreen == 'token-management-test',
+          ),
+          _buildCollapsedSubMenuItem(
+            'token-test',
+            Icons.vpn_key,
+            selectedScreen == 'token-test',
           ),
         ],
       ],
@@ -1242,6 +1274,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       'security',
       'integrations',
       'billing',
+      'token-management-test',
+      'token-test',
     ].contains(selectedScreen)) {
       _expandedGroups['settings'] = true;
     }
@@ -1379,6 +1413,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           'security',
           'integrations',
           'billing',
+          'token-management-test',
+          'token-test',
         ], selectedScreen),
 
         if (_expandedGroups['settings'] == true) ...[
@@ -1412,6 +1448,18 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               'Billing',
               Icons.receipt_long,
               selectedScreen == 'billing',
+            ),
+            _buildSubMenuItem(
+              'token-management-test',
+              'Token Management Test',
+              Icons.vpn_key,
+              selectedScreen == 'token-management-test',
+            ),
+            _buildSubMenuItem(
+              'token-test',
+              'Token Test',
+              Icons.vpn_key,
+              selectedScreen == 'token-test',
             ),
           ]),
         ],
