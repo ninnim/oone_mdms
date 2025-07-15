@@ -6,12 +6,17 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
+import '../../../core/models/device_group.dart';
+import '../../../core/models/address.dart';
 import '../../../core/services/device_service.dart';
 import '../../widgets/common/app_card.dart';
+import '../../widgets/common/app_button.dart';
+import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
-import '../../widgets/devices/device_location_map.dart';
+import '../../widgets/devices/device_location_viewer.dart';
+import '../../widgets/devices/interactive_map_dialog.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
 import '../../widgets/devices/billing_table_columns.dart';
 import '../../widgets/common/custom_date_range_picker.dart';
@@ -79,6 +84,41 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   String? _metricsSortBy;
   bool _metricsSortAscending = true;
 
+  // Overview edit mode state
+  bool _isEditingOverview = false;
+  bool _savingOverview = false;
+  final GlobalKey<FormState> _overviewFormKey = GlobalKey<FormState>();
+
+  // Edit mode controllers
+  final TextEditingController _serialNumberEditController =
+      TextEditingController();
+  final TextEditingController _modelEditController = TextEditingController();
+  final TextEditingController _addressEditController = TextEditingController();
+
+  // Edit mode form data
+  String _selectedDeviceTypeEdit = 'None';
+  String _selectedLinkStatusEdit = 'None';
+  String _selectedStatusEdit = 'None';
+  int? _selectedDeviceGroupIdEdit;
+  Address? _selectedAddressEdit;
+
+  // Dropdown data for edit mode
+  List<DeviceGroup> _deviceGroups = [];
+  bool _isLoadingDeviceGroups = false;
+
+  // Device type options
+  final List<String> _deviceTypes = ['None', 'Smart Meter', 'IoT'];
+
+  // Link status options
+  final List<String> _linkStatusOptions = ['None', 'MULTIDRIVE', 'E-POWER'];
+
+  // Status options
+  final List<String> _statusOptions = [
+    'None',
+    'Commissioned',
+    'Decommissioned',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -114,7 +154,377 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   @override
   void dispose() {
+    _serialNumberEditController.dispose();
+    _modelEditController.dispose();
+    _addressEditController.dispose();
     super.dispose();
+  }
+
+  // Helper method to get device group name
+  String _getDeviceGroupName() {
+    if (widget.device.deviceGroupId == 0) {
+      return 'None';
+    }
+
+    final deviceGroup = _deviceGroups.firstWhere(
+      (group) => group.id == widget.device.deviceGroupId,
+      orElse: () => DeviceGroup(
+        id: 0,
+        name: 'Unknown',
+        description: '',
+        active: false,
+        devices: [],
+      ),
+    );
+    return deviceGroup.name;
+  }
+
+  // Start editing overview
+  void _startEditingOverview() {
+    setState(() {
+      _isEditingOverview = true;
+    });
+    _loadDropdownDataForEdit();
+    _populateEditFields();
+  }
+
+  // Cancel editing overview
+  void _cancelEditingOverview() {
+    setState(() {
+      _isEditingOverview = false;
+      _savingOverview = false;
+    });
+    _clearEditFields();
+  }
+
+  // Populate edit fields with current device data
+  void _populateEditFields() {
+    _serialNumberEditController.text = widget.device.serialNumber;
+    _modelEditController.text = widget.device.model;
+    _addressEditController.text = widget.device.addressText;
+    _selectedDeviceTypeEdit = widget.device.deviceType.isNotEmpty
+        ? widget.device.deviceType
+        : 'None';
+    _selectedLinkStatusEdit = widget.device.linkStatus.isNotEmpty
+        ? widget.device.linkStatus
+        : 'None';
+    _selectedStatusEdit = widget.device.status.isNotEmpty
+        ? widget.device.status
+        : 'None';
+    _selectedDeviceGroupIdEdit = widget.device.deviceGroupId != 0
+        ? widget.device.deviceGroupId
+        : null;
+    _selectedAddressEdit = widget.device.address;
+  }
+
+  // Clear edit fields
+  void _clearEditFields() {
+    _serialNumberEditController.clear();
+    _modelEditController.clear();
+    _addressEditController.clear();
+    _selectedDeviceTypeEdit = 'None';
+    _selectedLinkStatusEdit = 'None';
+    _selectedStatusEdit = 'None';
+    _selectedDeviceGroupIdEdit = null;
+    _selectedAddressEdit = null;
+  }
+
+  // Load dropdown data for edit mode
+  Future<void> _loadDropdownDataForEdit() async {
+    setState(() {
+      _isLoadingDeviceGroups = true;
+    });
+
+    try {
+      // Load device groups
+      final deviceGroupsResponse = await _deviceService.getDeviceGroups(
+        limit: 100,
+        includeDevices: false,
+      );
+
+      if (deviceGroupsResponse.success) {
+        setState(() {
+          _deviceGroups = deviceGroupsResponse.data ?? [];
+        });
+      }
+    } catch (e) {
+      // Error loading dropdown data
+      print('Error loading dropdown data: $e');
+    } finally {
+      setState(() {
+        _isLoadingDeviceGroups = false;
+      });
+    }
+  }
+
+  // Save overview changes
+  Future<void> _saveOverviewChanges() async {
+    if (!_overviewFormKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _savingOverview = true;
+    });
+
+    try {
+      // Create updated device object with proper null safety
+      final updatedDevice = Device(
+        id: widget.device.id,
+        serialNumber: _serialNumberEditController.text.trim(),
+        name: widget.device.name,
+        model: _modelEditController.text.trim(),
+        deviceType: _selectedDeviceTypeEdit == 'None'
+            ? ''
+            : _selectedDeviceTypeEdit,
+        manufacturer: widget.device.manufacturer,
+        status: _selectedStatusEdit == 'None' ? 'None' : _selectedStatusEdit,
+        linkStatus: _selectedLinkStatusEdit == 'None'
+            ? 'None'
+            : _selectedLinkStatusEdit,
+        active: widget.device.active,
+        deviceGroupId: _selectedDeviceGroupIdEdit ?? 0,
+        addressId: widget.device.addressId,
+        addressText: _addressEditController.text.trim(),
+        address: _selectedAddressEdit,
+        deviceChannels:
+            [], //widget.device.deviceChannels, // Keep existing channels
+        deviceAttributes:
+            widget.device.deviceAttributes, // Keep existing attributes
+      );
+
+      // Save device
+      final response = await _deviceService.updateDevice(updatedDevice);
+
+      if (response.success) {
+        // If LinkStatus is not None, trigger link to HES
+        if (_selectedLinkStatusEdit != 'None' && response.data != null) {
+          try {
+            await _deviceService.linkDeviceToHES(response.data!.id ?? '');
+          } catch (e) {
+            // Error linking to HES - continue even if HES linking fails
+            print('Error linking to HES: $e');
+          }
+        }
+
+        if (mounted) {
+          AppToast.showSuccess(
+            context,
+            title: 'Device Updated',
+            message: 'Device information updated successfully',
+          );
+
+          // Exit edit mode and refresh data
+          setState(() {
+            _isEditingOverview = false;
+            _savingOverview = false;
+          });
+
+          // Refresh overview data
+          _overviewLoaded = false;
+          await _loadOverviewData();
+        }
+      } else {
+        if (mounted) {
+          AppToast.showError(
+            context,
+            title: 'Update Failed',
+            error: response.message ?? 'Unknown error occurred',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(
+          context,
+          title: 'Update Failed',
+          error: 'Error updating device: $e',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingOverview = false;
+        });
+      }
+    }
+  }
+
+  // Build dropdown field for edit mode
+  Widget _buildEditDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+    String? helpText,
+  }) {
+    // Ensure the value is in the items list
+    String safeValue = items.contains(value) ? value : items.first;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF374151),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: AppSizes.inputHeight,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: safeValue,
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  // Use post-frame callback to avoid setState during build
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      onChanged(newValue);
+                    }
+                  });
+                }
+              },
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              items: items.map((String item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(
+                    item,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        //  const SizedBox(height: 8),
+        if (helpText != null) ...[
+          const SizedBox(height: AppSizes.spacing8),
+
+          Positioned(
+            top: 40,
+            child:
+                // if (helpText != null) ...[
+                //     const SizedBox(height: AppSizes.spacing8),
+                Text(
+                  helpText,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Build device group dropdown for edit mode
+  Widget _buildDeviceGroupEditDropdown() {
+    // Create unique items map to avoid duplicates
+    final Map<int?, String> uniqueGroups = {};
+    uniqueGroups[null] = 'None';
+
+    for (final group in _deviceGroups) {
+      if (!uniqueGroups.containsKey(group.id)) {
+        uniqueGroups[group.id] = group.name;
+      }
+    }
+
+    // Ensure the selected value exists in the items
+    int? safeSelectedValue = _selectedDeviceGroupIdEdit;
+    if (safeSelectedValue != null &&
+        !uniqueGroups.containsKey(safeSelectedValue)) {
+      safeSelectedValue = null; // Reset to None if value doesn't exist
+    }
+
+    final List<DropdownMenuItem<int?>> menuItems = uniqueGroups.entries
+        .map(
+          (entry) => DropdownMenuItem<int?>(
+            value: entry.key,
+            child: Text(
+              entry.value,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF374151)),
+            ),
+          ),
+        )
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Device Group',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF374151),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: AppSizes.inputHeight,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int?>(
+              value: safeSelectedValue,
+              onChanged: _isLoadingDeviceGroups
+                  ? null
+                  : (int? value) {
+                      // Use post-frame callback to avoid setState during build
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _selectedDeviceGroupIdEdit = value;
+                          });
+                        }
+                      });
+                    },
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              hint: _isLoadingDeviceGroups
+                  ? const Text('Loading...')
+                  : const Text('Select Device Group'),
+              items: menuItems,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Open interactive map dialog
+  void _openMapDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => InteractiveMapDialog(
+        initialAddress: _selectedAddressEdit,
+        onLocationSelected: (address) {
+          setState(() {
+            _selectedAddressEdit = address;
+            _addressEditController.text = address.street ?? '';
+          });
+        },
+      ),
+    );
   }
 
   // Overview tab - Load basic device info and groups
@@ -130,7 +540,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     try {
       // Load device details
       final deviceDetailsResponse = await _deviceService.getDeviceById(
-        widget.device.id,
+        widget.device.id ?? '',
       );
 
       if (deviceDetailsResponse.success) {
@@ -165,7 +575,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       // Device channels are typically included in device details
       if (_deviceDetails == null) {
         final deviceDetailsResponse = await _deviceService.getDeviceById(
-          widget.device.id,
+          widget.device.id ?? '',
         );
         if (deviceDetailsResponse.success) {
           _deviceDetails = deviceDetailsResponse.data;
@@ -204,7 +614,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       );
 
       final metricsResponse = await _deviceService.getDeviceMetrics(
-        widget.device.id,
+        widget.device.id ?? '',
         startDate: _metricsStartDate.toIso8601String(),
         endDate: _metricsEndDate.toIso8601String(),
         limit: 100, // Get more data for pagination
@@ -259,7 +669,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       print('Loading billing data for device: ${widget.device.id}');
 
       final billingResponse = await _deviceService.getDeviceBilling(
-        widget.device.id,
+        widget.device.id ?? '',
       );
       print('Billing response: ${billingResponse.success}');
 
@@ -378,7 +788,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       children: [
         // Header section
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.spacing24,
+            vertical: AppSizes.spacing8,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             border: Border(
@@ -408,12 +821,51 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      'Serial: ${widget.device.serialNumber}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF64748b),
-                      ),
+                    // Text(
+                    //   'Serial: ${widget.device.serialNumber}',
+                    //   style: const TextStyle(
+                    //     fontSize: 16,
+                    //     color: Color(0xFF64748b),
+                    //   ),
+                    // ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      // crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // StatusChip.fromDeviceStatus(
+                        //   widget.device.status,
+                        //   compact: true,
+                        // ),
+
+                        // const SizedBox(width: 16),
+                        Expanded(
+                          flex: 0,
+                          child: _buildInfoRow(
+                            '',
+                            widget.device.status,
+                            icon: Icons.power_settings_new,
+                            showStatusChip: true,
+                            showLabel: false,
+                          ),
+                        ),
+                        SizedBox(width: AppSizes.spacing4),
+                        Expanded(
+                          flex: 0,
+                          child: _buildInfoRow(
+                            '',
+                            widget.device.linkStatus,
+                            icon: Icons.link,
+                            showStatusChip: true,
+                            showLabel: false,
+                          ),
+                        ),
+                        // Expanded(flex: 4, child: Container()),
+                        // StatusChip(
+                        //   text: 'Link: ${widget.device.linkStatus}',
+                        //   compact: true,
+                        //   type: StatusChipType.info,
+                        // ),
+                      ],
                     ),
                   ],
                 ),
@@ -525,6 +977,15 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       content: _buildLocationTab(),
                     ),
                   ],
+                  // selectedColor:
+                  //     Colors.blue, // Background color for selected tab
+                  // unselectedColor: Colors.grey.withOpacity(
+                  //   0.2,
+                  // ), // Background for unselected
+                  // selectedTextColor:
+                  //     Colors.white, // Text and icon color when selected
+                  // unselectedTextColor:
+                  //     Colors.grey, // Text and icon color when unselected
                 ),
         ),
       ],
@@ -644,7 +1105,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     );
 
     try {
-      final response = await _deviceService.pingDevice(widget.device.id);
+      final response = await _deviceService.pingDevice(widget.device.id ?? '');
 
       if (response.success && mounted) {
         AppToast.showSuccess(
@@ -672,7 +1133,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   Future<void> _linkToHES() async {
     try {
-      final response = await _deviceService.linkDeviceToHES(widget.device.id);
+      final response = await _deviceService.linkDeviceToHES(
+        widget.device.id ?? '',
+      );
 
       if (response.success && mounted) {
         AppToast.showSuccess(
@@ -713,7 +1176,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     if (confirmed == true) {
       try {
         final response = await _deviceService.commissionDevice(
-          widget.device.id,
+          widget.device.id ?? '',
         );
 
         if (response.success && mounted) {
@@ -764,92 +1227,255 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    return _isEditingOverview
+        ? _buildOverviewEditMode()
+        : _buildOverviewViewMode();
+  }
+
+  Widget _buildOverviewViewMode() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Device Status Card
+          // Header with Edit button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Device Overview',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1e293b),
+                ),
+              ),
+              AppButton(
+                text: 'Edit Device',
+                type: AppButtonType.outline,
+                size: AppButtonSize.small,
+                onPressed: _startEditingOverview,
+                icon: const Icon(Icons.edit, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // General Information Card
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Device Status',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1e293b),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Row(
                   children: [
-                    StatusChip.fromDeviceStatus(widget.device.status),
-                    const SizedBox(width: 16),
-                    StatusChip(
-                      text: 'Link: ${widget.device.linkStatus}',
-                      type: StatusChipType.info,
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'General Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1e293b),
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Device Information Card
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Device Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1e293b),
-                  ),
+                const SizedBox(height: 20),
+                _buildInfoRow(
+                  'Serial Number',
+                  widget.device.serialNumber,
+                  icon: Icons.qr_code,
                 ),
-                const SizedBox(height: 16),
-                _buildInfoRow('Serial Number', widget.device.serialNumber),
-                _buildInfoRow('Device Type', widget.device.deviceType),
-                _buildInfoRow('Model', widget.device.model),
-                _buildInfoRow('Manufacturer', widget.device.manufacturer),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  'Device Type',
+                  widget.device.deviceType.isEmpty
+                      ? 'Not specified'
+                      : widget.device.deviceType,
+                  icon: Icons.category,
+                ),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  'Model',
+                  widget.device.model.isEmpty
+                      ? 'Not specified'
+                      : widget.device.model,
+                  icon: Icons.memory,
+                ),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  'Manufacturer',
+                  widget.device.manufacturer.isEmpty
+                      ? 'Not specified'
+                      : widget.device.manufacturer,
+                  icon: Icons.business,
+                ),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  'Device Group',
+                  _getDeviceGroupName(),
+                  icon: Icons.group_work,
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
 
-          // Address Information Card
-          if (widget.device.address != null)
+          // Integration Information Card
+          // AppCard(
+          //   child: Column(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     children: [
+          //       Row(
+          //         children: [
+          //           Icon(
+          //             Icons.integration_instructions,
+          //             size: 20,
+          //             color: AppColors.primary,
+          //           ),
+          //           const SizedBox(width: 8),
+          //           const Text(
+          //             'Integration Information',
+          //             style: TextStyle(
+          //               fontSize: 18,
+          //               fontWeight: FontWeight.w600,
+          //               color: Color(0xFF1e293b),
+          //             ),
+          //           ),
+          //         ],
+          //       ),
+          //       const SizedBox(height: 20),
+          //       Row(
+          //         children: [
+          //           Expanded(
+          //             child: Column(
+          //               crossAxisAlignment: CrossAxisAlignment.start,
+          //               children: [
+          //                 _buildInfoRow(
+          //                   'Status',
+          //                   widget.device.status,
+          //                   icon: Icons.power_settings_new,
+          //                   showStatusChip: true,
+          //                 ),
+          //               ],
+          //             ),
+          //           ),
+          //           const SizedBox(width: 24),
+          //           Expanded(
+          //             child: Column(
+          //               crossAxisAlignment: CrossAxisAlignment.start,
+          //               children: [
+          //                 _buildInfoRow(
+          //                   'Link Status',
+          //                   widget.device.linkStatus,
+          //                   icon: Icons.link,
+          //                   showStatusChip: true,
+          //                 ),
+          //               ],
+          //             ),
+          //           ),
+          //         ],
+          //       ),
+          //     ],
+          //   ),
+          // ),
+          // const SizedBox(height: 24),
+
+          // Location Information Card
+          if (widget.device.address != null ||
+              widget.device.addressText.isNotEmpty)
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Address Information',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Location Information',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1e293b),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (widget.device.addressText.isNotEmpty)
+                    _buildInfoRow(
+                      'Address',
+                      widget.device.addressText,
+                      icon: Icons.home,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow(
-                    'Street',
-                    widget.device.address!.street ?? 'N/A',
-                  ),
-                  _buildInfoRow('City', widget.device.address!.city ?? 'N/A'),
-                  _buildInfoRow('State', widget.device.address!.state ?? 'N/A'),
-                  _buildInfoRow(
-                    'Postal Code',
-                    widget.device.address!.postalCode ?? 'N/A',
-                  ),
-                  _buildInfoRow(
-                    'Country',
-                    widget.device.address!.country ?? 'N/A',
-                  ),
+                  if (widget.device.address != null) ...[
+                    if (widget.device.addressText.isNotEmpty)
+                      const SizedBox(height: 12),
+                    _buildInfoRow(
+                      'Street',
+                      widget.device.address!.street ?? 'Not specified',
+                      icon: Icons.place,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoRow(
+                            'City',
+                            widget.device.address!.city ?? 'Not specified',
+                            icon: Icons.location_city,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildInfoRow(
+                            'State',
+                            widget.device.address!.state ?? 'Not specified',
+                            icon: Icons.map,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoRow(
+                            'Postal Code',
+                            widget.device.address!.postalCode ??
+                                'Not specified',
+                            icon: Icons.local_post_office,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildInfoRow(
+                            'Country',
+                            widget.device.address!.country ?? 'Not specified',
+                            icon: Icons.flag,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (widget.device.address!.latitude != null &&
+                        widget.device.address!.longitude != null) ...[
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Coordinates',
+                        '${widget.device.address!.latitude?.toStringAsFixed(6)}, ${widget.device.address!.longitude?.toStringAsFixed(6)}',
+                        icon: Icons.gps_fixed,
+                      ),
+                    ],
+                  ],
                 ],
               ),
             ),
@@ -862,30 +1488,79 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Device Attributes',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ..._deviceDetails!.deviceAttributes.map(
-                    (attribute) => Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.settings_outlined,
+                        size: 20,
+                        color: AppColors.primary,
                       ),
-                      child: _buildInfoRow(
-                        attribute.name.replaceAll('_', ' ').toUpperCase(),
-                        attribute.value,
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Device Attributes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1e293b),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
+                  const SizedBox(height: 20),
+                  ..._deviceDetails!.deviceAttributes.asMap().entries.map((
+                    entry,
+                  ) {
+                    final index = entry.key;
+                    final attribute = entry.value;
+                    return Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.label,
+                                size: 16,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  attribute.name
+                                      .replaceAll('_', ' ')
+                                      .toUpperCase(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF475569),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  attribute.value,
+                                  style: const TextStyle(
+                                    color: Color(0xFF64748b),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (index < _deviceDetails!.deviceAttributes.length - 1)
+                          const SizedBox(height: 8),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
@@ -894,6 +1569,631 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       ),
     );
   }
+
+  Widget _buildOverviewEditMode() {
+    return Scaffold(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+        child: Form(
+          key: _overviewFormKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              const Text(
+                'Edit Device Information',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1e293b),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // General Information Card
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'General Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1e293b),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppInputField(
+                            controller: _serialNumberEditController,
+                            label: 'Serial Number *',
+                            hintText: 'Enter device serial number',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Serial number is required';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: AppInputField(
+                            controller: _modelEditController,
+                            label: 'Model',
+                            hintText: 'Enter device model (optional)',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      //  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: _buildEditDropdownField(
+                            label: 'Device Type',
+                            value: _selectedDeviceTypeEdit,
+                            items: _deviceTypes,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedDeviceTypeEdit = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildDeviceGroupEditDropdown()),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Integration Information Card
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Integration Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1e293b),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildEditDropdownField(
+                            label: 'Status',
+                            value: _selectedStatusEdit,
+                            items: _statusOptions,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedStatusEdit = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildEditDropdownField(
+                            label: 'Link Status',
+                            value: _selectedLinkStatusEdit,
+                            items: _linkStatusOptions,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedLinkStatusEdit = value;
+                                });
+                              }
+                            },
+                            // helpText: _selectedLinkStatusEdit != 'None'
+                            //     ? 'Device will be linked to HES when saved'
+                            //     : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Location Information Card
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Location Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1e293b),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Address input with map icon
+                    AppInputField(
+                      controller: _addressEditController,
+                      label: 'Address',
+                      hintText:
+                          'Enter device address or click map icon to select',
+                      maxLines: 2,
+                      readOnly: true,
+                      onTap: _openMapDialog,
+                      suffixIcon: IconButton(
+                        onPressed: _openMapDialog,
+                        icon: const Icon(Icons.map, color: Color(0xFF2563eb)),
+                        tooltip: 'Open Map Selector',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Location coordinates display
+                    if (_selectedAddressEdit?.latitude != null &&
+                        _selectedAddressEdit?.longitude != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.pin_drop,
+                              color: Color(0xFF64748b),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Coordinates: ${_selectedAddressEdit!.latitude!.toStringAsFixed(6)}, ${_selectedAddressEdit!.longitude!.toStringAsFixed(6)}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // Device Attributes Card (if exists)
+              if (_deviceDetails?.deviceAttributes != null &&
+                  _deviceDetails!.deviceAttributes.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Device Attributes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1e293b),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Note: Device attributes are managed through the system configuration.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748b),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ..._deviceDetails!.deviceAttributes.map(
+                        (attribute) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  attribute.name
+                                      .replaceAll('_', ' ')
+                                      .toUpperCase(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  attribute.value,
+                                  style: const TextStyle(
+                                    color: Color(0xFF64748b),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            // crossAxisAlignment: CrossAxisAlignment.,
+            mainAxisAlignment: MainAxisAlignment.end,
+
+            children: [
+              SizedBox(
+                width: 100,
+                child: AppButton(
+                  size: AppButtonSize.small,
+                  text: 'Cancel',
+                  type: AppButtonType.outline,
+                  onPressed: _cancelEditingOverview,
+                  fullWidth: true,
+                ),
+              ),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 100,
+                child: AppButton(
+                  size: AppButtonSize.small,
+                  text: _savingOverview ? 'Saving...' : 'Save',
+                  type: AppButtonType.primary,
+                  onPressed: _savingOverview ? null : _saveOverviewChanges,
+                  icon: _savingOverview
+                      ? null
+                      : const Icon(Icons.save, size: 18),
+                  fullWidth: true,
+                  isLoading: _savingOverview,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Widget _buildOverviewEditMode() {
+  //   return Scaffold(
+  //     body: SingleChildScrollView(
+  //       padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+  //       child: Form(
+  //         key: _overviewFormKey,
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             // Header
+  //             const Text(
+  //               'Edit Device Information',
+  //               style: TextStyle(
+  //                 fontSize: 20,
+  //                 fontWeight: FontWeight.w600,
+  //                 color: Color(0xFF1e293b),
+  //               ),
+  //             ),
+  //             const SizedBox(height: 24),
+
+  //             // General Information Card
+  //             AppCard(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   const Text(
+  //                     'General Information',
+  //                     style: TextStyle(
+  //                       fontSize: 18,
+  //                       fontWeight: FontWeight.w600,
+  //                       color: Color(0xFF1e293b),
+  //                     ),
+  //                   ),
+
+  //                   const SizedBox(height: 24),
+  //                   AppInputField(
+  //                     controller: _serialNumberEditController,
+  //                     label: 'Serial Number *',
+  //                     hintText: 'Enter device serial number',
+  //                     validator: (value) {
+  //                       if (value == null || value.trim().isEmpty) {
+  //                         return 'Serial number is required';
+  //                       }
+  //                       return null;
+  //                     },
+  //                   ),
+
+  //                   const SizedBox(height: 16),
+  //                   AppInputField(
+  //                     controller: _modelEditController,
+  //                     label: 'Model',
+  //                     hintText: 'Enter device model (optional)',
+  //                   ),
+
+  //                   _buildEditDropdownField(
+  //                     label: 'Device Type',
+  //                     value: _selectedDeviceTypeEdit,
+  //                     items: _deviceTypes,
+  //                     onChanged: (value) {
+  //                       if (value != null) {
+  //                         setState(() {
+  //                           _selectedDeviceTypeEdit = value;
+  //                         });
+  //                       }
+  //                     },
+  //                   ),
+  //                   const SizedBox(height: 16),
+
+  //                   _buildDeviceGroupEditDropdown(),
+  //                 ],
+  //               ),
+  //             ),
+  //             const SizedBox(height: 24),
+
+  //             // Integration Information Card
+  //             AppCard(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   const Text(
+  //                     'Integration Information',
+  //                     style: TextStyle(
+  //                       fontSize: 18,
+  //                       fontWeight: FontWeight.w600,
+  //                       color: Color(0xFF1e293b),
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 24),
+
+  //                   Row(
+  //                     children: [
+  //                       Expanded(
+  //                         child: _buildEditDropdownField(
+  //                           label: 'Status',
+  //                           value: _selectedStatusEdit,
+  //                           items: _statusOptions,
+  //                           onChanged: (value) {
+  //                             if (value != null) {
+  //                               setState(() {
+  //                                 _selectedStatusEdit = value;
+  //                               });
+  //                             }
+  //                           },
+  //                         ),
+  //                       ),
+  //                       const SizedBox(width: 16),
+  //                       Expanded(
+  //                         child: _buildEditDropdownField(
+  //                           label: 'Link Status',
+  //                           value: _selectedLinkStatusEdit,
+  //                           items: _linkStatusOptions,
+  //                           onChanged: (value) {
+  //                             if (value != null) {
+  //                               setState(() {
+  //                                 _selectedLinkStatusEdit = value;
+  //                               });
+  //                             }
+  //                           },
+  //                           helpText: _selectedLinkStatusEdit != 'None'
+  //                               ? 'Device will be linked to HES when saved'
+  //                               : null,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             const SizedBox(height: 24),
+
+  //             // Location Information Card
+  //             AppCard(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   const Text(
+  //                     'Location Information',
+  //                     style: TextStyle(
+  //                       fontSize: 18,
+  //                       fontWeight: FontWeight.w600,
+  //                       color: Color(0xFF1e293b),
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 24),
+
+  //                   AppInputField(
+  //                     controller: _addressEditController,
+  //                     label: 'Address',
+  //                     hintText: 'Enter device address',
+  //                     maxLines: 2,
+  //                   ),
+  //                   const SizedBox(height: 16),
+
+  //                   // Map Location Picker
+  //                   Container(
+  //                     height: 300,
+  //                     decoration: BoxDecoration(
+  //                       borderRadius: BorderRadius.circular(8),
+  //                       border: Border.all(color: const Color(0xFFE2E8F0)),
+  //                     ),
+  //                     child: FlutterMapLocationPicker(
+  //                       initialAddress: _selectedAddressEdit,
+  //                       onLocationChanged: (lat, lng, address) {
+  //                         // Use post-frame callback to avoid setState during build
+  //                         WidgetsBinding.instance.addPostFrameCallback((_) {
+  //                           if (mounted) {
+  //                             setState(() {
+  //                               _selectedAddressEdit = Address(
+  //                                 id: _selectedAddressEdit?.id ?? '',
+  //                                 street: address,
+  //                                 city: '',
+  //                                 state: '',
+  //                                 postalCode: '',
+  //                                 country: '',
+  //                                 latitude: lat,
+  //                                 longitude: lng,
+  //                               );
+  //                             });
+  //                           }
+  //                         });
+  //                       },
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+
+  //             // Device Attributes Card (if exists)
+  //             if (_deviceDetails?.deviceAttributes != null &&
+  //                 _deviceDetails!.deviceAttributes.isNotEmpty) ...[
+  //               const SizedBox(height: 24),
+  //               AppCard(
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     const Text(
+  //                       'Device Attributes',
+  //                       style: TextStyle(
+  //                         fontSize: 18,
+  //                         fontWeight: FontWeight.w600,
+  //                         color: Color(0xFF1e293b),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 16),
+  //                     const Text(
+  //                       'Note: Device attributes are managed through the system configuration.',
+  //                       style: TextStyle(
+  //                         fontSize: 14,
+  //                         color: Color(0xFF64748b),
+  //                         fontStyle: FontStyle.italic,
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 12),
+  //                     ..._deviceDetails!.deviceAttributes.map(
+  //                       (attribute) => Container(
+  //                         margin: const EdgeInsets.only(bottom: 8),
+  //                         padding: const EdgeInsets.all(12),
+  //                         decoration: BoxDecoration(
+  //                           color: const Color(0xFFF8FAFC),
+  //                           borderRadius: BorderRadius.circular(8),
+  //                           border: Border.all(color: const Color(0xFFE2E8F0)),
+  //                         ),
+  //                         child: Row(
+  //                           children: [
+  //                             Expanded(
+  //                               child: Text(
+  //                                 attribute.name
+  //                                     .replaceAll('_', ' ')
+  //                                     .toUpperCase(),
+  //                                 style: const TextStyle(
+  //                                   fontWeight: FontWeight.w500,
+  //                                   color: Color(0xFF475569),
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                             const SizedBox(width: 16),
+  //                             Expanded(
+  //                               child: Text(
+  //                                 attribute.value,
+  //                                 style: const TextStyle(
+  //                                   color: Color(0xFF64748b),
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ],
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //     bottomNavigationBar: Container(
+  //       padding: const EdgeInsets.all(24),
+  //       decoration: const BoxDecoration(
+  //         color: Colors.white,
+  //         border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Color(0x1A000000),
+  //             blurRadius: 8,
+  //             offset: Offset(0, -2),
+  //           ),
+  //         ],
+  //       ),
+  //       child: SafeArea(
+  //         child: Row(
+  //           children: [
+  //             Expanded(
+  //               child: AppButton(
+  //                 text: 'Cancel',
+  //                 type: AppButtonType.secondary,
+  //                 onPressed: _cancelEditingOverview,
+  //                 fullWidth: true,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 16),
+  //             Expanded(
+  //               child: AppButton(
+  //                 text: _savingOverview ? 'Saving...' : 'Save Changes',
+  //                 type: AppButtonType.primary,
+  //                 onPressed: _savingOverview ? null : _saveOverviewChanges,
+  //                 icon: _savingOverview
+  //                     ? null
+  //                     : const Icon(Icons.save, size: 18),
+  //                 fullWidth: true,
+  //                 isLoading: _savingOverview,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildChannelsTab() {
     if (_loadingChannels && !_channelsLoaded) {
@@ -1770,115 +3070,112 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Device Location',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (widget.device.address != null) ...[
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Address Details',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow(
-                    'Street',
-                    widget.device.address!.street ?? 'N/A',
-                  ),
-                  _buildInfoRow('City', widget.device.address!.city ?? 'N/A'),
-                  _buildInfoRow('State', widget.device.address!.state ?? 'N/A'),
-                  _buildInfoRow(
-                    'Postal Code',
-                    widget.device.address!.postalCode ?? 'N/A',
-                  ),
-                  _buildInfoRow(
-                    'Country',
-                    widget.device.address!.country ?? 'N/A',
-                  ),
-                  if (widget.device.address!.latitude != null &&
-                      widget.device.address!.longitude != null)
-                    _buildInfoRow(
-                      'Coordinates',
-                      '${widget.device.address!.latitude}, ${widget.device.address!.longitude}',
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Map View',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DeviceLocationMap(
-                    address: widget.device.address,
-                    readOnly: true,
-                  ),
-                ],
-              ),
-            ),
-          ] else
-            const AppCard(
-              child: Center(
-                child: Text(
-                  'No address information available for this device',
-                  style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
-                ),
-              ),
-            ),
-        ],
+      child: DeviceLocationViewer(
+        address: widget.device.address,
+        addressText: widget.device.addressText,
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    IconData? icon,
+    bool showStatusChip = false,
+    bool showLabel = true,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF64748b),
+          if (icon != null && showLabel) ...[
+            Icon(icon, size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 8),
+          ],
+          if (showLabel) ...[
+            SizedBox(
+              width: icon != null ? 100 : 120,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF64748b),
+                ),
               ),
             ),
-          ),
-          const Text(
-            ': ',
-            style: TextStyle(fontSize: 14, color: Color(0xFF64748b)),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF1e293b)),
+            const Text(
+              ': ',
+              style: TextStyle(fontSize: 14, color: Color(0xFF64748b)),
+            ),
+          ],
+          showStatusChip
+              ? _buildStatusDisplay(value)
+              : Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1e293b),
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusDisplay(String status) {
+    // if (status.isEmpty || status == 'None') {
+    //   return Container(
+    //     // 'None',
+    //     // style: TextStyle(
+    //     //   fontSize: 14,
+    //     //   color: Color(0xFF9CA3AF),
+    //     //   fontStyle: FontStyle.italic,
+    //     // ),
+    //   );
+    // }
+
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (status.toLowerCase()) {
+      case 'commissioned':
+        statusColor = AppColors.success;
+        statusIcon = Icons.check_circle;
+        break;
+      case 'decommissioned':
+        statusColor = AppColors.error;
+        statusIcon = Icons.cancel;
+        break;
+      case 'multidrive':
+      case 'e-power':
+        statusColor = AppColors.primary;
+        statusIcon = Icons.link;
+        break;
+      default:
+        statusColor = AppColors.warning;
+        statusIcon = Icons.info;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(statusIcon, size: 14, color: statusColor),
+          const SizedBox(width: 4),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: statusColor,
             ),
           ),
         ],

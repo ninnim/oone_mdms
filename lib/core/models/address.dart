@@ -1,5 +1,5 @@
 class Address {
-  final String id;
+  final String? id;
   final double? latitude;
   final double? longitude;
   final String shortText;
@@ -40,7 +40,7 @@ class Address {
 
   Map<String, dynamic> toJson() {
     return {
-      'Id': id,
+      //  'Id': id ?? '',
       'Latitute': latitude,
       'Longtitute': longitude,
       'ShortText': shortText,

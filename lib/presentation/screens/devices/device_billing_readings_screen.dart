@@ -63,7 +63,7 @@ class _DeviceBillingReadingsScreenState
           widget.billingRecord['EndTime'] ?? '2024-12-31T23:59:59.999+07';
 
       final response = await _deviceService.getDeviceBillingReadings(
-        widget.device.id,
+        widget.device.id ?? '',
         startTime: startTime,
         endTime: endTime,
       );

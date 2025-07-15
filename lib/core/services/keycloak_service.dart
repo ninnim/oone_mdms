@@ -192,44 +192,44 @@ class KeycloakService extends ChangeNotifier {
           identifier: _clientId,
           secret: _clientSecret,
         );
-        print('KeycloakService: OAuth client created');
+        //print('KeycloakService: OAuth client created');
 
         // Load user info
-        print('KeycloakService: Loading user info...');
+        // print('KeycloakService: Loading user info...');
         await _loadUserInfo();
-        print('KeycloakService: User info loaded');
+        //  print('KeycloakService: User info loaded');
 
         // Verify authentication state
-        print('KeycloakService: Final authentication state: $isAuthenticated');
+        //  print('KeycloakService: Final authentication state: $isAuthenticated');
 
         // Notify listeners that authentication state has changed
-        print('KeycloakService: Notifying listeners...');
+        // print('KeycloakService: Notifying listeners...');
         notifyListeners();
 
-        print('KeycloakService: handleCallback completed successfully');
+        // print('KeycloakService: handleCallback completed successfully');
 
         return true;
       }
 
-      print(
-        'KeycloakService: Token exchange failed with status: ${response.statusCode}',
-      );
+      // print(
+      //   'KeycloakService: Token exchange failed with status: ${response.statusCode}',
+      // );
       return false;
     } catch (e) {
-      print('KeycloakService: Callback handling error: $e');
+      //  print('KeycloakService: Callback handling error: $e');
       return false;
     }
   }
 
   Future<void> logout() async {
     try {
-      print('KeycloakService: Starting logout process...');
+      //print('KeycloakService: Starting logout process...');
 
       // If we have a refresh token, revoke it at Keycloak
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
       if (refreshToken != null) {
         try {
-          print('KeycloakService: Revoking refresh token...');
+          // print('KeycloakService: Revoking refresh token...');
           final dio = Dio();
           await dio.post(
             _logoutEndpoint,
@@ -242,7 +242,7 @@ class KeycloakService extends ChangeNotifier {
               headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             ),
           );
-          print('KeycloakService: Token revoked successfully');
+          //  print('KeycloakService: Token revoked successfully');
         } catch (e) {
           print('KeycloakService: Error revoking token: $e');
           // Continue with logout even if revocation fails
@@ -286,19 +286,19 @@ class KeycloakService extends ChangeNotifier {
 
   Future<void> _loadStoredTokens() async {
     try {
-      print('KeycloakService: Loading stored tokens...');
+      //  print('KeycloakService: Loading stored tokens...');
       _accessToken = await _secureStorage.read(key: _accessTokenKey);
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
 
-      print(
-        'KeycloakService: Access token loaded: ${_accessToken != null ? 'YES (${_accessToken!.substring(0, 20)}...)' : 'NO'}',
-      );
-      print(
-        'KeycloakService: Refresh token loaded: ${refreshToken != null ? 'YES' : 'NO'}',
-      );
+      // print(
+      //   'KeycloakService: Access token loaded: ${_accessToken != null ? 'YES (${_accessToken!.substring(0, 20)}...)' : 'NO'}',
+      // );
+      // print(
+      //   'KeycloakService: Refresh token loaded: ${refreshToken != null ? 'YES' : 'NO'}',
+      // );
 
       if (_accessToken != null && refreshToken != null) {
-        print('KeycloakService: Creating OAuth client with stored tokens');
+        // print('KeycloakService: Creating OAuth client with stored tokens');
         // Recreate OAuth client with stored tokens
         final credentials = oauth2.Credentials(
           _accessToken!,
@@ -312,12 +312,13 @@ class KeycloakService extends ChangeNotifier {
           secret: _clientSecret,
         );
 
-        print('KeycloakService: Checking if access token is expired...');
+       // print('KeycloakService: Checking if access token is expired...');
         // Check if access token is expired and refresh if needed
         if (_isTokenExpired(_accessToken!)) {
-          print('KeycloakService: Token expired, refreshing...');
+        ///  print('KeycloakService: Token expired, refreshing...');
           await _refreshTokens();
-        } else {
+        }
+         else {
           print('KeycloakService: Token is still valid');
         }
       } else {

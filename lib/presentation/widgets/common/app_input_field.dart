@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class AppInputField extends StatefulWidget {
@@ -110,27 +111,27 @@ class _AppInputFieldState extends State<AppInputField> {
                 ? colorScheme.surface
                 : colorScheme.surfaceContainerHighest,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              borderSide: BorderSide(color: colorScheme.outline),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              borderSide: BorderSide(color: colorScheme.outline),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               borderSide: BorderSide(color: colorScheme.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               borderSide: BorderSide(color: colorScheme.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               borderSide: BorderSide(color: colorScheme.error, width: 2),
             ),
             disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               borderSide: BorderSide(
                 color: colorScheme.outline.withOpacity(0.5),
               ),

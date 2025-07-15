@@ -122,7 +122,7 @@ class DeviceAttribute {
 }
 
 class Device {
-  final String id;
+  final String? id;
   final String serialNumber;
   final String name;
   final String deviceType;
@@ -139,7 +139,7 @@ class Device {
   final List<DeviceAttribute> deviceAttributes;
 
   Device({
-    required this.id,
+    this.id,
     required this.serialNumber,
     required this.name,
     required this.deviceType,

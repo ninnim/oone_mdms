@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../common/blunest_data_table.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -21,6 +22,8 @@ class BillingTableColumns {
           final index = billingRecords?.indexOf(record) ?? 0;
           final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
           return Container(
+            alignment: Alignment.centerLeft,
+            height: AppSizes.spacing40,
             child: Text(
               '$rowNumber',
               style: const TextStyle(
@@ -46,6 +49,7 @@ class BillingTableColumns {
               DateTime.tryParse(record['EndTime'] ?? '') ?? DateTime.now();
 
           return Container(
+            height: AppSizes.spacing40,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               '${DateFormat('MMM d, y').format(startTime)} - ${DateFormat('MMM d, y').format(endTime)}',
@@ -70,6 +74,7 @@ class BillingTableColumns {
           final touName = timeOfUse['Code'] ?? 'N/A';
 
           return Container(
+            height: AppSizes.spacing40,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -101,6 +106,7 @@ class BillingTableColumns {
               DateTime.tryParse(record['StartTime'] ?? '') ?? DateTime.now();
 
           return Container(
+            height: AppSizes.spacing40,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               DateFormat('MMM d, y HH:mm').format(startTime),
@@ -125,6 +131,7 @@ class BillingTableColumns {
               DateTime.tryParse(record['EndTime'] ?? '') ?? DateTime.now();
 
           return Container(
+            height: AppSizes.spacing40,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               DateFormat('MMM d, y HH:mm').format(endTime),
@@ -161,6 +168,7 @@ class BillingTableColumns {
           }
 
           return Container(
+            height: AppSizes.spacing40,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               durationText,
@@ -182,11 +190,13 @@ class BillingTableColumns {
         sortable: false,
         builder: (record) {
           return Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            alignment: Alignment.center,
+            height: AppSizes.spacing40,
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Center(
               child: IconButton(
                 onPressed: () => onRowTapped?.call(record),
-                icon: const Icon(Icons.visibility, size: 20),
+                icon: const Icon(Icons.visibility, size: 16),
                 tooltip: 'View Billing Readings',
                 style: IconButton.styleFrom(
                   foregroundColor: AppColors.primary,

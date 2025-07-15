@@ -536,7 +536,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                           title: Text(
                             device.serialNumber.isNotEmpty
                                 ? device.serialNumber
-                                : 'Device-${device.id.substring(0, 6)}',
+                                : 'Device-${device.id?.substring(0, 6)}',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -635,7 +635,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                   child: Text(
                     _selectedDevice!.serialNumber.isNotEmpty
                         ? _selectedDevice!.serialNumber
-                        : 'Device ${_selectedDevice!.id.substring(0, 6)}',
+                        : 'Device ${_selectedDevice!.id?.substring(0, 6)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -657,7 +657,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
               type: _getStatusChipType(_selectedDevice!.status),
               text: _selectedDevice!.status.isNotEmpty
                   ? _selectedDevice!.status
-                  : 'Unknown',
+                  : 'None',
             ),
             const SizedBox(height: 12),
             ElevatedButton(

@@ -172,8 +172,10 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
         model: _modelController.text.trim(),
         deviceType: _selectedDeviceType == 'None' ? '' : _selectedDeviceType,
         manufacturer: widget.device?.manufacturer ?? '',
-        status: _selectedStatus == 'None' ? '' : _selectedStatus,
-        linkStatus: _selectedLinkStatus == 'None' ? '' : _selectedLinkStatus,
+        status: _selectedStatus == 'None' ? 'None' : _selectedStatus,
+        linkStatus: _selectedLinkStatus == 'None'
+            ? 'None'
+            : _selectedLinkStatus,
         active: true,
         deviceGroupId: _selectedDeviceGroupId ?? 0,
         addressId: widget.device?.addressId ?? '',
@@ -192,7 +194,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
         // If LinkStatus is not None, trigger link to HES
         if (_selectedLinkStatus != 'None' && response.data != null) {
           try {
-            await _deviceService.linkDeviceToHES(response.data!.id);
+            await _deviceService.linkDeviceToHES(response.data!.id ?? '');
           } catch (e) {
             // Error linking to HES - continue even if HES linking fails
           }

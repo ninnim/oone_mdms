@@ -643,8 +643,6 @@ Method DELETE https://mdms.oone.bz/api/rest/Device/Id=5448bbe9-19b0-40c4-a01e-f0
 
 // Search Map String Text
 GET https://mdms.oone.bz/esb/googleapi?input=sen sok
-// Search Map Lat Long
-GET https://maps.googleapis.com/maps/api/geocode/json?latlng=11.334 , 11.30&key=AIzaSyDdSCVC4a0YlAULbIVpN7XGGMEufochffw
 
 // Get that location
 GET https://mdms.oone.bz/esb/googleapi/detail?place_id=ChIJ61Mo_XhNCTER6sSuFVQSNVg

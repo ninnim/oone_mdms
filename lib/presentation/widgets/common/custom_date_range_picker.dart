@@ -490,7 +490,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
               elevation: 0,
             ),
             child: const Text(
-              'Applys',
+              'Apply',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),

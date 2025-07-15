@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/advanced_filters.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -85,33 +87,40 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
         children: [
           // Search field
           Expanded(
-            flex: 3,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search devices...',
-                prefixIcon: const Icon(Icons.search, size: AppSizes.iconMedium),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  borderSide: const BorderSide(color: AppColors.border),
+            flex: 2,
+            child: Container(
+              height: AppSizes.buttonHeight,
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search devices...',
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: AppSizes.iconMedium,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    borderSide: const BorderSide(color: AppColors.primary),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing16,
+                    vertical: AppSizes.spacing12,
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  borderSide: const BorderSide(color: AppColors.primary),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing16,
-                  vertical: AppSizes.spacing12,
-                ),
+                onChanged: widget.onSearchChanged,
               ),
-              onChanged: widget.onSearchChanged,
             ),
           ),
 
+          Expanded(flex: 2, child: Container()),
           const SizedBox(width: AppSizes.spacing16),
 
           // View mode selector
@@ -164,24 +173,24 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
               ),
 
               // Column settings (only for table view)
-              if (widget.currentViewMode == DeviceViewMode.table)
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _showColumnSettings = !_showColumnSettings;
-                      if (_showColumnSettings) _showFilters = false;
-                    });
-                  },
-                  icon: Icon(
-                    _showColumnSettings
-                        ? Icons.view_column
-                        : Icons.view_column_outlined,
-                    color: _showColumnSettings
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                  tooltip: 'Show/Hide Columns',
-                ),
+              // if (widget.currentViewMode == DeviceViewMode.table)
+              //   IconButton(
+              //     onPressed: () {
+              //       setState(() {
+              //         _showColumnSettings = !_showColumnSettings;
+              //         if (_showColumnSettings) _showFilters = false;
+              //       });
+              //     },
+              //     icon: Icon(
+              //       _showColumnSettings
+              //           ? Icons.view_column
+              //           : Icons.view_column_outlined,
+              //       color: _showColumnSettings
+              //           ? AppColors.primary
+              //           : AppColors.textSecondary,
+              //     ),
+              //     tooltip: 'Show/Hide Columns',
+              //   ),
 
               // Refresh
               IconButton(
@@ -212,19 +221,27 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
               const SizedBox(width: AppSizes.spacing8),
 
               // Add device button
-              ElevatedButton.icon(
+              AppButton(
                 onPressed: widget.onAddDevice,
-                icon: const Icon(Icons.add, size: AppSizes.iconSmall),
-                label: const Text('Add Device'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.surface,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing16,
-                    vertical: AppSizes.spacing12,
-                  ),
-                ),
+                text: 'Add Device',
+                icon: Icon(Icons.add, size: AppSizes.iconSmall),
+                size: AppButtonSize.small,
+                type: AppButtonType.primary,
               ),
+              // ElevatedButton.icon(
+
+              //   onPressed: widget.onAddDevice,
+              //   icon: const Icon(Icons.add, size: AppSizes.iconSmall),
+              //   label: const Text('Add Device'),
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: AppColors.primary,
+              //     foregroundColor: AppColors.surface,
+              //     padding: const EdgeInsets.symmetric(
+              //       horizontal: AppSizes.spacing16,
+              //      // vertical: AppSizes.spacing12,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ],

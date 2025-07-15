@@ -42,6 +42,7 @@ class AppSizes {
   static const double sidebarWidth = 250.0;
   static const double sidebarCollapsedWidth = 80.0;
   static const double appBarHeight = 64.0;
+  static const double appBarHeightWithRoute = 56.0;
   static const double buttonHeight = 44.0;
   static const double inputHeight = 48.0;
   static const double cardMinHeight = 120.0;

@@ -1798,9 +1798,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     final currentLocation = GoRouterState.of(context).uri.toString();
 
     return Container(
+      //   height: AppSizes.appBarHeightWithRoute,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing24,
-        vertical: AppSizes.spacing16,
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -1831,7 +1832,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               Text(
                 _getPageTitle(currentLocation),
                 style: const TextStyle(
-                  fontSize: AppSizes.fontSizeXXLarge,
+                  fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF1e293b),
                 ),
@@ -1956,8 +1957,13 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           ),
           // Breadcrumb navigation row
           if (_shouldShowBreadcrumbs(currentLocation)) ...[
-            const SizedBox(height: 12),
-            const BreadcrumbNavigation(),
+            // const SizedBox(height: AppSizes.spacing12),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing8,
+              ),
+              child: const BreadcrumbNavigation(),
+            ),
           ],
         ],
       ),

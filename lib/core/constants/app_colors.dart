@@ -44,6 +44,7 @@ class AppColors {
   static const Color vacant = error;
   static const Color occupied = primary;
   static const Color construction = secondary;
+  
 
   // Additional colors for tickets and components
   static const Color onPrimary = Color(0xFFffffff);
