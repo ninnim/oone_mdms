@@ -517,7 +517,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     if (confirmed == true && mounted) {
       try {
         // TODO: Implement actual delete functionality
-        // await _deviceService.deleteDevice(device.id);
+        await _deviceService.deleteDevice(device.id.toString());
 
         // Show success toast
         AppToast.showSuccess(
