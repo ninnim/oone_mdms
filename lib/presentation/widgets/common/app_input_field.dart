@@ -88,69 +88,76 @@ class _AppInputFieldState extends State<AppInputField> {
           ),
           const SizedBox(height: AppSizes.spacing8),
         ],
-        TextFormField(
-          controller: widget.controller,
-          focusNode: _focusNode,
-          validator: widget.validator,
-          onChanged: widget.onChanged,
-          onTap: widget.onTap,
-          obscureText: widget.obscureText,
-          readOnly: widget.readOnly,
-          enabled: widget.enabled,
-          keyboardType: widget.keyboardType,
-          maxLines: widget.maxLines,
-          minLines: widget.minLines,
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            helperText: widget.helperText,
-            errorText: widget.errorText,
-            prefixIcon: widget.prefixIcon,
-            suffixIcon: widget.suffixIcon,
-            filled: true,
-            fillColor: widget.enabled
-                ? colorScheme.surface
-                : colorScheme.surfaceContainerHighest,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-              borderSide: BorderSide(color: AppColors.border),
+        SizedBox(
+          height: AppSizes.inputHeight,
+          child: TextFormField(
+            controller: widget.controller,
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: colorScheme.onSurface,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-              borderSide: BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-              borderSide: BorderSide(color: colorScheme.primary, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-              borderSide: BorderSide(color: colorScheme.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-              borderSide: BorderSide(color: colorScheme.error, width: 2),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-              borderSide: BorderSide(
-                color: colorScheme.outline.withOpacity(0.5),
+            focusNode: _focusNode,
+            validator: widget.validator,
+            onChanged: widget.onChanged,
+            onTap: widget.onTap,
+            obscureText: widget.obscureText,
+            readOnly: widget.readOnly,
+            enabled: widget.enabled,
+            keyboardType: widget.keyboardType,
+            maxLines: widget.maxLines,
+            minLines: widget.minLines,
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              helperText: widget.helperText,
+              errorText: widget.errorText,
+              prefixIcon: widget.prefixIcon,
+              suffixIcon: widget.suffixIcon,
+              filled: true,
+              fillColor: widget.enabled
+                  ? colorScheme.surface
+                  : colorScheme.surfaceContainerHighest,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                borderSide: BorderSide(color: AppColors.border),
               ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing16,
-              vertical: AppSizes.spacing12,
-            ),
-            hintStyle: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: AppSizes.fontSizeMedium,
-            ),
-            helperStyle: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: AppSizes.fontSizeSmall,
-            ),
-            errorStyle: TextStyle(
-              color: colorScheme.error,
-              fontSize: AppSizes.fontSizeSmall,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                borderSide: BorderSide(color: colorScheme.error),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                borderSide: BorderSide(color: colorScheme.error, width: 2),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withOpacity(0.5),
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing16,
+                vertical: AppSizes.spacing12,
+              ),
+              hintStyle: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: AppSizes.fontSizeMedium,
+              ),
+              helperStyle: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: AppSizes.fontSizeSmall,
+              ),
+              errorStyle: TextStyle(
+                color: colorScheme.error,
+                fontSize: AppSizes.fontSizeSmall,
+              ),
             ),
           ),
         ),
@@ -254,7 +261,7 @@ class AppDropdownField<T> extends StatelessWidget {
             ),
             hintStyle: TextStyle(
               color: colorScheme.onSurfaceVariant,
-              fontSize: AppSizes.fontSizeMedium,
+              fontSize: AppSizes.fontSizeSmall,
             ),
           ),
         ),

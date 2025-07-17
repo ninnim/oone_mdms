@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../../../core/models/address.dart';
 import '../../../core/constants/app_colors.dart';
 import '../common/app_card.dart';
@@ -101,12 +102,16 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.location_on, color: AppColors.primary, size: 24),
+                  Icon(
+                    Icons.location_on,
+                    color: AppColors.primary,
+                    size: AppSizes.iconMedium,
+                  ),
                   const SizedBox(width: 12),
                   const Text(
                     'Device Location',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: AppSizes.fontSizeMedium,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF1e293b),
                     ),
@@ -130,14 +135,14 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
                       children: [
                         Icon(
                           Icons.place,
-                          size: 18,
+                          size: AppSizes.iconMedium,
                           color: AppColors.textSecondary,
                         ),
                         const SizedBox(width: 8),
                         const Text(
                           'Address:',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppSizes.fontSizeMedium,
                             fontWeight: FontWeight.w500,
                             color: Color(0xFF64748b),
                           ),
@@ -148,7 +153,7 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
                     Text(
                       _locationText,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppSizes.fontSizeMedium,
                         color: _hasValidLocation
                             ? const Color(0xFF374151)
                             : const Color(0xFF9CA3AF),
@@ -163,14 +168,14 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
                       children: [
                         Icon(
                           Icons.my_location,
-                          size: 18,
+                          size: AppSizes.iconMedium,
                           color: AppColors.textSecondary,
                         ),
                         const SizedBox(width: 8),
                         const Text(
                           'Coordinates:',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppSizes.fontSizeMedium,
                             fontWeight: FontWeight.w500,
                             color: Color(0xFF64748b),
                           ),
@@ -181,7 +186,7 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
                     Text(
                       _coordinatesText,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppSizes.fontSizeMedium,
                         color: _hasValidLocation
                             ? const Color(0xFF374151)
                             : const Color(0xFF9CA3AF),
@@ -198,7 +203,7 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
         // Map View
         AppCard(
@@ -207,12 +212,16 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.map, color: AppColors.primary, size: 20),
+                  Icon(
+                    Icons.map,
+                    color: AppColors.primary,
+                    size: AppSizes.iconMedium,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     'Map View',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppSizes.fontSizeMedium,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF1e293b),
                     ),
@@ -223,9 +232,9 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
 
               // Map Container
               Container(
-                height: 400,
+                height: 300,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                   boxShadow: [
                     BoxShadow(

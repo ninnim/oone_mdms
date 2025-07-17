@@ -24,7 +24,6 @@ class DeviceTableColumns {
           final index = devices?.indexOf(device) ?? 0;
           final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
           return Container(
-            height: AppSizes.spacing40,
             alignment: Alignment.centerLeft,
             child: Text(
               '$rowNumber',
@@ -45,8 +44,7 @@ class DeviceTableColumns {
         flex: 2,
         sortable: true,
         builder: (device) => Container(
-          height: AppSizes.spacing40,
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          alignment: Alignment.centerLeft,
           child: Text(
             device.serialNumber.isNotEmpty ? device.serialNumber : 'N/A',
             style: const TextStyle(
@@ -66,8 +64,7 @@ class DeviceTableColumns {
         flex: 2,
         sortable: true,
         builder: (device) => Container(
-          height: AppSizes.spacing40,
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          alignment: Alignment.centerLeft,
           child: Text(
             device.model.isNotEmpty ? device.model : 'N/A',
             style: const TextStyle(
@@ -85,8 +82,7 @@ class DeviceTableColumns {
         flex: 2,
         sortable: true,
         builder: (device) => Container(
-          height: AppSizes.spacing40,
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          alignment: Alignment.centerLeft,
           child: Text(
             device.manufacturer.isNotEmpty ? device.manufacturer : 'N/A',
             style: const TextStyle(fontSize: 13, color: Color(0xFF374151)),
@@ -100,43 +96,36 @@ class DeviceTableColumns {
         title: 'Device Type',
         flex: 2,
         sortable: true,
-        builder: (device) => Container(
-          height: AppSizes.spacing40,
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: device.deviceType == 'Smart Meter'
-                      ? Colors.blue.withOpacity(0.1)
-                      : Colors.grey.withOpacity(0.1),
-                ),
-                child: Icon(
-                  device.deviceType == 'Smart Meter'
-                      ? Icons.electrical_services
-                      : Icons.device_hub,
-                  size: 14,
-                  color: device.deviceType == 'Smart Meter'
-                      ? Colors.blue.shade600
-                      : Colors.grey.shade600,
-                ),
+        builder: (device) => Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: device.deviceType == 'Smart Meter'
+                    ? Colors.blue.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.1),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  device.deviceType.isNotEmpty ? device.deviceType : 'N/A',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF374151),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              child: Icon(
+                device.deviceType == 'Smart Meter'
+                    ? Icons.electrical_services
+                    : Icons.device_hub,
+                size: 14,
+                color: device.deviceType == 'Smart Meter'
+                    ? Colors.blue.shade600
+                    : Colors.grey.shade600,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                device.deviceType.isNotEmpty ? device.deviceType : 'N/A',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF374151)),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
 
@@ -149,7 +138,7 @@ class DeviceTableColumns {
 
         builder: (device) => Container(
           alignment: Alignment.centerLeft,
-          height: AppSizes.spacing40,
+          //height: AppSizes.spacing40,
           child: _buildStatusChip(device.status),
         ),
       ),
@@ -162,7 +151,7 @@ class DeviceTableColumns {
         sortable: true,
         builder: (device) => Container(
           alignment: Alignment.centerLeft,
-          height: AppSizes.spacing40,
+          //  height: AppSizes.spacing40,
           child: _buildLinkStatusChip(device.linkStatus),
         ),
       ),
@@ -174,8 +163,8 @@ class DeviceTableColumns {
         flex: 3,
         sortable: true,
         builder: (device) => Container(
-          height: AppSizes.spacing40,
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          //height: AppSizes.spacing40,
+          //  padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: Row(
             children: [
               const Icon(Icons.location_on, size: 16, color: Color(0xFF6B7280)),
@@ -202,18 +191,20 @@ class DeviceTableColumns {
       BluNestTableColumn<Device>(
         key: 'actions',
         title: 'Actions',
+
         flex: 1,
         sortable: false,
         builder: (device) => Container(
+          alignment: Alignment.center,
           height: AppSizes.spacing40,
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing2),
+          //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: PopupMenuButton<String>(
             icon: const Icon(
               Icons.more_vert,
               color: Color(0xFF9CA3AF),
               size: 16,
             ),
-            elevation: 8,
+            //  elevation: 8,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),

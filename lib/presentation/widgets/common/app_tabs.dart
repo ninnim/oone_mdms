@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import 'package:flutter/animation.dart';
 
 // class AppTab {
 //   final String label;
@@ -355,13 +354,13 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
             ),
             indicatorColor: widget.indicatorColor ?? AppColors.primary,
             indicatorSize: widget.indicatorSize,
-            indicatorWeight: 3.0,
+            indicatorWeight: 1.0,
             indicator: BoxDecoration(
               color: Colors.transparent,
               border: Border(
                 bottom: BorderSide(
                   color: widget.indicatorColor ?? AppColors.primary,
-                  width: 3.0, // Adjusted to a reasonable width
+                  width: 1.0, // Adjusted to a reasonable width
                 ),
               ),
             ),
@@ -391,7 +390,8 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
                         IconTheme(
                           data: IconThemeData(
                             color: isSelected
-                                ? (widget.selectedTabColor ?? AppColors.primary)
+                                ? (widget.selectedTabColor ??
+                                      const Color.fromARGB(255, 192, 199, 213))
                                 : (widget.unselectedTabColor ??
                                       AppColors.textSecondary),
                           ),
@@ -399,7 +399,10 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
                         ),
                         SizedBox(width: AppSizes.spacing8),
                       ],
-                      Text(tab.label),
+                      Text(
+                        tab.label,
+                        //  style: TextStyle(fontSize: AppSizes.fontSizeSmall),
+                      ),
                     ],
                   ),
                 ),
@@ -647,7 +650,8 @@ class _AppPillTabsState extends State<AppPillTabs>
     return Column(
       children: [
         Container(
-          height: 50,
+          // alignment: Alignment.center,
+          height: 45,
           padding: EdgeInsets.all(AppSizes.spacing4),
           decoration: BoxDecoration(
             color: AppColors.surfaceVariant,
@@ -666,21 +670,28 @@ class _AppPillTabsState extends State<AppPillTabs>
                     builder: (context, child) {
                       return Positioned(
                         left: _slideAnimation.value.dx * containerWidth,
-                        width: tabWidth, // Adjusted to match tab button width
-                        child: Container(
-                          height: 42, // Slightly less for padding effect
-                          decoration: BoxDecoration(
-                            color: widget.selectedColor ?? AppColors.primary,
-                            borderRadius: BorderRadius.circular(
-                              AppSizes.radiusMedium,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                        width: tabWidth,
+
+                        // Adjusted to match tab button width
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.spacing32,
+                          ),
+                          child: Container(
+                            height: 35, // Slightly less for padding effect
+                            decoration: BoxDecoration(
+                              color: widget.selectedColor ?? AppColors.primary,
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusLarge,
                               ),
-                            ],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: AppSizes.radiusLarge,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -695,11 +706,11 @@ class _AppPillTabsState extends State<AppPillTabs>
 
                       return Container(
                         width: tabWidth, // Match the active tab width
-                        height: 50,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSizes.spacing16,
-                          vertical: AppSizes.spacing12,
-                        ),
+                        height: 35,
+                        // padding: EdgeInsets.symmetric(
+                        //   horizontal: AppSizes.spacing8,
+                        //   vertical: AppSizes.spacing8,
+                        // ),
                         child: GestureDetector(
                           onTap: () => _animateToTab(index),
                           child: Row(
@@ -708,6 +719,7 @@ class _AppPillTabsState extends State<AppPillTabs>
                               if (tab.icon != null) ...[
                                 IconTheme(
                                   data: IconThemeData(
+                                    size: AppSizes.iconMedium,
                                     color: isSelected
                                         ? (widget.selectedTextColor ??
                                               AppColors.onPrimary)
@@ -721,7 +733,7 @@ class _AppPillTabsState extends State<AppPillTabs>
                               Text(
                                 tab.label,
                                 style: TextStyle(
-                                  fontSize: AppSizes.fontSizeMedium,
+                                  fontSize: AppSizes.fontSizeSmall,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
                                       ? (widget.selectedTextColor ??

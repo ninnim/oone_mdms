@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
@@ -9,7 +11,8 @@ import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_toast.dart';
-import '../../widgets/devices/flutter_map_location_picker.dart';
+import '../../widgets/common/app_dropdown_field.dart';
+import '../../widgets/devices/interactive_map_dialog.dart';
 
 class CreateEditDeviceDialog extends StatefulWidget {
   final Device? device;
@@ -21,9 +24,7 @@ class CreateEditDeviceDialog extends StatefulWidget {
   State<CreateEditDeviceDialog> createState() => _CreateEditDeviceDialogState();
 }
 
-class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
   final _formKey = GlobalKey<FormState>();
   late DeviceService _deviceService;
   late ScheduleService _scheduleService;
@@ -32,6 +33,19 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
   bool _isSaving = false;
   bool _isLoadingDeviceGroups = false;
   bool _isLoadingSchedules = false;
+  bool _deviceGroupsLoaded = false;
+  bool _schedulesLoaded = false;
+
+  // Pagination states
+  int _deviceGroupsPage = 1;
+  int _deviceGroupsLimit = 10;
+  bool _hasMoreDeviceGroups = true;
+  String _deviceGroupSearchQuery = '';
+
+  int _schedulesPage = 1;
+  int _schedulesLimit = 10;
+  bool _hasMoreSchedules = true;
+  String _scheduleSearchQuery = '';
 
   // Form controllers
   final TextEditingController _serialNumberController = TextEditingController();
@@ -68,7 +82,6 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
 
     // Use ServiceLocator to get properly configured API service
     final serviceLocator = ServiceLocator();
@@ -80,12 +93,13 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
       _populateFields();
     }
 
-    _loadDropdownData();
+    // Load dropdown data immediately to ensure proper display
+    _loadDeviceGroups();
+    _loadSchedules();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _serialNumberController.dispose();
     _modelController.dispose();
     _addressTextController.dispose();
@@ -117,40 +131,184 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
     }
   }
 
-  Future<void> _loadDropdownData() async {
+  Future<void> _loadDeviceGroups({
+    bool loadMore = false,
+    String? searchQuery,
+  }) async {
+    if (_isLoadingDeviceGroups) return;
+
+    // If loading more, but no more data available, return
+    if (loadMore && !_hasMoreDeviceGroups) return;
+
     setState(() {
       _isLoadingDeviceGroups = true;
-      _isLoadingSchedules = true;
+
+      // Reset for new search or first load
+      if (!loadMore) {
+        _deviceGroupsPage = 1;
+        _deviceGroups.clear();
+        _hasMoreDeviceGroups = true;
+      }
+
+      if (searchQuery != null) {
+        _deviceGroupSearchQuery = searchQuery;
+      }
     });
 
     try {
-      // Load device groups
+      if (kDebugMode) {
+        print(
+          'Loading device groups: page=$_deviceGroupsPage, loadMore=$loadMore, searchQuery=$searchQuery',
+        );
+        print('Current selected device group ID: $_selectedDeviceGroupId');
+      }
+
       final deviceGroupsResponse = await _deviceService.getDeviceGroups(
-        limit: 100,
+        limit: _deviceGroupsLimit,
+        offset: loadMore ? (_deviceGroupsPage - 1) * _deviceGroupsLimit : 0,
+        search: _deviceGroupSearchQuery.isNotEmpty
+            ? _deviceGroupSearchQuery
+            : '',
         includeDevices: false,
       );
 
-      if (deviceGroupsResponse.success) {
-        setState(() {
-          _deviceGroups = deviceGroupsResponse.data ?? [];
-        });
-      }
+      if (deviceGroupsResponse.success && mounted) {
+        final newGroups = deviceGroupsResponse.data ?? [];
 
-      // Load schedules
-      final schedulesResponse = await _scheduleService.getSchedules(limit: 100);
+        if (kDebugMode) {
+          print('Device groups loaded: ${newGroups.length} groups');
+          print(
+            'Total device groups: ${loadMore ? _deviceGroups.length + newGroups.length : newGroups.length}',
+          );
+          if (_selectedDeviceGroupId != null) {
+            final hasSelected = newGroups.any(
+              (g) => g.id == _selectedDeviceGroupId,
+            );
+            print(
+              'Selected device group $_selectedDeviceGroupId found in loaded groups: $hasSelected',
+            );
+          }
+        }
 
-      if (schedulesResponse.success) {
         setState(() {
-          _schedules = schedulesResponse.data ?? [];
+          if (loadMore) {
+            _deviceGroups.addAll(newGroups);
+          } else {
+            _deviceGroups = newGroups;
+          }
+
+          _deviceGroupsLoaded = true;
+          _hasMoreDeviceGroups = newGroups.length >= _deviceGroupsLimit;
+
+          if (loadMore) {
+            _deviceGroupsPage++;
+          }
+
+          // Validate selected device group still exists
+          if (_selectedDeviceGroupId != null) {
+            final uniqueGroups = _getUniqueDeviceGroups();
+            final groupExists = uniqueGroups.any(
+              (group) => group.id == _selectedDeviceGroupId,
+            );
+            if (!groupExists) {
+              if (kDebugMode) {
+                print(
+                  'Selected device group ID $_selectedDeviceGroupId not found in available groups, resetting to null',
+                );
+              }
+              _selectedDeviceGroupId = null;
+            }
+          }
         });
       }
     } catch (e) {
-      // Error loading dropdown data
+      if (kDebugMode) {
+        print('Error loading device groups: $e');
+      }
     } finally {
-      setState(() {
-        _isLoadingDeviceGroups = false;
-        _isLoadingSchedules = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingDeviceGroups = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadSchedules({
+    bool loadMore = false,
+    String? searchQuery,
+  }) async {
+    if (_isLoadingSchedules) return;
+
+    // If loading more, but no more data available, return
+    if (loadMore && !_hasMoreSchedules) return;
+
+    setState(() {
+      _isLoadingSchedules = true;
+
+      // Reset for new search or first load
+      if (!loadMore) {
+        _schedulesPage = 1;
+        _schedules.clear();
+        _hasMoreSchedules = true;
+      }
+
+      if (searchQuery != null) {
+        _scheduleSearchQuery = searchQuery;
+      }
+    });
+
+    try {
+      final schedulesResponse = await _scheduleService.getSchedules(
+        limit: _schedulesLimit,
+        offset: loadMore ? (_schedulesPage - 1) * _schedulesLimit : 0,
+        search: _scheduleSearchQuery.isNotEmpty ? _scheduleSearchQuery : '',
+      );
+
+      if (schedulesResponse.success && mounted) {
+        final newSchedules = schedulesResponse.data ?? [];
+
+        setState(() {
+          if (loadMore) {
+            _schedules.addAll(newSchedules);
+          } else {
+            _schedules = newSchedules;
+          }
+
+          _schedulesLoaded = true;
+          _hasMoreSchedules = newSchedules.length >= _schedulesLimit;
+
+          if (loadMore) {
+            _schedulesPage++;
+          }
+
+          // Validate selected schedule still exists
+          if (_selectedScheduleId != null) {
+            final uniqueSchedules = _getUniqueSchedules();
+            final scheduleExists = uniqueSchedules.any(
+              (schedule) => schedule['id'] == _selectedScheduleId,
+            );
+            if (!scheduleExists) {
+              if (kDebugMode) {
+                print(
+                  'Selected schedule ID $_selectedScheduleId not found in available schedules, resetting to null',
+                );
+              }
+              _selectedScheduleId = null;
+            }
+          }
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading schedules: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingSchedules = false;
+        });
+      }
     }
   }
 
@@ -177,11 +335,11 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
             ? 'None'
             : _selectedLinkStatus,
         active: true,
-        deviceGroupId: _selectedDeviceGroupId ?? 0,
+        deviceGroupId: _selectedDeviceGroupId ?? 0, // 0 means "None"
         addressId: widget.device?.addressId ?? '',
         addressText: _addressTextController.text.trim(),
         address: _selectedAddress,
-        deviceChannels: widget.device?.deviceChannels ?? [],
+        deviceChannels: [], // Keep empty as requested
         deviceAttributes: widget.device?.deviceAttributes ?? [],
       );
 
@@ -241,8 +399,8 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SizedBox(
-        width: 900,
-        height: 700,
+        width: MediaQuery.of(context).size.width * 0.9,
+        height: MediaQuery.of(context).size.width * 0.8,
         child: Column(
           children: [
             // Header
@@ -281,35 +439,21 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
               ),
             ),
 
-            // Tabs
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-                ),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: const Color(0xFF2563eb),
-                unselectedLabelColor: const Color(0xFF64748b),
-                indicatorColor: const Color(0xFF2563eb),
-                tabs: const [
-                  Tab(icon: Icon(Icons.settings), text: 'General'),
-                  Tab(icon: Icon(Icons.location_on), text: 'Location'),
-                ],
-              ),
-            ),
-
             // Content
             Expanded(
               child: Container(
                 color: const Color(0xFFF8FAFC),
+                padding: const EdgeInsets.all(24),
                 child: Form(
                   key: _formKey,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [_buildGeneralTab(), _buildLocationTab()],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _buildGeneralInfoSection(),
+                        const SizedBox(height: 32),
+                        _buildLocationSection(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -329,17 +473,22 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
                 ),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: AppSizes.buttonWidth,
                     child: AppButton(
+                      size: AppButtonSize.small,
                       text: 'Cancel',
-                      type: AppButtonType.secondary,
+                      type: AppButtonType.outline,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
+                  SizedBox(
+                    width: AppSizes.buttonW,
                     child: AppButton(
+                      size: AppButtonSize.small,
                       text: _isSaving
                           ? 'Saving...'
                           : (widget.device == null
@@ -358,28 +507,26 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
     );
   }
 
-  Widget _buildGeneralTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+  Widget _buildGeneralInfoSection() {
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // General Info Section
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'General Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1e293b),
-                  ),
-                ),
-                const SizedBox(height: 24),
+          const Text(
+            'General Information',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1e293b),
+            ),
+          ),
+          const SizedBox(height: 24),
 
-                AppInputField(
+          // First row: Serial Number and Model (2 columns)
+          Row(
+            children: [
+              Expanded(
+                child: AppInputField(
                   controller: _serialNumberController,
                   label: 'Serial Number *',
                   hintText: 'Enter device serial number',
@@ -390,366 +537,356 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-
-                AppInputField(
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: AppInputField(
                   controller: _modelController,
                   label: 'Model',
                   hintText: 'Enter device model (optional)',
                 ),
-                const SizedBox(height: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
 
-                _buildDropdownField(
-                  label: 'Device Type',
-                  value: _selectedDeviceType,
-                  items: _deviceTypes,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedDeviceType = value!;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                _buildDeviceGroupDropdown(),
-                const SizedBox(height: 16),
-
-                _buildScheduleDropdown(),
-              ],
-            ),
+          // Second row: Device Type, Device Group, and Schedule (3 columns)
+          Row(
+            children: [
+              Expanded(child: _buildDeviceTypeDropdown()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildDeviceGroupDropdown()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildScheduleDropdown()),
+            ],
           ),
           const SizedBox(height: 24),
 
           // Integration HES Section
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Integration HES',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1e293b),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                _buildDropdownField(
-                  label: 'Link Status',
-                  value: _selectedLinkStatus,
-                  items: _linkStatusOptions,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedLinkStatus = value!;
-                    });
-                  },
-                  helpText: _selectedLinkStatus != 'None'
-                      ? 'Device will be linked to HES when saved'
-                      : null,
-                ),
-                const SizedBox(height: 16),
-
-                _buildDropdownField(
-                  label: 'Status',
-                  value: _selectedStatus,
-                  items: _statusOptions,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedStatus = value!;
-                    });
-                  },
-                ),
-              ],
+          const Text(
+            'Integration HES',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1e293b),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Link Status and Status in a row
+          Row(
+            children: [
+              Expanded(child: _buildLinkStatusDropdown()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatusDropdown()),
+            ],
+          ),
+          if (_selectedLinkStatus != 'None') ...[
+            const SizedBox(height: 4),
+            Text(
+              'Device will be linked to HES when saved',
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                color: Color(0xFF2563eb),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildLocationTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+  Widget _buildLocationSection() {
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Device Location',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1e293b),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Coordinates input
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppInputField(
-                        controller: _latitudeController,
-                        label: 'Latitude',
-                        hintText: 'Enter latitude',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        onChanged: (value) {
-                          _updateMapFromCoordinates();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: AppInputField(
-                        controller: _longitudeController,
-                        label: 'Longitude',
-                        hintText: 'Enter longitude',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        onChanged: (value) {
-                          _updateMapFromCoordinates();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Address text input
-                AppInputField(
-                  controller: _addressTextController,
-                  label: 'Address Text',
-                  hintText:
-                      'Address will be filled automatically when location is selected',
-                  maxLines: 2,
-                  readOnly: true,
-                ),
-                const SizedBox(height: 24),
-
-                // Flutter Map Location Picker
-                SizedBox(
-                  height: 500,
-                  child: FlutterMapLocationPicker(
-                    initialAddress: _selectedAddress,
-                    onLocationChanged: (lat, lng, address) {
-                      final newAddress = Address(
-                        latitude: lat,
-                        longitude: lng,
-                        longText: address,
-                        shortText: address,
-                      );
-                      _onMapLocationChanged(newAddress);
-                    },
-                  ),
-                ),
-              ],
+          const Text(
+            'Device Location',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1e293b),
             ),
           ),
+          const SizedBox(height: 24),
+
+          // Coordinates input
+          Row(
+            children: [
+              Expanded(
+                child: AppInputField(
+                  controller: _latitudeController,
+                  label: 'Latitude',
+                  hintText: 'Enter latitude',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onChanged: (value) {
+                    _updateMapFromCoordinates();
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: AppInputField(
+                  controller: _longitudeController,
+                  label: 'Longitude',
+                  hintText: 'Enter longitude',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onChanged: (value) {
+                    _updateMapFromCoordinates();
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Address text input with map dialog
+          AppInputField(
+            controller: _addressTextController,
+            label: 'Address',
+            hintText: 'Click map icon to select location',
+            maxLines: 2,
+            readOnly: true,
+            onTap: _openMapDialog,
+            suffixIcon: IconButton(
+              onPressed: _openMapDialog,
+              icon: const Icon(Icons.map, color: Color(0xFF2563eb)),
+              tooltip: 'Open Map Selector',
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Location coordinates display
+          if (_selectedAddress?.latitude != null &&
+              _selectedAddress?.longitude != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.pin_drop,
+                    color: Color(0xFF64748b),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Coordinates: ${_selectedAddress!.latitude!.toStringAsFixed(6)}, ${_selectedAddress!.longitude!.toStringAsFixed(6)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    String? helpText,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1e293b),
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: value,
-          items: items.map((item) {
-            return DropdownMenuItem(value: item, child: Text(item));
-          }).toList(),
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFFE1E5E9)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFFE1E5E9)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFF2563eb)),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 16,
-            ),
-          ),
-        ),
-        if (helpText != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            helpText,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF2563eb)),
-          ),
-        ],
-      ],
     );
   }
 
   Widget _buildDeviceGroupDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Device Group',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1e293b),
+    return AppSearchableDropdown<int>(
+      label: 'Device Group',
+      hintText: 'None',
+      value: _getSafeDeviceGroupValue(),
+      height: AppSizes.inputHeight,
+      items: [
+        const DropdownMenuItem<int>(
+          value: null,
+          child: Text(
+            'None',
+            style: TextStyle(fontSize: AppSizes.fontSizeSmall),
           ),
         ),
-        const SizedBox(height: 8),
-        _isLoadingDeviceGroups
-            ? Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFE1E5E9)),
-                  borderRadius: BorderRadius.circular(6),
-                  color: Colors.white,
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            : DropdownButtonFormField<int>(
-                value: _selectedDeviceGroupId,
-                items: [
-                  const DropdownMenuItem<int>(value: null, child: Text('None')),
-                  ..._deviceGroups.map((group) {
-                    return DropdownMenuItem<int>(
-                      value: group.id,
-                      child: Text(group.name),
-                    );
-                  }),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDeviceGroupId = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: Color(0xFFE1E5E9)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: Color(0xFFE1E5E9)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: Color(0xFF2563eb)),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 16,
-                  ),
-                ),
-              ),
+        ..._getUniqueDeviceGroups().map((group) {
+          if (kDebugMode) {
+            print('Device Group: ID=${group.id}, Name=${group.name}');
+          }
+          return DropdownMenuItem<int>(
+            value: group.id,
+            child: Text(
+              group.name,
+              style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            ),
+          );
+        }),
       ],
+      isLoading: _isLoadingDeviceGroups,
+      hasMore: _hasMoreDeviceGroups,
+      searchQuery: _deviceGroupSearchQuery,
+      onChanged: (value) {
+        setState(() {
+          _selectedDeviceGroupId = value;
+        });
+      },
+      onTap: () {
+        // Load device groups when dropdown is tapped
+        if (!_deviceGroupsLoaded && !_isLoadingDeviceGroups) {
+          _loadDeviceGroups();
+        }
+      },
+      onSearchChanged: (query) {
+        _loadDeviceGroups(searchQuery: query);
+      },
+      onLoadMore: () {
+        _loadDeviceGroups(loadMore: true);
+      },
     );
   }
 
   Widget _buildScheduleDropdown() {
+    return AppSearchableDropdown<int>(
+      label: 'Schedule',
+      hintText: 'None',
+      value: _getSafeScheduleValue(),
+      height: AppSizes.inputHeight,
+      items: [
+        const DropdownMenuItem<int>(
+          value: null,
+          child: Text(
+            'None',
+            style: TextStyle(fontSize: AppSizes.fontSizeSmall),
+          ),
+        ),
+        ..._getUniqueSchedules().map((schedule) {
+          return DropdownMenuItem<int>(
+            value: schedule['id'],
+            child: Text(
+              schedule['name'],
+              style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            ),
+          );
+        }),
+      ],
+      isLoading: _isLoadingSchedules,
+      hasMore: _hasMoreSchedules,
+      searchQuery: _scheduleSearchQuery,
+      onChanged: (value) {
+        setState(() {
+          _selectedScheduleId = value;
+        });
+      },
+      onTap: () {
+        // Load schedules when dropdown is tapped
+        if (!_schedulesLoaded && !_isLoadingSchedules) {
+          _loadSchedules();
+        }
+      },
+      onSearchChanged: (query) {
+        _loadSchedules(searchQuery: query);
+      },
+      onLoadMore: () {
+        _loadSchedules(loadMore: true);
+      },
+    );
+  }
+
+  Widget _buildDeviceTypeDropdown() {
+    return AppSearchableDropdown<String>(
+      label: 'Device Type',
+      hintText: 'None',
+      value: _selectedDeviceType,
+      height: AppSizes.inputHeight,
+      items: _deviceTypes.map((type) {
+        return DropdownMenuItem<String>(
+          value: type,
+          child: Text(
+            type,
+            style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        setState(() {
+          _selectedDeviceType = value ?? 'None';
+        });
+      },
+    );
+  }
+
+  Widget _buildLinkStatusDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Schedule',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1e293b),
-          ),
-        ),
-        const SizedBox(height: 8),
-        _isLoadingSchedules
-            ? Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFE1E5E9)),
-                  borderRadius: BorderRadius.circular(6),
-                  color: Colors.white,
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            : DropdownButtonFormField<int>(
-                value: _selectedScheduleId,
-                items: [
-                  const DropdownMenuItem<int>(value: null, child: Text('None')),
-                  ..._schedules.map((schedule) {
-                    return DropdownMenuItem<int>(
-                      value: schedule['id'],
-                      child: Text(schedule['name']),
-                    );
-                  }),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedScheduleId = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: Color(0xFFE1E5E9)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: Color(0xFFE1E5E9)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: Color(0xFF2563eb)),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 16,
-                  ),
-                ),
+        AppSearchableDropdown<String>(
+          label: 'Link Status',
+          hintText: 'None',
+          value: _selectedLinkStatus,
+          height: AppSizes.inputHeight,
+          items: _linkStatusOptions.map((status) {
+            return DropdownMenuItem<String>(
+              value: status,
+              child: Text(
+                status,
+                style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
               ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedLinkStatus = value ?? 'None';
+            });
+          },
+        ),
+        // if (_selectedLinkStatus != 'None') ...[
+        //   const SizedBox(height: 4),
+        //   Text(
+        //     'Device will be linked to HES when saved',
+        //     style: const TextStyle(
+        //       fontSize: AppSizes.fontSizeSmall,
+        //       color: Color(0xFF2563eb),
+        //     ),
+        //   ),
+        // ],
+      ],
+    );
+  }
+
+  Widget _buildStatusDropdown() {
+    return Column(
+      children: [
+        AppSearchableDropdown<String>(
+          label: 'Status',
+          hintText: 'None',
+          value: _selectedStatus,
+          height: AppSizes.inputHeight,
+          items: _statusOptions.map((status) {
+            return DropdownMenuItem<String>(
+              value: status,
+              child: Text(
+                status,
+                style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedStatus = value ?? 'None';
+            });
+          },
+        ),
+        if (_selectedLinkStatus != 'None') ...[
+          const SizedBox(height: 4),
+          Container(),
+          // Text(
+          //   'Device will be linked to HES when saved',
+          //   style: const TextStyle(
+          //     fontSize: AppSizes.fontSizeSmall,
+          //     color: Color(0xFF2563eb),
+          //   ),
+          // ),
+        ],
       ],
     );
   }
@@ -764,19 +901,123 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog>
           id: _selectedAddress?.id ?? '',
           latitude: lat,
           longitude: lng,
-          shortText: _addressTextController.text,
-          longText: _addressTextController.text,
+          street: _addressTextController.text,
+          city: '',
+          state: '',
+          postalCode: '',
+          country: '',
         );
       });
     }
   }
 
-  void _onMapLocationChanged(Address address) {
-    setState(() {
-      _latitudeController.text = address.latitude!.toStringAsFixed(6);
-      _longitudeController.text = address.longitude!.toStringAsFixed(6);
-      _addressTextController.text = address.longText;
-      _selectedAddress = address;
-    });
+  // Open interactive map dialog
+  void _openMapDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => InteractiveMapDialog(
+        initialAddress: _selectedAddress,
+        onLocationSelected: (address) {
+          setState(() {
+            _selectedAddress = address;
+            _addressTextController.text = address.street ?? '';
+            _latitudeController.text = address.latitude?.toString() ?? '';
+            _longitudeController.text = address.longitude?.toString() ?? '';
+          });
+        },
+      ),
+    );
+  }
+
+  // Get unique device groups to prevent dropdown duplicates
+  List<DeviceGroup> _getUniqueDeviceGroups() {
+    final seen = <int>{};
+    return _deviceGroups.where((group) {
+      if (seen.contains(group.id)) {
+        if (kDebugMode) {
+          print(
+            'Duplicate device group found with ID: ${group.id}, Name: ${group.name}',
+          );
+        }
+        return false;
+      }
+      seen.add(group.id);
+      return true;
+    }).toList();
+  }
+
+  // Validate and get a safe device group value for the dropdown
+  int? _getSafeDeviceGroupValue() {
+    if (_selectedDeviceGroupId == null) return null;
+
+    final uniqueGroups = _getUniqueDeviceGroups();
+
+    // If groups are still loading, keep the selected value
+    if (uniqueGroups.isEmpty && _isLoadingDeviceGroups) {
+      return _selectedDeviceGroupId;
+    }
+
+    final groupExists = uniqueGroups.any(
+      (group) => group.id == _selectedDeviceGroupId,
+    );
+
+    if (!groupExists) {
+      if (kDebugMode) {
+        print(
+          'Selected device group ID $_selectedDeviceGroupId not found in dropdown (groups loaded: ${uniqueGroups.length})',
+        );
+      }
+      // Only reset if we're sure the groups have been loaded
+      if (!_isLoadingDeviceGroups && uniqueGroups.isNotEmpty) {
+        _selectedDeviceGroupId = null;
+        return null;
+      }
+      // Otherwise, keep the value while loading
+      return _selectedDeviceGroupId;
+    }
+
+    return _selectedDeviceGroupId;
+  }
+
+  // Get unique schedules to prevent dropdown duplicates
+  List<Map<String, dynamic>> _getUniqueSchedules() {
+    final seen = <int>{};
+    return _schedules.where((schedule) {
+      final id = schedule['id'] as int?;
+      if (id == null || seen.contains(id)) {
+        if (kDebugMode && id != null) {
+          print(
+            'Duplicate schedule found with ID: $id, Name: ${schedule['name']}',
+          );
+        }
+        return false;
+      }
+      seen.add(id);
+      return true;
+    }).toList();
+  }
+
+  // Validate and get a safe schedule value for the dropdown
+  int? _getSafeScheduleValue() {
+    if (_selectedScheduleId == null) return null;
+
+    final uniqueSchedules = _getUniqueSchedules();
+    final scheduleExists = uniqueSchedules.any(
+      (schedule) => schedule['id'] == _selectedScheduleId,
+    );
+
+    if (!scheduleExists) {
+      if (kDebugMode) {
+        print(
+          'Selected schedule ID $_selectedScheduleId not found in dropdown, resetting to null',
+        );
+      }
+      // Reset the invalid value immediately to prevent dropdown assertion
+      _selectedScheduleId = null;
+      return null;
+    }
+
+    return _selectedScheduleId;
   }
 }

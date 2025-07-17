@@ -40,7 +40,7 @@ class AppButton extends StatelessWidget {
       case AppButtonSize.small:
         return 36;
       case AppButtonSize.medium:
-        return AppSizes.buttonHeight;
+        return AppSizes.buttonHeightSmall;
       case AppButtonSize.large:
         return 52;
     }

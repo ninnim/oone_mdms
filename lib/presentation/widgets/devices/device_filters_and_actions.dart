@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mdms_clone/presentation/widgets/common/advanced_filters.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -87,16 +86,18 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
         children: [
           // Search field
           Expanded(
-            flex: 2,
+            flex: 1,
             child: Container(
-              height: AppSizes.buttonHeight,
+              alignment: Alignment.centerLeft,
+              height: AppSizes.inputHeight,
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search devices...',
+                  hintStyle: TextStyle(fontSize: AppSizes.fontSizeSmall),
                   prefixIcon: const Icon(
                     Icons.search,
-                    size: AppSizes.iconMedium,
+                    size: AppSizes.iconSmall,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -120,6 +121,20 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
             ),
           ),
 
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _showFilters = !_showFilters;
+                if (_showFilters) _showColumnSettings = false;
+              });
+            },
+            icon: Icon(
+              _showFilters ? Icons.filter_list : Icons.filter_list_outlined,
+              size: AppSizes.iconMedium,
+              color: _showFilters ? AppColors.primary : AppColors.textSecondary,
+            ),
+            tooltip: 'Filters',
+          ),
           Expanded(flex: 2, child: Container()),
           const SizedBox(width: AppSizes.spacing16),
 
@@ -138,6 +153,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
                 ),
                 _buildViewModeButton(
                   icon: Icons.view_kanban,
+
                   mode: DeviceViewMode.kanban,
                   tooltip: 'Kanban View',
                 ),
@@ -156,21 +172,22 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
           Row(
             children: [
               // Filters toggle
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _showFilters = !_showFilters;
-                    if (_showFilters) _showColumnSettings = false;
-                  });
-                },
-                icon: Icon(
-                  _showFilters ? Icons.filter_list : Icons.filter_list_outlined,
-                  color: _showFilters
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
-                ),
-                tooltip: 'Filters',
-              ),
+              // IconButton(
+              //   onPressed: () {
+              //     setState(() {
+              //       _showFilters = !_showFilters;
+              //       if (_showFilters) _showColumnSettings = false;
+              //     });
+              //   },
+              //   icon: Icon(
+              //     _showFilters ? Icons.filter_list : Icons.filter_list_outlined,
+              //     size: AppSizes.iconMedium,
+              //     color: _showFilters
+              //         ? AppColors.primary
+              //         : AppColors.textSecondary,
+              //   ),
+              //   tooltip: 'Filters',
+              // ),
 
               // Column settings (only for table view)
               // if (widget.currentViewMode == DeviceViewMode.table)
@@ -195,7 +212,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
               // Refresh
               IconButton(
                 onPressed: widget.onRefresh,
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh, size: AppSizes.iconMedium),
                 color: AppColors.textSecondary,
                 tooltip: 'Refresh',
               ),
@@ -204,7 +221,10 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
               if (widget.onExport != null)
                 IconButton(
                   onPressed: widget.onExport,
-                  icon: const Icon(Icons.file_download),
+                  icon: const Icon(
+                    Icons.file_download,
+                    size: AppSizes.iconMedium,
+                  ),
                   color: AppColors.textSecondary,
                   tooltip: 'Export',
                 ),
@@ -213,7 +233,10 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
               if (widget.onImport != null)
                 IconButton(
                   onPressed: widget.onImport,
-                  icon: const Icon(Icons.file_upload),
+                  icon: const Icon(
+                    Icons.file_upload,
+                    size: AppSizes.iconMedium,
+                  ),
                   color: AppColors.textSecondary,
                   tooltip: 'Import',
                 ),
@@ -266,6 +289,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
         icon: Icon(
           icon,
           color: isSelected ? AppColors.surface : AppColors.textSecondary,
+          size: AppSizes.iconMedium,
         ),
         tooltip: tooltip,
       ),
@@ -280,6 +304,8 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Status filter
           Expanded(
@@ -357,22 +383,29 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
           ),
         ),
         const SizedBox(height: AppSizes.spacing4),
-        DropdownButtonFormField<String>(
-          value: value ?? 'All',
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              borderSide: const BorderSide(color: AppColors.border),
+        SizedBox(
+          height: AppSizes.inputHeight,
+          child: DropdownButtonFormField<String>(
+            value: value ?? 'All',
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textPrimary,
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing12,
-              vertical: AppSizes.spacing8,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing12,
+                vertical: AppSizes.spacing8,
+              ),
             ),
+            items: items
+                .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                .toList(),
+            onChanged: onChanged,
           ),
-          items: items
-              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList(),
-          onChanged: onChanged,
         ),
       ],
     );

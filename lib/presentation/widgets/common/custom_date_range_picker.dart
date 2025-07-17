@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mdms_clone/core/constants/app_sizes.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import '../../../core/constants/app_colors.dart';
 
 class CustomDateRangePicker extends StatefulWidget {
@@ -28,15 +31,38 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
   DateTime _displayMonth = DateTime.now();
   DateTime? _tempStartDate;
   DateTime? _tempEndDate;
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+  String? _selectedQuickOption;
+
+  // Dropdown overlay variables
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink();
+  bool _isDropdownOpen = false;
 
   @override
   void initState() {
     super.initState();
-    _startDate = widget.initialStartDate;
-    _endDate = widget.initialEndDate;
-    if (_startDate != null) {
-      _displayMonth = DateTime(_startDate!.year, _startDate!.month);
+    final now = DateTime.now();
+    // Set default to current week (Monday to Sunday) if no initial dates are provided
+    if (widget.initialStartDate != null && widget.initialEndDate != null) {
+      _startDate = widget.initialStartDate;
+      _endDate = widget.initialEndDate;
+    } else {
+      _startDate = now.subtract(Duration(days: now.weekday - 1));
+      _endDate = _startDate!.add(const Duration(days: 6));
     }
+    _displayMonth = DateTime(_startDate!.year, _startDate!.month);
+    _startDateController.text = DateFormat('yyyy-MM-dd').format(_startDate!);
+    _endDateController.text = DateFormat('yyyy-MM-dd').format(_endDate!);
+  }
+
+  @override
+  void dispose() {
+    _closeDropdown(); // Clean up overlay if still open
+    _startDateController.dispose();
+    _endDateController.dispose();
+    super.dispose();
   }
 
   @override
@@ -44,50 +70,55 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return GestureDetector(
-      onTap: widget.enabled ? _showDateRangePicker : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: GestureDetector(
+        onTap: widget.enabled ? _toggleDropdown : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: widget.enabled
+                  ? (isDark ? const Color(0xFF4a5568) : AppColors.border)
+                  : (isDark ? const Color(0xFF2d3748) : AppColors.borderLight),
+            ),
+            borderRadius: BorderRadius.circular(6),
             color: widget.enabled
-                ? (isDark ? const Color(0xFF4a5568) : AppColors.border)
-                : (isDark ? const Color(0xFF2d3748) : AppColors.borderLight),
+                ? (isDark ? const Color(0xFF2d3748) : AppColors.surface)
+                : (isDark ? const Color(0xFF1e293b) : AppColors.surfaceVariant),
           ),
-          borderRadius: BorderRadius.circular(6),
-          color: widget.enabled
-              ? (isDark ? const Color(0xFF2d3748) : AppColors.surface)
-              : (isDark ? const Color(0xFF1e293b) : AppColors.surfaceVariant),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.calendar_today,
-              size: 16,
-              color: widget.enabled
-                  ? (isDark ? Colors.white70 : AppColors.textSecondary)
-                  : (isDark ? Colors.white30 : AppColors.textTertiary),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              _getDisplayText(),
-              style: TextStyle(
-                fontSize: 14,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 16,
                 color: widget.enabled
-                    ? (isDark ? Colors.white : AppColors.textPrimary)
-                    : (isDark ? Colors.white54 : AppColors.textTertiary),
+                    ? (isDark ? Colors.white70 : AppColors.textSecondary)
+                    : (isDark ? Colors.white30 : AppColors.textTertiary),
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: widget.enabled
-                  ? (isDark ? Colors.white70 : AppColors.textSecondary)
-                  : (isDark ? Colors.white30 : AppColors.textTertiary),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                _getDisplayText(),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: widget.enabled
+                      ? (isDark ? Colors.white : AppColors.textPrimary)
+                      : (isDark ? Colors.white54 : AppColors.textTertiary),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                _isDropdownOpen
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                size: 16,
+                color: widget.enabled
+                    ? (isDark ? Colors.white70 : AppColors.textSecondary)
+                    : (isDark ? Colors.white30 : AppColors.textTertiary),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -97,55 +128,300 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
     if (_startDate == null || _endDate == null) {
       return widget.hintText ?? 'Select date range';
     }
-
     final formatter = DateFormat('MMM d, yyyy');
     return '${formatter.format(_startDate!)} - ${formatter.format(_endDate!)}';
   }
 
-  void _showDateRangePicker() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+  void _toggleDropdown() {
+    if (_isDropdownOpen) {
+      _closeDropdown();
+    } else {
+      _openDropdown();
+    }
+  }
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              backgroundColor: isDark
-                  ? const Color(0xFF2d3748)
-                  : AppColors.surface,
-              shape: RoundedRectangleBorder(
+  void _openDropdown() {
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+    setState(() {
+      _isDropdownOpen = true;
+    });
+  }
+
+  void _closeDropdown() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    setState(() {
+      _isDropdownOpen = false;
+    });
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    return OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // Invisible barrier to close dropdown when clicking outside
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeDropdown,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          // Dropdown content
+          Positioned(
+            width: 600,
+            child: CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              offset: const Offset(0, 50), // Offset below the field
+              child: Material(
+                elevation: 8,
                 borderRadius: BorderRadius.circular(16),
+                child: _buildDropdownContent(),
               ),
-              child: Container(
-                width: 360,
-                padding: const EdgeInsets.all(24),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownContent() {
+    return StatefulBuilder(
+      builder: (context, setDropdownState) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left side: Date inputs and quick select items
+              SizedBox(
+                width: 200,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Start and End Date in one row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppInputField(
+                            controller: _startDateController,
+                            label: 'Start Date',
+                            onChanged: (value) => _validateAndUpdateDate(
+                              value,
+                              true,
+                              setDropdownState,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: AppInputField(
+                            label: 'End Date',
+                            controller: _endDateController,
+                            onChanged: (value) => _validateAndUpdateDate(
+                              value,
+                              false,
+                              setDropdownState,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Quick select items as scrollable list
+                    Container(
+                      height: 200, // Fixed height for scrollable area
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(
+                          AppSizes.radiusLarge,
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          children: [
+                            _buildQuickSelectItem(
+                              'Today',
+                              'today',
+                              setDropdownState,
+                            ),
+                            _buildQuickSelectItem(
+                              'This Week',
+                              'this_week',
+                              setDropdownState,
+                            ),
+                            _buildQuickSelectItem(
+                              'Last Week',
+                              'last_week',
+                              setDropdownState,
+                            ),
+                            _buildQuickSelectItem(
+                              'This Month',
+                              'this_month',
+                              setDropdownState,
+                            ),
+                            _buildQuickSelectItem(
+                              'Last Month',
+                              'last_month',
+                              setDropdownState,
+                            ),
+                            _buildQuickSelectItem(
+                              'This Year',
+                              'this_year',
+                              setDropdownState,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 24),
+              // Right side: Calendar and controls
+              Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Header with month navigation
-                    _buildHeader(setDialogState, isDark),
+                    _buildHeader(
+                      setDropdownState,
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     const SizedBox(height: 24),
-
-                    // Selected date display
-                    _buildSelectedDateDisplay(setDialogState, isDark),
-                    const SizedBox(height: 24),
-
                     // Calendar
-                    _buildCalendar(setDialogState, isDark),
+                    _buildCalendar(
+                      setDropdownState,
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     const SizedBox(height: 24),
-
                     // Action buttons
-                    _buildActionButtons(isDark),
+                    _buildActionButtons(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                   ],
                 ),
               ),
-            );
-          },
+            ],
+          ),
         );
       },
     );
+  }
+
+  Widget _buildQuickSelectItem(
+    String label,
+    String value,
+    StateSetter setDropdownState,
+  ) {
+    final isSelected = _selectedQuickOption == value;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () {
+            _handleQuickSelect(value, setDropdownState);
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary.withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+              border: isSelected
+                  ? Border.all(color: AppColors.primary, width: 1)
+                  : null,
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                color: isSelected
+                    ? AppColors.primary
+                    : (isDark ? Colors.white : AppColors.textPrimary),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleQuickSelect(String value, StateSetter setDropdownState) {
+    setDropdownState(() {
+      _selectedQuickOption = value;
+      final now = DateTime.now();
+      switch (value) {
+        case 'today':
+          _tempStartDate = DateTime(now.year, now.month, now.day);
+          _tempEndDate = DateTime(now.year, now.month, now.day);
+          break;
+        case 'this_week':
+          _tempStartDate = now.subtract(Duration(days: now.weekday - 1));
+          _tempEndDate = _tempStartDate!.add(const Duration(days: 6));
+          break;
+        case 'last_week':
+          _tempStartDate = now.subtract(Duration(days: now.weekday - 1 + 7));
+          _tempEndDate = _tempStartDate!.add(const Duration(days: 6));
+          break;
+        case 'this_month':
+          _tempStartDate = DateTime(now.year, now.month, 1);
+          _tempEndDate = DateTime(now.year, now.month + 1, 0);
+          break;
+        case 'last_month':
+          _tempStartDate = DateTime(now.year, now.month - 1, 1);
+          _tempEndDate = DateTime(now.year, now.month, 0);
+          break;
+        case 'this_year':
+          _tempStartDate = DateTime(now.year, 1, 1);
+          _tempEndDate = DateTime(now.year, 12, 31);
+          break;
+      }
+      _startDateController.text = DateFormat(
+        'yyyy-MM-dd',
+      ).format(_tempStartDate!);
+      _endDateController.text = DateFormat('yyyy-MM-dd').format(_tempEndDate!);
+      _displayMonth = DateTime(_tempStartDate!.year, _tempStartDate!.month);
+    });
+  }
+
+  void _validateAndUpdateDate(
+    String value,
+    bool isStartDate,
+    StateSetter setDialogState,
+  ) {
+    try {
+      final date = DateFormat('yyyy-MM-dd').parseStrict(value);
+      setDialogState(() {
+        if (isStartDate) {
+          _tempStartDate = date;
+        } else {
+          _tempEndDate = date;
+        }
+        _selectedQuickOption =
+            null; // Clear quick select when manual input is used
+        if (_tempStartDate != null) {
+          _displayMonth = DateTime(_tempStartDate!.year, _tempStartDate!.month);
+        }
+      });
+    } catch (e) {
+      // Invalid date format, do not update
+    }
   }
 
   Widget _buildHeader(StateSetter setDialogState, bool isDark) {
@@ -169,7 +445,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
         Text(
           DateFormat('MMMM yyyy').format(_displayMonth),
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w600,
             color: isDark ? Colors.white : AppColors.textPrimary,
           ),
@@ -186,65 +462,6 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
           icon: Icon(
             Icons.chevron_right,
             color: isDark ? Colors.white70 : AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSelectedDateDisplay(StateSetter setDialogState, bool isDark) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isDark ? const Color(0xFF4a5568) : AppColors.border,
-              ),
-              borderRadius: BorderRadius.circular(8),
-              color: isDark
-                  ? const Color(0xFF1e293b)
-                  : AppColors.surfaceVariant,
-            ),
-            child: Text(
-              _tempStartDate != null
-                  ? DateFormat('MMM d, yyyy').format(_tempStartDate!)
-                  : (_startDate != null
-                        ? DateFormat('MMM d, yyyy').format(_startDate!)
-                        : 'Start Date'),
-              style: TextStyle(
-                fontSize: 14,
-                color: (_tempStartDate ?? _startDate) != null
-                    ? (isDark ? Colors.white : AppColors.textPrimary)
-                    : (isDark ? Colors.white70 : AppColors.textSecondary),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        GestureDetector(
-          onTap: () {
-            setDialogState(() {
-              _tempStartDate = DateTime.now();
-              _tempEndDate = DateTime.now();
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isDark ? const Color(0xFF4a5568) : AppColors.border,
-              ),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              'Today',
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.white70 : AppColors.textSecondary,
-              ),
-            ),
           ),
         ),
       ],
@@ -276,7 +493,6 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
               .toList(),
         ),
         const SizedBox(height: 12),
-
         // Calendar grid
         ..._buildCalendarWeeks(setDialogState, isDark),
       ],
@@ -289,8 +505,6 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
       _displayMonth.month,
       1,
     );
-
-    // Get the first Monday of the calendar view
     final firstMondayOfCalendar = firstDayOfMonth.subtract(
       Duration(days: (firstDayOfMonth.weekday - 1) % 7),
     );
@@ -298,7 +512,6 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
     final weeks = <Widget>[];
     var currentWeekStart = firstMondayOfCalendar;
 
-    // Generate 6 weeks to cover all possible month layouts
     for (int week = 0; week < 6; week++) {
       final weekDays = <Widget>[];
 
@@ -310,7 +523,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
             _isSameDay(currentDay, _tempStartDate) ||
             _isSameDay(currentDay, _tempEndDate);
         final isInRange = _isInSelectedRange(currentDay);
-        final hasEvent = _hasEvent(currentDay); // You can customize this
+        final hasEvent = _hasEvent(currentDay);
 
         weekDays.add(
           Expanded(
@@ -318,6 +531,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
               onTap: () => _selectDate(currentDay, setDialogState),
               child: Container(
                 height: 40,
+                width: 40,
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   color: isSelected
@@ -325,7 +539,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                       : (isInRange
                             ? AppColors.primary.withOpacity(0.1)
                             : Colors.transparent),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                 ),
                 child: Stack(
                   children: [
@@ -333,7 +547,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                       child: Text(
                         currentDay.day.toString(),
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppSizes.fontSizeSmall,
                           fontWeight: isToday
                               ? FontWeight.w600
                               : FontWeight.normal,
@@ -374,10 +588,8 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
       }
 
       weeks.add(Row(children: weekDays));
-
       currentWeekStart = currentWeekStart.add(const Duration(days: 7));
 
-      // Break if we've covered the month and some of the next month
       if (week >= 4 && currentWeekStart.month != _displayMonth.month) {
         break;
       }
@@ -408,65 +620,62 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
   }
 
   bool _hasEvent(DateTime date) {
-    // Customize this based on your needs
-    // For the example image, there are events on certain days
-    return date.day == 11 || date.day == 24;
+    return date.day == 11 || date.day == 24; // Customize based on your needs
   }
 
   void _selectDate(DateTime date, StateSetter setDialogState) {
     setDialogState(() {
       if (_tempStartDate == null || _tempEndDate != null) {
-        // Start new selection
         _tempStartDate = date;
         _tempEndDate = null;
+        _startDateController.text = DateFormat('yyyy-MM-dd').format(date);
+        _endDateController.clear();
       } else {
-        // Complete the range
         _tempEndDate = date;
-
-        // Ensure start is before end
+        _endDateController.text = DateFormat('yyyy-MM-dd').format(date);
         if (_tempStartDate!.isAfter(_tempEndDate!)) {
           final temp = _tempStartDate;
           _tempStartDate = _tempEndDate;
           _tempEndDate = temp;
+          _startDateController.text = DateFormat(
+            'yyyy-MM-dd',
+          ).format(_tempStartDate!);
+          _endDateController.text = DateFormat(
+            'yyyy-MM-dd',
+          ).format(_tempEndDate!);
         }
       }
+      _selectedQuickOption = null; // Clear quick select when calendar is used
+      _displayMonth = DateTime(_tempStartDate!.year, _tempStartDate!.month);
     });
   }
 
   Widget _buildActionButtons(bool isDark) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Expanded(
-          child: TextButton(
+        SizedBox(
+          width: 100,
+          child: AppButton(
+            type: AppButtonType.outline,
+            size: AppButtonSize.small,
             onPressed: () {
-              // Navigator.of(context).pop();
-              Navigator.of(context, rootNavigator: true).pop();
-              // Reset temp selections
+              _closeDropdown();
               _tempStartDate = null;
               _tempEndDate = null;
+              _selectedQuickOption = null;
+              _startDateController.clear();
+              _endDateController.clear();
             },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color: isDark ? const Color(0xFF4a5568) : AppColors.border,
-                ),
-              ),
-            ),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white70 : AppColors.textSecondary,
-              ),
-            ),
+            text: 'Cancel',
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
+        SizedBox(
+          width: 100,
+          child: AppButton(
+            type: AppButtonType.primary,
+            size: AppButtonSize.small,
             onPressed: _tempStartDate != null && _tempEndDate != null
                 ? () {
                     setState(() {
@@ -474,25 +683,13 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                       _endDate = _tempEndDate;
                     });
                     widget.onDateRangeSelected(_startDate!, _endDate!);
-                    // Navigator.of(context).pop();
-                    Navigator.of(context, rootNavigator: true).pop();
+                    _closeDropdown();
                     _tempStartDate = null;
                     _tempEndDate = null;
+                    _selectedQuickOption = null;
                   }
                 : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Apply',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
+            text: 'Apply',
           ),
         ),
       ],

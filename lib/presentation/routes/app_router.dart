@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart';
-import 'package:mdms_clone/presentation/screens/device_groups/device_groups_screen.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
 import 'dart:async';
@@ -762,7 +761,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildSidebar(String selectedScreen) {
     return Container(
-      width: _sidebarCollapsed ? 80 : 280,
+      width: _sidebarCollapsed ? 72 : 240,
       height: double.infinity,
       decoration: const BoxDecoration(
         color: AppColors.background,
@@ -993,8 +992,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           },
           borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
           child: Container(
-            width: 56,
-            height: 56,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: hasSelectedChild
                   ? AppColors.primary.withOpacity(0.15)
@@ -1021,7 +1020,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                     color: hasSelectedChild
                         ? AppColors.primary
                         : AppColors.textSecondary,
-                    size: AppSizes.iconLarge,
+                    size: AppSizes.iconMedium,
                   ),
                 ),
                 Positioned(
@@ -1054,7 +1053,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
   Widget _buildCollapsedSubMenuItem(String id, IconData icon, bool isSelected) {
     return Container(
       margin: const EdgeInsets.only(
-        bottom: AppSizes.spacing4,
+        bottom: AppSizes.spacing8,
         left: AppSizes.spacing8,
       ),
       child: Material(
@@ -1063,8 +1062,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           onTap: () => context.go('/$id'),
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           child: Container(
-            width: 48,
-            height: 48,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: isSelected
                   ? AppColors.primary.withOpacity(0.15)
@@ -1110,8 +1109,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           onTap: () => context.go('/$id'),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            width: 56,
-            height: 56,
+            alignment: Alignment.center,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: isSelected
                   ? AppColors.primary.withOpacity(0.15)
@@ -1138,7 +1138,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                     color: isSelected
                         ? AppColors.primary
                         : AppColors.textSecondary,
-                    size: AppSizes.iconLarge,
+                    size: AppSizes.iconMedium,
                   ),
                 ),
                 if (badge != null)
@@ -1159,7 +1159,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                         badge,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: AppSizes.fontSizeExtraSmall,
+                          fontSize: AppSizes.fontSizeMedium,
                           fontWeight: FontWeight.w600,
                         ),
                         textAlign: TextAlign.center,
@@ -1522,7 +1522,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   color: hasSelectedChild
                       ? const Color(0xFF2563eb)
                       : const Color(0xFF64748b),
-                  size: 20,
+                  size: AppSizes.iconMedium,
                 ),
                 if (!_sidebarCollapsed) ...[
                   const SizedBox(width: 12),
@@ -1533,7 +1533,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                         color: hasSelectedChild
                             ? const Color(0xFF2563eb)
                             : const Color(0xFF64748b),
-                        fontSize: 14,
+                        fontSize: AppSizes.fontSizeSmall,
                         fontWeight: hasSelectedChild
                             ? FontWeight.w600
                             : FontWeight.normal,
@@ -1874,7 +1874,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                 color: const Color(0xFF64748b),
               ),
               const SizedBox(width: 8),
-              // User Avatar with Dropdown
+              // User Avatar with Dropdown១
               PopupMenuButton<String>(
                 offset: const Offset(0, 40),
                 child: Row(

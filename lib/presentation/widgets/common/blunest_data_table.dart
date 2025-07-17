@@ -86,8 +86,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
       ),
       child: Column(
         children: [
-          // Table Header
+          // Table Header60
           Container(
+            height: 60,
             padding: const EdgeInsets.symmetric(
               horizontal: AppSizes.spacing24,
               vertical: AppSizes.spacing16,
@@ -192,6 +193,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 final isEven = index % 2 == 0;
 
                 return Container(
+                  height: 60,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary.withValues(alpha: 0.1)
@@ -286,7 +288,8 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
 
   Widget _buildTableControls() {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       decoration: const BoxDecoration(
         color: AppColors.surfaceVariant,
         border: Border(bottom: BorderSide(color: AppColors.border)),
@@ -308,7 +311,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 onPressed: () {
                   widget.onSelectionChanged?.call({});
                 },
-                icon: const Icon(Icons.clear, size: 16),
+                icon: const Icon(Icons.clear, size: AppSizes.iconMedium),
                 label: const Text('Clear'),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.textSecondary,
@@ -323,7 +326,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 onPressed: () {
                   widget.onSelectionChanged?.call(widget.data.toSet());
                 },
-                icon: const Icon(Icons.select_all, size: 16),
+                icon: const Icon(Icons.select_all, size: AppSizes.iconMedium),
                 label: const Text('Select All'),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
@@ -346,7 +349,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               tooltip: 'Show/Hide Columns',
               elevation: 8,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
               ),
               itemBuilder: (context) => widget.columns
                   .map(
