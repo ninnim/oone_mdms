@@ -1,3 +1,5 @@
+import 'package:mdms_clone/core/models/device_group.dart';
+
 import 'address.dart';
 
 class Channel {
@@ -134,6 +136,7 @@ class Device {
   final int deviceGroupId;
   final String addressId;
   final String addressText;
+  final DeviceGroup? deviceGroup;
   final Address? address;
   final List<DeviceChannel> deviceChannels;
   final List<DeviceAttribute> deviceAttributes;
@@ -151,6 +154,7 @@ class Device {
     required this.deviceGroupId,
     required this.addressId,
     required this.addressText,
+    this.deviceGroup,
     this.address,
     required this.deviceChannels,
     required this.deviceAttributes,
@@ -170,6 +174,9 @@ class Device {
       deviceGroupId: json['DeviceGroupId'] ?? 0,
       addressId: json['AddressId'] ?? '',
       addressText: json['AddressText'] ?? '',
+      deviceGroup: json['DeviceGroup'] != null
+          ? DeviceGroup.fromJson(json['DeviceGroup'])
+          : null,
       address: json['Address'] != null
           ? Address.fromJson(json['Address'])
           : null,
@@ -200,6 +207,7 @@ class Device {
       'DeviceGroupId': deviceGroupId,
       'AddressId': addressId,
       'AddressText': addressText,
+      if (deviceGroup != null) 'DeviceGroup': deviceGroup!.toJson(),
       if (address != null) 'Address': address!.toJson(),
       'DeviceChannels': deviceChannels.map((e) => e.toJson()).toList(),
       'DeviceAttributes': deviceAttributes.map((e) => e.toJson()).toList(),
@@ -219,6 +227,7 @@ class Device {
     int? deviceGroupId,
     String? addressId,
     String? addressText,
+    DeviceGroup? deviceGroup,
     Address? address,
     List<DeviceChannel>? deviceChannels,
     List<DeviceAttribute>? deviceAttributes,
@@ -237,6 +246,7 @@ class Device {
       addressId: addressId ?? this.addressId,
       addressText: addressText ?? this.addressText,
       address: address ?? this.address,
+      deviceGroup: deviceGroup ?? this.deviceGroup,
       deviceChannels: deviceChannels ?? this.deviceChannels,
       deviceAttributes: deviceAttributes ?? this.deviceAttributes,
     );

@@ -7,6 +7,7 @@ import '../../../core/services/service_locator.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 
 class DeviceBillingReadingsScreen extends StatefulWidget {
   final Device device;
@@ -207,7 +208,11 @@ class _DeviceBillingReadingsScreenState
           // Content section
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? AppLottieStateWidget.loading(
+                    title: 'Loading Billing Readings',
+                    message: 'Please wait while we load the billing readings.',
+                    lottieSize: 80,
+                  )
                 : _error != null
                 ? Center(
                     child: Column(

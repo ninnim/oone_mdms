@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
@@ -201,15 +202,23 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
   @override
   Widget build(BuildContext context) {
     if (_isLoadingDevices && _allDevicesForMap.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading device locations...'),
-          ],
-        ),
+      return Center(
+        child:
+            //  Column(
+            //   mainAxisAlignment: MainAxisAlignment.center,
+            //   children: [
+            //     CircularProgressIndicator(),
+            //     SizedBox(height: 16),
+            //     Text('Loading device locations...'),
+            //   ],
+            // ),
+            AppLottieStateWidget.loading(
+              title: 'Loading Device Locations',
+              message: 'Please wait while we fetch device locations.',
+              lottieSize: 80,
+              titleColor: AppColors.primary,
+              messageColor: AppColors.secondary,
+            ),
       );
     }
 
@@ -438,7 +447,16 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
           // Device list
           Expanded(
             child: _isLoadingDevices
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: AppLottieStateWidget.loading(
+                      title: 'Loading Devices',
+                      message: 'Please wait while we fetch devices.',
+                      lottieSize: 50,
+                      titleColor: AppColors.primary,
+                      messageColor: AppColors.secondary,
+                    ),
+                  )
+                //CircularProgressIndicator()
                 : _errorMessage.isNotEmpty
                 ? Center(
                     child: Column(

@@ -5,6 +5,7 @@ import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_band.dart';
@@ -86,6 +87,24 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state
+    if (_isLoading && _timeBands.isEmpty) {
+      return const AppLottieStateWidget.loading(
+        title: 'Loading Time Bands',
+        message: 'Please wait while we fetch your time band configurations...',
+      );
+    }
+
+    // Show error state if error and no data
+    if (_errorMessage.isNotEmpty && _timeBands.isEmpty) {
+      return AppLottieStateWidget.error(
+        title: 'Failed to Load Time Bands',
+        message: _errorMessage,
+        buttonText: 'Try Again',
+        onButtonPressed: _loadTimeBands,
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(AppSizes.spacing24),
       child: Column(
@@ -93,19 +112,32 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
           _buildHeader(),
           const SizedBox(height: AppSizes.spacing24),
           _buildErrorMessage(),
-          Expanded(
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  _buildTableHeader(),
-                  if (_selectedTimeBands.isNotEmpty) _buildMultiSelectToolbar(),
-                  Expanded(child: _buildTimeBandsTable()),
-                  _buildPagination(),
-                ],
-              ),
-            ),
-          ),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    // Show no data state if no time bands after loading
+    if (!_isLoading && _timeBands.isEmpty && _errorMessage.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Time Bands Found',
+        message:
+            'No time bands have been configured yet. Click "Add Time Band" to create your first configuration.',
+        buttonText: 'Add Time Band',
+        onButtonPressed: _createTimeBand,
+      );
+    }
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildTableHeader(),
+          if (_selectedTimeBands.isNotEmpty) _buildMultiSelectToolbar(),
+          Expanded(child: _buildTimeBandsTable()),
+          _buildPagination(),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/keycloak_service.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 
 class AuthCallbackScreen extends StatefulWidget {
   final String? code;

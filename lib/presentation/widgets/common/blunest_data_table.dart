@@ -88,10 +88,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
         children: [
           // Table Header60
           Container(
-            height: 60,
+            //    height: 60,
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing24,
-              vertical: AppSizes.spacing16,
+              horizontal: AppSizes.spacing16,
+              vertical: AppSizes.spacing8,
             ),
             decoration: const BoxDecoration(
               color: AppColors.surfaceVariant,
@@ -193,7 +193,11 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 final isEven = index % 2 == 0;
 
                 return Container(
-                  height: 60,
+                  //height: 60,
+                  // padding: const EdgeInsets.symmetric(
+                  //   // horizontal: AppSizes.spacing24,
+                  //   vertical: AppSizes.spacing8,
+                  // ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary.withValues(alpha: 0.1)
@@ -227,9 +231,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical:
-                              12, // Reduced from 16 to 12 for smaller row height
+                          horizontal: AppSizes.spacing16,
+
+                          vertical: AppSizes
+                              .spacing4, // Reduced from 16 to 4 for smaller row height
                         ),
                         child: Row(
                           children: [

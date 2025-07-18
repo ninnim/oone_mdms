@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../common/blunest_data_table.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -85,15 +86,12 @@ class MetricsTableColumns {
           final PreValue = metric['PreValue'];
           final units = metric['Labels']?['Units'] ?? '';
 
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              PreValue != null ? '$PreValue $units'.trim() : 'N/A',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF6B7280),
-              ),
+          return Text(
+            PreValue != null ? '$PreValue $units'.trim() : 'N/A',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6B7280),
             ),
           );
         },
@@ -110,15 +108,12 @@ class MetricsTableColumns {
           final PreValue = metric['PreValue'];
 
           if (value == null || PreValue == null) {
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: const Text(
-                'N/A',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF6B7280),
-                ),
+            return const Text(
+              'N/A',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF6B7280),
               ),
             );
           }
@@ -143,36 +138,30 @@ class MetricsTableColumns {
             }
           } catch (e) {
             // If parsing fails, show N/A
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: const Text(
-                'N/A',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF6B7280),
-                ),
+            return const Text(
+              'N/A',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF6B7280),
               ),
             );
           }
 
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(changeIcon, size: 14, color: changeColor),
-                const SizedBox(width: 4),
-                Text(
-                  change.toStringAsFixed(2),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: changeColor,
-                  ),
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(changeIcon, size: AppSizes.iconSmall, color: changeColor),
+              const SizedBox(width: 4),
+              Text(
+                change.toStringAsFixed(2),
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  fontWeight: FontWeight.w600,
+                  color: changeColor,
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
@@ -186,15 +175,12 @@ class MetricsTableColumns {
         builder: (metric) {
           final phase = metric['Labels']?['Phase'] ?? metric['Phase'];
 
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              phase?.toString() ?? 'N/A',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1e293b),
-              ),
+          return Text(
+            phase?.toString() ?? 'N/A',
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1e293b),
             ),
           );
         },
@@ -209,22 +195,12 @@ class MetricsTableColumns {
         builder: (metric) {
           final units = metric['Labels']?['Units'] ?? metric['Units'];
 
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                units?.toString() ?? 'N/A',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.secondary,
-                ),
-              ),
+          return Text(
+            units?.toString() ?? 'N/A',
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              fontWeight: FontWeight.w500,
+              color: AppColors.secondary,
             ),
           );
         },

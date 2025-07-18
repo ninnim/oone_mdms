@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:mdms_clone/presentation/screens/tou_management/time_bands_screen.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
 import 'dart:async';
@@ -68,7 +70,13 @@ class AppRouter {
         GoRoute(
           path: '/auth',
           name: 'auth',
-          builder: (context, state) => const SimpleAuthRedirectScreen(),
+          builder: (context, state) =>
+              const
+              // AppLottieStateWidget.loading(
+              //   title: 'Loading Authentication',
+              //   message: 'Please wait while we authenticate you.',
+              // ),
+              SimpleAuthRedirectScreen(),
         ),
 
         // Protected routes (inside shell)
@@ -128,6 +136,12 @@ class AppRouter {
               name: 'tou-management',
               builder: (context, state) => const TouManagementRouteWrapper(),
             ),
+
+            // GoRoute(
+            //   path: '/time-of-use',
+            //   name: 'time-of-use',
+            //   builder: (context, state) => const TimeOfUseRouteWrapper(),
+            // ),
 
             // Tickets Routes
             GoRoute(
@@ -194,7 +208,7 @@ class AppRouter {
             GoRoute(
               path: '/time-bands',
               name: 'time-bands',
-              builder: (context, state) => const TouManagementRouteWrapper(),
+              builder: (context, state) => const TimeBandRouteWrapper(),
             ),
             GoRoute(
               path: '/special-days',
@@ -399,9 +413,13 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading device details...'),
+              AppLottieStateWidget.loading(
+                title: 'Loading Device Details',
+                message: 'Please wait while we load the device details.',
+                lottieSize: 80,
+              ),
+              // SizedBox(height: 16),
+              // Text('Loading device details...'),
             ],
           ),
         ),
@@ -572,9 +590,13 @@ class _DeviceBillingReadingsRouteWrapperState
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading billing data...'),
+              AppLottieStateWidget.loading(
+                title: 'Loading Billing Readings',
+                message: 'Please wait while we load the billing readings.',
+                lottieSize: 80,
+              ),
+              // SizedBox(height: 16),
+              // Text('Loading billing readings...'),
             ],
           ),
         ),
@@ -631,8 +653,18 @@ class DeviceGroupsRouteWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     // return DeviceGroupsScreen();
 
-    return const Scaffold(
-      body: Center(child: Text('Device Groups Route - To be implemented')),
+    return Scaffold(
+      body: Center(
+        child: AppLottieStateWidget.comingSoon(
+          title: 'Coming Soon...',
+          message: 'Please wait new features will comming soon...',
+          lottieSize: 400,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+        ),
+      ),
+
+      //Text('TOU Management Route - To be implemented')
     );
   }
 }
@@ -642,8 +674,40 @@ class TouManagementRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('TOU Management Route - To be implemented')),
+    return Scaffold(
+      body: Center(
+        child: AppLottieStateWidget.comingSoon(
+          title: 'Coming Soon...',
+          message: 'Please wait new features will comming soon...',
+          lottieSize: 400,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+        ),
+      ),
+
+      //Text('TOU Management Route - To be implemented')
+    );
+  }
+}
+
+class TimeBandRouteWrapper extends StatelessWidget {
+  const TimeBandRouteWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Placeholder for Time Band Management screen
+    return Scaffold(
+      body: Center(
+        child: AppLottieStateWidget.comingSoon(
+          title: 'Coming Soon...',
+          message: 'Please wait new features will comming soon...',
+          lottieSize: 400,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+        ),
+      ),
+
+      //Text('TOU Management Route - To be implemented')
     );
   }
 }
@@ -653,8 +717,18 @@ class TicketsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Tickets Route - To be implemented')),
+    return Scaffold(
+      body: Center(
+        child: AppLottieStateWidget.comingSoon(
+          title: 'Coming Soon...',
+          message: 'Please wait new features will comming soon...',
+          lottieSize: 400,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+        ),
+      ),
+
+      //Text('TOU Management Route - To be implemented')
     );
   }
 }
@@ -664,8 +738,18 @@ class AnalyticsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Analytics Route - To be implemented')),
+    return Scaffold(
+      body: Center(
+        child: AppLottieStateWidget.comingSoon(
+          title: 'Coming Soon...',
+          message: 'Please wait new features will comming soon...',
+          lottieSize: 400,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+        ),
+      ),
+
+      //Text('TOU Management Route - To be implemented')
     );
   }
 }
@@ -675,8 +759,18 @@ class SettingsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Settings Route - To be implemented')),
+    return Scaffold(
+      body: Center(
+        child: AppLottieStateWidget.comingSoon(
+          title: 'Coming Soon...',
+          message: 'Please wait new features will comming soon...',
+          lottieSize: 400,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+        ),
+      ),
+
+      //Text('TOU Management Route - To be implemented')
     );
   }
 }
@@ -2223,9 +2317,12 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Processing login...'),
+            AppLottieStateWidget.loading(
+              title: 'Processing login...',
+              message: 'Please wait while we process your login.',
+            ),
+            // SizedBox(height: 16),
+            // Text('Processing login...'),
           ],
         ),
       ),

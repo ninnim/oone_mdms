@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/constants/app_colors.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/keycloak_service.dart';
@@ -119,48 +121,55 @@ class _SimpleAuthRedirectScreenState extends State<SimpleAuthRedirectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF2563eb),
-              const Color(0xFF2563eb).withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.security_rounded, size: 80, color: Colors.white),
-              SizedBox(height: 32),
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 3,
-              ),
-              SizedBox(height: 32),
-              Text(
-                'Connecting to authentication service...',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Please wait while we process your authentication.',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+      body: AppLottieStateWidget.loading(
+        title: 'Loading Authentication',
+        message: 'Please wait while we authenticate you.',
+        lottieSize: 100,
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
       ),
+      // Container(
+      //   width: double.infinity,
+      //   height: double.infinity,
+      //   decoration: BoxDecoration(
+      //     gradient: LinearGradient(
+      //       begin: Alignment.topLeft,
+      //       end: Alignment.bottomRight,
+      //       colors: [
+      //         const Color(0xFF2563eb),
+      //         const Color(0xFF2563eb).withOpacity(0.8),
+      //       ],
+      //     ),
+      //   ),
+      //   child: const Center(
+      //     child: Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+      //         Icon(Icons.security_rounded, size: 80, color: Colors.white),
+      //         SizedBox(height: 32),
+      //         CircularProgressIndicator(
+      //           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      //           strokeWidth: 3,
+      //         ),
+      //         SizedBox(height: 32),
+      //         Text(
+      //           'Connecting to authentication service...',
+      //           style: TextStyle(
+      //             color: Colors.white,
+      //             fontSize: 18,
+      //             fontWeight: FontWeight.w600,
+      //           ),
+      //         ),
+      //         SizedBox(height: 16),
+      //         Text(
+      //           'Please wait while we process your authentication.',
+      //           style: TextStyle(color: Colors.white70, fontSize: 14),
+      //           textAlign: TextAlign.center,
+      //         ),
+      //       ],
+      //     ),
+      //   ),
+      // ),
     );
   }
 }

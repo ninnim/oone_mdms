@@ -6,6 +6,7 @@ import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/kanban_view.dart';
 import '../../widgets/common/advanced_filters.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/modals/create_ticket_modal.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -114,8 +115,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
       _priorityFilter = null;
       _categoryFilter = null;
       _assigneeFilter = null;
-      _applyFilters();
+      _currentPage = 1;
     });
+    _applyFilters();
   }
 
   void _showCreateTicketModal() {
@@ -154,6 +156,25 @@ class _TicketsScreenState extends State<TicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state
+    if (_isLoading && _tickets.isEmpty) {
+      return const AppLottieStateWidget.loading(
+        title: 'Loading Tickets',
+        message: 'Please wait while we fetch your support tickets...',
+      );
+    }
+
+    // Show no data state if no tickets after loading
+    if (!_isLoading && _tickets.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Tickets Found',
+        message:
+            'No support tickets have been created yet. Click "Create Ticket" to get started.',
+        buttonText: 'Create Ticket',
+        onButtonPressed: _showCreateTicketModal,
+      );
+    }
+
     return Column(
       children: [
         _buildHeader(),
@@ -162,13 +183,24 @@ class _TicketsScreenState extends State<TicketsScreen> {
         const SizedBox(height: AppSizes.spacing24),
         _buildFiltersAndActions(),
         const SizedBox(height: AppSizes.spacing16),
-        Expanded(
-          child: _selectedView == 'table'
-              ? _buildTableView()
-              : _buildKanbanView(),
-        ),
+        Expanded(child: _buildContent()),
       ],
     );
+  }
+
+  Widget _buildContent() {
+    // Show filtered empty state if filtered tickets are empty but original tickets exist
+    if (!_isLoading && _filteredTickets.isEmpty && _tickets.isNotEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Matching Tickets',
+        message:
+            'No tickets match your current filters. Try adjusting your search criteria.',
+        buttonText: 'Clear Filters',
+        onButtonPressed: _clearFilters,
+      );
+    }
+
+    return _selectedView == 'table' ? _buildTableView() : _buildKanbanView();
   }
 
   Widget _buildHeader() {
@@ -434,10 +466,6 @@ class _TicketsScreenState extends State<TicketsScreen> {
   }
 
   Widget _buildTableView() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing24),
       child: AppCard(

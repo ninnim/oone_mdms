@@ -9,6 +9,7 @@ import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/devices/device_table_columns.dart';
 import '../../widgets/devices/device_kanban_view.dart';
 import '../../widgets/devices/flutter_map_device_view.dart';
@@ -179,6 +180,17 @@ class _DevicesScreenState extends State<DevicesScreen> {
   Widget _buildErrorMessage() {
     if (_errorMessage.isEmpty) return const SizedBox.shrink();
 
+    // Show full-screen error state if no devices and there's an error
+    if (_devices.isEmpty) {
+      return AppLottieStateWidget.error(
+        title: 'Failed to Load Devices',
+        message: _errorMessage,
+        buttonText: 'Try Again',
+        onButtonPressed: _loadDevices,
+      );
+    }
+
+    // Show compact error banner if devices exist but there was an error
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       padding: const EdgeInsets.all(AppSizes.spacing16),
@@ -255,6 +267,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildMainContent(BuildContext context) {
+    // Show full-screen error state if no devices and there's an error
+    if (_errorMessage.isNotEmpty && _devices.isEmpty) {
+      return _buildErrorMessage();
+    }
+
     // Main devices view - optimized for maximum table space
     return Padding(
       padding: const EdgeInsets.all(
@@ -283,7 +300,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
           ),
 
           const SizedBox(height: AppSizes.spacing8), // Reduced from spacing12
-          // Error message
+          // Error message (compact banner for existing devices)
           _buildErrorMessage(),
 
           // Content based on view mode
@@ -782,6 +799,39 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildContent() {
+    // Show loading state
+    if (_isLoading && _devices.isEmpty) {
+      return AppLottieStateWidget.loading(
+        title: 'Loading Devices',
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
+        message: 'Please wait while we fetch your devices...',
+        lottieSize: 100,
+      );
+    }
+
+    // Show no data state if no devices after loading
+    if (!_isLoading && _devices.isEmpty && _errorMessage.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Devices Found',
+        message:
+            'No devices have been added yet. Click the "Add Device" button to get started.',
+        buttonText: 'Add Device',
+        onButtonPressed: _showAddDeviceModal,
+      );
+    }
+
+    // Show filtered empty state if filtered devices are empty but original devices exist
+    if (!_isLoading && _filteredDevices.isEmpty && _devices.isNotEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Matching Devices',
+        message:
+            'No devices match your current filters. Try adjusting your search criteria.',
+        buttonText: 'Clear Filters',
+        onButtonPressed: _clearAllFilters,
+      );
+    }
+
     switch (_currentViewMode) {
       case DeviceViewMode.table:
         return _buildTableView();
@@ -871,5 +921,15 @@ class _DevicesScreenState extends State<DevicesScreen> {
         break;
       // No action needed for the last breadcrumb (current page)
     }
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _selectedStatus = null;
+      _selectedType = null;
+      _selectedLinkStatus = null;
+      _searchController.clear();
+    });
+    _onSearchChanged('');
   }
 }

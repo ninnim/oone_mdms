@@ -43,7 +43,7 @@ class AppSizes {
   static const double sidebarCollapsedWidth = 80.0;
   static const double appBarHeight = 64.0;
   static const double appBarHeightWithTabs = 72.0;
-static const double appBarHeightSmall = 56.0;
+  static const double appBarHeightSmall = 56.0;
   static const double appBarHeightWithRoute = 56.0;
   static const double buttonHeightSmall = 36.0;
   static const double buttonHeight = 44.0;

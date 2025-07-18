@@ -3,6 +3,7 @@ import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/status_chip.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -386,80 +387,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildAdvancedTab() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'System Maintenance',
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeLarge,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSizes.spacing16),
-                _buildActionButton(
-                  'Clear Cache',
-                  'Clear application cache to free up space',
-                  Icons.clear_all,
-                  AppColors.info,
-                  _clearCache,
-                ),
-                const SizedBox(height: AppSizes.spacing12),
-                _buildActionButton(
-                  'Rebuild Database Indexes',
-                  'Optimize database performance',
-                  Icons.storage,
-                  AppColors.warning,
-                  _rebuildIndexes,
-                ),
-                const SizedBox(height: AppSizes.spacing12),
-                _buildActionButton(
-                  'Backup Configuration',
-                  'Create a backup of current settings',
-                  Icons.backup,
-                  AppColors.success,
-                  _backupConfiguration,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSizes.spacing16),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Debug Settings',
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeLarge,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSizes.spacing16),
-                _buildSwitchSetting(
-                  'Debug Mode',
-                  'Enable debug logging (affects performance)',
-                  false,
-                  (value) => {},
-                ),
-                const SizedBox(height: AppSizes.spacing16),
-                _buildSwitchSetting(
-                  'API Logging',
-                  'Log API requests and responses',
-                  false,
-                  (value) => {},
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return const AppLottieStateWidget.comingSoon(
+      title: 'Advanced Settings',
+      message:
+          'Advanced configuration options are coming soon. This will include system maintenance, performance tuning, and developer tools.',
     );
   }
 

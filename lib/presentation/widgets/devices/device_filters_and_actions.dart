@@ -100,15 +100,15 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
                     size: AppSizes.iconSmall,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                     borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                     borderSide: const BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                     borderSide: const BorderSide(color: AppColors.primary),
                   ),
                   contentPadding: const EdgeInsets.symmetric(

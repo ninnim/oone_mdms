@@ -12,6 +12,7 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_dropdown_field.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/devices/interactive_map_dialog.dart';
 
 class CreateEditDeviceDialog extends StatefulWidget {
@@ -343,6 +344,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
         deviceAttributes: widget.device?.deviceAttributes ?? [],
       );
 
+      if (kDebugMode) {
+        print('devicejob${device.toJson()}');
+      }
       // Save device
       final response = widget.device == null
           ? await _deviceService.createDevice(device)
@@ -702,21 +706,29 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
       value: _getSafeDeviceGroupValue(),
       height: AppSizes.inputHeight,
       items: [
-        const DropdownMenuItem<int>(
-          value: null,
+        // const DropdownMenuItem<int>(
+        //   value: null,
+        //   child: Text(
+        //     'None',
+        //     style: TextStyle(fontSize: AppSizes.fontSizeSmall),
+        //   ),
+        // ),
+        DropdownMenuItem<int>(
+          value: widget.device?.deviceGroup?.id,
           child: Text(
-            'None',
+            widget.device?.deviceGroup?.name ?? 'None',
             style: TextStyle(fontSize: AppSizes.fontSizeSmall),
           ),
         ),
+
         ..._getUniqueDeviceGroups().map((group) {
-          if (kDebugMode) {
-            print('Device Group: ID=${group.id}, Name=${group.name}');
-          }
+          // if (kDebugMode) {
+          //   print('Device Group: ID=${group.id}, Name=${group.name}');
+          // }
           return DropdownMenuItem<int>(
             value: group.id,
             child: Text(
-              group.name,
+              group.name ?? 'None',
               style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
             ),
           );
@@ -942,7 +954,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
         }
         return false;
       }
-      seen.add(group.id);
+      seen.add(group.id ?? 0);
       return true;
     }).toList();
   }

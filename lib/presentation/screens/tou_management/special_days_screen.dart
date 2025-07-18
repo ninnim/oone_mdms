@@ -5,6 +5,7 @@ import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
@@ -86,6 +87,25 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state
+    if (_isLoading && _specialDays.isEmpty) {
+      return const AppLottieStateWidget.loading(
+        title: 'Loading Special Days',
+        message:
+            'Please wait while we fetch your special day configurations...',
+      );
+    }
+
+    // Show error state if error and no data
+    if (_errorMessage.isNotEmpty && _specialDays.isEmpty) {
+      return AppLottieStateWidget.error(
+        title: 'Failed to Load Special Days',
+        message: _errorMessage,
+        buttonText: 'Try Again',
+        onButtonPressed: _loadSpecialDays,
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(AppSizes.spacing24),
       child: Column(
@@ -93,20 +113,32 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
           _buildHeader(),
           const SizedBox(height: AppSizes.spacing24),
           _buildErrorMessage(),
-          Expanded(
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  _buildTableHeader(),
-                  if (_selectedSpecialDays.isNotEmpty)
-                    _buildMultiSelectToolbar(),
-                  Expanded(child: _buildSpecialDaysTable()),
-                  _buildPagination(),
-                ],
-              ),
-            ),
-          ),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    // Show no data state if no special days after loading
+    if (!_isLoading && _specialDays.isEmpty && _errorMessage.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Special Days Found',
+        message:
+            'No special days have been configured yet. Click "Add Special Day" to create your first special day configuration.',
+        buttonText: 'Add Special Day',
+        onButtonPressed: _createSpecialDay,
+      );
+    }
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildTableHeader(),
+          if (_selectedSpecialDays.isNotEmpty) _buildMultiSelectToolbar(),
+          Expanded(child: _buildSpecialDaysTable()),
+          _buildPagination(),
         ],
       ),
     );

@@ -60,6 +60,9 @@ class DeviceService {
           'Model': device.model,
           'DeviceType': device.deviceType,
           'Manufacturer': device.manufacturer,
+          'Status': device.status,
+          'LinkStatus': device.linkStatus,
+          'DeviceGroupId': device.deviceGroupId,
           'AddressText': device.addressText,
           if (device.address != null)
             'Address': {'data': device.address!.toJson()},

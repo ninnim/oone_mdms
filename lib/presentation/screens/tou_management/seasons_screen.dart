@@ -5,6 +5,7 @@ import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/season.dart';
@@ -85,6 +86,24 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state
+    if (_isLoading && _seasons.isEmpty) {
+      return const AppLottieStateWidget.loading(
+        title: 'Loading Seasons',
+        message: 'Please wait while we fetch your season configurations...',
+      );
+    }
+
+    // Show error state if error and no data
+    if (_errorMessage.isNotEmpty && _seasons.isEmpty) {
+      return AppLottieStateWidget.error(
+        title: 'Failed to Load Seasons',
+        message: _errorMessage,
+        buttonText: 'Try Again',
+        onButtonPressed: _loadSeasons,
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(AppSizes.spacing24),
       child: Column(
@@ -92,19 +111,32 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
           _buildHeader(),
           const SizedBox(height: AppSizes.spacing24),
           _buildErrorMessage(),
-          Expanded(
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  _buildTableHeader(),
-                  if (_selectedSeasons.isNotEmpty) _buildMultiSelectToolbar(),
-                  Expanded(child: _buildSeasonsTable()),
-                  _buildPagination(),
-                ],
-              ),
-            ),
-          ),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    // Show no data state if no seasons after loading
+    if (!_isLoading && _seasons.isEmpty && _errorMessage.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Seasons Found',
+        message:
+            'No seasons have been configured yet. Click "Add Season" to create your first season configuration.',
+        buttonText: 'Add Season',
+        onButtonPressed: _createSeason,
+      );
+    }
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildTableHeader(),
+          if (_selectedSeasons.isNotEmpty) _buildMultiSelectToolbar(),
+          Expanded(child: _buildSeasonsTable()),
+          _buildPagination(),
         ],
       ),
     );

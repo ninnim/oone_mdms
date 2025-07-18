@@ -673,25 +673,20 @@ class _AppPillTabsState extends State<AppPillTabs>
                         width: tabWidth,
 
                         // Adjusted to match tab button width
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.spacing32,
-                          ),
-                          child: Container(
-                            height: 35, // Slightly less for padding effect
-                            decoration: BoxDecoration(
-                              color: widget.selectedColor ?? AppColors.primary,
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusLarge,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: AppSizes.radiusLarge,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                        child: Container(
+                          height: 35, // Slightly less for padding effect
+                          decoration: BoxDecoration(
+                            color: widget.selectedColor ?? AppColors.primary,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusLarge,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: AppSizes.radiusLarge,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -753,7 +748,7 @@ class _AppPillTabsState extends State<AppPillTabs>
             },
           ),
         ),
-        SizedBox(height: AppSizes.spacing16),
+        // SizedBox(height: AppSizes.spacing16),
         Expanded(child: widget.tabs[selectedIndex].content),
       ],
     );

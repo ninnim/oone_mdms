@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_tabs.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,7 @@ import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_dropdown_field.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/devices/device_location_viewer.dart';
 import '../../widgets/devices/interactive_map_dialog.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
@@ -205,7 +207,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   // Helper method to get device group name
-  String _getDeviceGroupName() {
+  String? _getDeviceGroupName() {
     if (widget.device.deviceGroupId == 0) {
       return 'None';
     }
@@ -228,7 +230,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     setState(() {
       _isEditingOverview = true;
     });
-    _loadDropdownDataForEdit();
+    // _loadDropdownDataForEdit();
     _populateEditFields();
   }
 
@@ -508,7 +510,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   Widget _buildDeviceGroupEditDropdown() {
     // Create dropdown items from device groups
     final List<DropdownMenuItem<int?>> items = [
-      const DropdownMenuItem<int?>(
+      DropdownMenuItem<int?>(
         value: null,
         child: Text(
           'None',
@@ -518,25 +520,35 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
         ),
       ),
-      ..._deviceGroups
-          .map(
-            (group) => DropdownMenuItem<int?>(
-              value: group.id,
-              child: Text(
-                group.name,
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  color: Color(0xFF374151),
-                ),
-              ),
-            ),
-          )
-          .toList(),
+      DropdownMenuItem<int?>(
+        value: widget.device.deviceGroup?.id ?? 0,
+        child: Text(
+          widget.device.deviceGroup?.name ?? 'None',
+          style: TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: Color(0xFF374151),
+          ),
+        ),
+      ),
+      // ..._deviceGroups
+      //     .map(
+      //       (group) => DropdownMenuItem<int?>(
+      //         value: group.id,
+      //         child: Text(
+      //           group.name ?? 'None',
+      //           style: const TextStyle(
+      //             fontSize: AppSizes.fontSizeSmall,
+      //             color: Color(0xFF374151),
+      //           ),
+      //         ),
+      //       ),
+      //     )
+      //     .toList(),
     ];
 
     return AppSearchableDropdown<int?>(
       label: 'Device Group',
-      hintText: 'Select Device Group',
+      hintText: 'None',
       value: _selectedDeviceGroupIdEdit,
       height: AppSizes.inputHeight,
       items: items,
@@ -1054,7 +1066,15 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         // Content section with AppTabs
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                  child: AppLottieStateWidget.loading(
+                    title: 'Loading Device Details',
+                    message: 'Please wait while we fetch device details.',
+                    lottieSize: 80,
+                    titleColor: AppColors.primary,
+                    messageColor: AppColors.secondary,
+                  ),
+                )
               : _error != null
               ? Center(
                   child: Column(
@@ -1400,7 +1420,15 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   Widget _buildOverviewTab() {
     if (_loadingOverview && !_overviewLoaded) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Overview',
+          message: 'Loading device overview...',
+          lottieSize: 80,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.secondary,
+        ),
+      );
     }
 
     return _isEditingOverview
@@ -1409,8 +1437,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   Widget _buildOverviewViewMode() {
+    if (kDebugMode) {
+      print(
+        'Building overview view mode for device: ${widget.device.deviceGroup?.toJson()}',
+      );
+    }
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1493,9 +1526,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   'Device Group',
-                  widget.device.deviceGroupId.toString() == '0'
-                      ? 'None'
-                      : _getDeviceGroupName(),
+                  widget.device.deviceGroup?.name ?? 'None',
+                  // widget.device.deviceGroupId.toString() == '0'
+                  //     ? 'None'
+                  //     : _getDeviceGroupName(),
                   icon: Icons.group_work,
                 ),
               ],
@@ -2345,36 +2379,46 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   Widget _buildChannelsTab() {
     if (_loadingChannels && !_channelsLoaded) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Channels',
+          message: 'Loading device channels...',
+          lottieSize: 80,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.secondary,
+        ),
+      );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Device Channels',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
               color: Color(0xFF1e293b),
             ),
           ),
-          const SizedBox(height: 16),
+          // const SizedBox(height: AppSizes.spacing16),
           if (_deviceChannels == null || _deviceChannels!.isEmpty)
-            const AppCard(
-              child: Center(
-                child: Text(
-                  'No channels found for this device',
-                  style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
-                ),
+            Padding(
+              padding: const EdgeInsets.only(top: 100.0),
+              child: AppLottieStateWidget.noData(
+                //  title: 'No Channels Found',
+                // message: 'This device has no channels associated with it.',
+                //   lottieSize: 100,
+                titleColor: AppColors.primary,
+                messageColor: AppColors.secondary,
               ),
             )
           else
             ..._deviceChannels!.map(
               (channel) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: AppSizes.spacing16),
                 child: AppCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2382,12 +2426,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       Text(
                         channel.channel?.name ?? 'Channel ${channel.channelId}',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: AppSizes.fontSizeSmall,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF1e293b),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSizes.spacing8),
                       _buildInfoRow('Channel ID', channel.channelId.toString()),
                       _buildInfoRow('Code', channel.channel?.code ?? 'N/A'),
                       _buildInfoRow('Units', channel.channel?.units ?? 'N/A'),
@@ -2415,11 +2459,19 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   Widget _buildMetricsTab() {
     if (_loadingMetrics && !_metricsLoaded) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Metrics',
+          message: 'Loading device metrics...',
+          lottieSize: 80,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.secondary,
+        ),
+      );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3013,11 +3065,19 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   Widget _buildBillingTab() {
     if (_loadingBilling && !_billingLoaded) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Billing',
+          message: 'Loading device billing information...',
+          lottieSize: 80,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.secondary,
+        ),
+      );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3028,7 +3088,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               const Text(
                 'Device Billing Information',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF1e293b),
                 ),
@@ -3036,7 +3096,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               _buildBillingActions(),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSizes.spacing16),
 
           if (_deviceBilling != null) ...[
             _buildBillingDataTable(),
@@ -3045,7 +3105,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               child: Center(
                 child: Text(
                   'No billing data available',
-                  style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeMedium,
+                    color: Color(0xFF64748b),
+                  ),
                 ),
               ),
             ),
@@ -3060,14 +3123,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFF2563eb),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
           ),
           child: IconButton(
             onPressed: _refreshBillingData,
-            icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+              size: AppSizes.iconSmall,
+            ),
             tooltip: 'Refresh Data',
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: const EdgeInsets.all(AppSizes.spacing8),
+            constraints: const BoxConstraints(
+              minWidth: AppSizes.spacing32,
+              minHeight: AppSizes.spacing32,
+            ),
           ),
         ),
       ],
@@ -3087,7 +3157,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         child: Center(
           child: Text(
             'No billing records found',
-            style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeMedium,
+              color: Color(0xFF64748b),
+            ),
           ),
         ),
       );
@@ -3145,7 +3218,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSizes.spacing16),
 
         // Pagination controls
         _buildBillingPagination(totalPages, totalItems),
@@ -3212,11 +3285,19 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   Widget _buildLocationTab() {
     if (_loadingLocation && !_locationLoaded) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Location',
+          message: 'Loading device location...',
+          lottieSize: 80,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.secondary,
+        ),
+      );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       child: DeviceLocationViewer(
         address: widget.device.address,
         addressText: widget.device.addressText,

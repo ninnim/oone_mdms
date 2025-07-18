@@ -1,18 +1,18 @@
 import 'device.dart';
 
 class DeviceGroup {
-  final int id;
-  final String name;
-  final String description;
-  final bool active;
-  final List<Device> devices;
+  final int? id;
+  final String? name;
+  final String? description;
+  final bool? active;
+  final List<Device>? devices;
 
   DeviceGroup({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.active,
-    required this.devices,
+     this.id,
+     this.name,
+     this.description,
+     this.active,
+     this.devices,
   });
 
   factory DeviceGroup.fromJson(Map<String, dynamic> json) {
@@ -33,7 +33,7 @@ class DeviceGroup {
       'Name': name,
       'Description': description,
       'Active': active,
-      'Devices': devices.map((e) => e.toJson()).toList(),
+      'Devices': devices?.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -64,6 +64,6 @@ class DeviceGroup {
 
   @override
   String toString() {
-    return 'DeviceGroup(id: $id, name: $name, description: $description, active: $active, devices: ${devices.length})';
+    return 'DeviceGroup(id: $id, name: $name, description: $description, active: $active, devices: ${devices?.length})';
   }
 }

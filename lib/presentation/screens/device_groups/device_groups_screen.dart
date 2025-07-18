@@ -4,6 +4,7 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device_group.dart';
@@ -78,6 +79,24 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state
+    if (_isLoading && _deviceGroups.isEmpty) {
+      return const AppLottieStateWidget.loading(
+        title: 'Loading Device Groups',
+        message: 'Please wait while we fetch your device groups...',
+      );
+    }
+
+    // Show error state if error and no data
+    if (_errorMessage.isNotEmpty && _deviceGroups.isEmpty) {
+      return AppLottieStateWidget.error(
+        title: 'Failed to Load Device Groups',
+        message: _errorMessage,
+        buttonText: 'Try Again',
+        onButtonPressed: _loadDeviceGroups,
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(AppSizes.spacing24),
       child: Column(
@@ -85,17 +104,32 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           _buildHeader(),
           const SizedBox(height: AppSizes.spacing24),
           _buildErrorMessage(),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                _buildTableHeader(),
-                if (_selectedGroups.isNotEmpty) _buildMultiSelectToolbar(),
-                Expanded(child: _buildDeviceGroupTable()),
-                _buildPagination(),
-              ],
-            ),
-          ),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    // Show no data state if no device groups after loading
+    if (!_isLoading && _deviceGroups.isEmpty && _errorMessage.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Device Groups Found',
+        message:
+            'No device groups have been created yet. Click "Add Device Group" to create your first group.',
+        buttonText: 'Add Device Group',
+        onButtonPressed: _createDeviceGroup,
+      );
+    }
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildTableHeader(),
+          if (_selectedGroups.isNotEmpty) _buildMultiSelectToolbar(),
+          Expanded(child: _buildDeviceGroupTable()),
+          _buildPagination(),
         ],
       ),
     );
@@ -185,7 +219,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           builder: (group) => Expanded(
             flex: 2,
             child: Text(
-              group.name,
+              group.name ?? 'None',
               style: const TextStyle(
                 fontSize: AppSizes.fontSizeMedium,
                 fontWeight: FontWeight.w500,
@@ -209,7 +243,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               ),
               child: Text(
-                '${group.devices.length}',
+                '${group.devices?.length ?? 0}',
                 style: const TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   fontWeight: FontWeight.w500,
@@ -225,7 +259,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           builder: (group) => SizedBox(
             width: 120,
             child: Text(
-              group.description.isNotEmpty ? group.description : 'N/A',
+              group.description ?? 'N/A',
               style: const TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 color: AppColors.textSecondary,
