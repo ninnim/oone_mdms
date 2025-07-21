@@ -1194,6 +1194,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       children: [
         // Ping Device
         IconButton(
+          padding: const EdgeInsets.all(AppSizes.spacing8),
+          constraints: const BoxConstraints(
+            minWidth: AppSizes.spacing32,
+            minHeight: AppSizes.spacing32,
+          ),
+          iconSize: AppSizes.iconSmall,
           onPressed: () => _performDeviceAction('ping'),
           icon: const Icon(Icons.network_ping),
           tooltip: 'Ping Device',
@@ -1206,6 +1212,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
         // Link HES
         IconButton(
+          padding: const EdgeInsets.all(AppSizes.spacing8),
+          constraints: const BoxConstraints(
+            minWidth: AppSizes.spacing32,
+            minHeight: AppSizes.spacing32,
+          ),
+          iconSize: AppSizes.iconSmall,
           onPressed: () => _performDeviceAction('link_hes'),
           icon: const Icon(Icons.link),
           tooltip: 'Link to HES',
@@ -1218,6 +1230,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
         // Commission Device
         IconButton(
+          padding: const EdgeInsets.all(AppSizes.spacing8),
+          constraints: const BoxConstraints(
+            minWidth: AppSizes.spacing32,
+            minHeight: AppSizes.spacing32,
+          ),
+          iconSize: AppSizes.iconSmall,
           onPressed: () => _performDeviceAction('commission'),
           icon: const Icon(Icons.check_circle),
           tooltip: 'Commission Device',
@@ -1230,6 +1248,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
         // More Actions
         PopupMenuButton<String>(
+          padding: const EdgeInsets.all(AppSizes.spacing8),
+          constraints: const BoxConstraints(
+            minWidth: AppSizes.spacing32,
+            minHeight: AppSizes.spacing32,
+          ),
           onSelected: _performDeviceAction,
           icon: const Icon(Icons.more_vert),
           tooltip: 'More Actions',
@@ -2489,9 +2512,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               ),
               // View toggle
               Container(
-                height: AppSizes.inputHeight,
+                height: AppSizes.buttonHeightSmall,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                   color: const Color(0xFFF1F5F9),
                 ),
                 child: Row(
@@ -2529,14 +2552,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
             else
               _buildMetricsGraph(),
           ] else
-            const AppCard(
-              child: Center(
-                child: Text(
-                  'No metrics data available',
-                  style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
-                ),
-              ),
+            AppLottieStateWidget.noData(
+              title: 'No Metrics Data',
+              message: 'No metrics data available',
             ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -2562,7 +2584,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         const SizedBox(width: 12),
         // Refresh button
         Container(
-          height: AppSizes.inputHeight,
+          // height: AppSizes.inputHeight,
           decoration: BoxDecoration(
             color: const Color(0xFF2563eb),
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
@@ -2575,7 +2597,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               size: AppSizes.iconSmall,
             ),
             tooltip: 'Refresh Data',
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(AppSizes.spacing8),
+            constraints: const BoxConstraints(
+              minWidth: AppSizes.spacing32,
+              minHeight: AppSizes.spacing32,
+            ),
             //  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
         ),
@@ -2596,12 +2622,17 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         );
         onTap();
       },
-      borderRadius: BorderRadius.circular(6),
+      //  borderRadius: BorderRadius.circular(6),
       child: Container(
-        height: AppSizes.inputHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        // height: AppSizes.buttonHeightSmall,
+        // padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.all(AppSizes.spacing8),
+        constraints: const BoxConstraints(
+          minWidth: AppSizes.spacing32,
+          minHeight: AppSizes.spacing32,
+        ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           color: isActive ? const Color(0xFF2563eb) : Colors.transparent,
         ),
         child: Row(
@@ -2642,16 +2673,26 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.bar_chart, size: 64, color: Color(0xFF64748b)),
-              SizedBox(height: 16),
+              Icon(
+                Icons.bar_chart,
+                size: AppSizes.iconSmall,
+                color: Color(0xFF64748b),
+              ),
+              // SizedBox(height: 16),
               Text(
                 'No metrics data available for graphing',
-                style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  color: Color(0xFF64748b),
+                ),
               ),
               SizedBox(height: 8),
               Text(
                 'Try adjusting the date range or refresh the data',
-                style: TextStyle(fontSize: 14, color: Color(0xFF64748b)),
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  color: Color(0xFF64748b),
+                ),
               ),
             ],
           ),
@@ -2912,14 +2953,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     final allMetrics = deviceMetrics['Metrics'] as List? ?? [];
 
     if (allMetrics.isEmpty) {
-      return const AppCard(
-        child: Center(
-          child: Text(
-            'No metrics data available',
-            style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
-          ),
-        ),
+      return AppLottieStateWidget.noData(
+        title: 'No Metrics Data',
+        message: 'No metrics data available for this device.',
+        // lottieSize: 100,
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
       );
+      //  AppCard(
+      //   child: Center(
+      //     child: Text(
+      //       'No metrics data available',
+      //       style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
+      //     ),
+      //   ),
+      // );
     }
 
     // Calculate pagination

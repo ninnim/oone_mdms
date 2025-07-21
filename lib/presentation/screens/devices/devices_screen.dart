@@ -814,10 +814,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
     if (!_isLoading && _devices.isEmpty && _errorMessage.isEmpty) {
       return AppLottieStateWidget.noData(
         title: 'No Devices Found',
-        message:
-            'No devices have been added yet. Click the "Add Device" button to get started.',
+        message: '',
         buttonText: 'Add Device',
-        onButtonPressed: _showAddDeviceModal,
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
+        //onButtonPressed: _showAddDeviceModal,
       );
     }
 

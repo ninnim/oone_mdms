@@ -408,20 +408,26 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AppLottieStateWidget.loading(
-                title: 'Loading Device Details',
-                message: 'Please wait while we load the device details.',
-                lottieSize: 80,
-              ),
-              // SizedBox(height: 16),
-              // Text('Loading device details...'),
-            ],
-          ),
+          child: Container(),
+          // child: AppLottieStateWidget.loading(
+          //   title: 'Loading Device Details',
+          //   message: 'Please wait while we load the device details.',
+          //   lottieSize: 80,
+          // ),
+          // Column(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     AppLottieStateWidget.loading(
+          //       title: 'Loading Device Details',
+          //       message: 'Please wait while we load the device details.',
+          //       lottieSize: 80,
+          //     ),
+          //     // SizedBox(height: 16),
+          //     // Text('Loading device details...'),
+          //   ],
+          // ),
         ),
       );
     }
@@ -585,20 +591,21 @@ class _DeviceBillingReadingsRouteWrapperState
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AppLottieStateWidget.loading(
-                title: 'Loading Billing Readings',
-                message: 'Please wait while we load the billing readings.',
-                lottieSize: 80,
-              ),
-              // SizedBox(height: 16),
-              // Text('Loading billing readings...'),
-            ],
-          ),
+          child: Container(),
+          // child: Column(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     AppLottieStateWidget.loading(
+          //       title: 'Loading Billing Readings',
+          //       message: 'Please wait while we load the billing readings.',
+          //       lottieSize: 80,
+          //     ),
+          //     // SizedBox(height: 16),
+          //     // Text('Loading billing readings...'),
+          //   ],
+          // ),
         ),
       );
     }

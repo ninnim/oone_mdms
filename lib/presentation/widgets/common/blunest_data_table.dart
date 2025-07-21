@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -418,20 +419,15 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
           ),
         ],
       ),
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-            SizedBox(height: AppSizes.spacing16),
-            Text(
-              'Loading...',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: AppSizes.fontSizeLarge,
-              ),
+            AppLottieStateWidget.loading(
+              title: 'Loading',
+              message: '',
+              lottieSize: 80,
+              titleColor: AppColors.primary,
             ),
           ],
         ),

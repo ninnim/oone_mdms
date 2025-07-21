@@ -48,7 +48,7 @@ class AppSizes {
   static const double buttonHeightSmall = 36.0;
   static const double buttonHeight = 44.0;
   static const double inputWidth = 300.0;
-  static const double inputHeight = 40.0;
+  static const double inputHeight = 36.0;
   static const double cardMinHeight = 120.0;
 
   /// Button Dimensions

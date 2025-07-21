@@ -75,6 +75,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
       child: GestureDetector(
         onTap: widget.enabled ? _toggleDropdown : null,
         child: Container(
+          height: AppSizes.inputHeight,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             border: Border.all(
@@ -92,7 +93,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
             children: [
               Icon(
                 Icons.calendar_today,
-                size: 16,
+                size: AppSizes.iconSmall,
                 color: widget.enabled
                     ? (isDark ? Colors.white70 : AppColors.textSecondary)
                     : (isDark ? Colors.white30 : AppColors.textTertiary),
@@ -101,7 +102,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
               Text(
                 _getDisplayText(),
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppSizes.fontSizeSmall,
                   color: widget.enabled
                       ? (isDark ? Colors.white : AppColors.textPrimary)
                       : (isDark ? Colors.white54 : AppColors.textTertiary),
@@ -112,7 +113,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                 _isDropdownOpen
                     ? Icons.keyboard_arrow_up
                     : Icons.keyboard_arrow_down,
-                size: 16,
+                size: AppSizes.iconSmall,
                 color: widget.enabled
                     ? (isDark ? Colors.white70 : AppColors.textSecondary)
                     : (isDark ? Colors.white30 : AppColors.textTertiary),
@@ -169,7 +170,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
           ),
           // Dropdown content
           Positioned(
-            width: 600,
+            width: 500,
             child: CompositedTransformFollower(
               link: _layerLink,
               showWhenUnlinked: false,
@@ -284,7 +285,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                   ],
                 ),
               ),
-              const SizedBox(width: 24),
+              // const SizedBox(width: 24),
               // Right side: Calendar and controls
               Expanded(
                 child: Column(
@@ -480,8 +481,8 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                     child: Text(
                       day,
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        fontSize: AppSizes.fontSizeSmall,
+                        fontWeight: FontWeight.w600,
                         color: isDark
                             ? Colors.white70
                             : AppColors.textSecondary,
@@ -530,8 +531,8 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
             child: GestureDetector(
               onTap: () => _selectDate(currentDay, setDialogState),
               child: Container(
-                height: 40,
-                width: 40,
+                height: 30,
+                width: 5,
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   color: isSelected
@@ -549,7 +550,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeSmall,
                           fontWeight: isToday
-                              ? FontWeight.w600
+                              ? FontWeight.w500
                               : FontWeight.normal,
                           color: isSelected
                               ? Colors.white
@@ -656,6 +657,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
       children: [
         SizedBox(
           width: 100,
+          height: 30,
           child: AppButton(
             type: AppButtonType.outline,
             size: AppButtonSize.small,
@@ -673,6 +675,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
         const SizedBox(width: 12),
         SizedBox(
           width: 100,
+          height: 30,
           child: AppButton(
             type: AppButtonType.primary,
             size: AppButtonSize.small,
