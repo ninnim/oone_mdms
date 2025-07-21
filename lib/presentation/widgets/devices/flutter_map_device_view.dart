@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/constants/app_sizes.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -406,41 +409,45 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                   child: Text(
                     'Device Locations ($_totalItems)',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: AppSizes.fontSizeSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    setState(() {
-                      _showDeviceList = false;
-                    });
-                  },
-                ),
+
+                // IconButton(
+                //   icon: const Icon(Icons.close),
+                //   onPressed: () {
+                //     setState(() {
+                //       _showDeviceList = false;
+                //     });
+                //   },
+                // ),
               ],
             ),
           ),
 
           // Search field
           Container(
+            // height: AppSizes.inputHeight,
             padding: const EdgeInsets.all(16),
-            child: TextField(
+            child: AppInputField(
               onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search devices...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.primary),
-                ),
-              ),
+              prefixIcon: const Icon(Icons.search),
+              hintText: 'Search devices...',
+              // decoration: InputDecoration(
+              //   hintText: 'Search devices...',
+              //   prefixIcon: const Icon(Icons.search),
+              //   border: OutlineInputBorder(
+              //     borderRadius: BorderRadius.circular(8),
+              //     borderSide: BorderSide(color: AppColors.border),
+              //   ),
+              //   focusedBorder: OutlineInputBorder(
+              //     borderRadius: BorderRadius.circular(8),
+              //     borderSide: BorderSide(color: AppColors.primary),
+              //   ),
+              // ),
             ),
           ),
 

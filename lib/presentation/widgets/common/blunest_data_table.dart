@@ -216,19 +216,8 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
-                        if (widget.enableMultiSelect) {
-                          final newSelection = Set<T>.from(
-                            widget.selectedItems,
-                          );
-                          if (isSelected) {
-                            newSelection.remove(item);
-                          } else {
-                            newSelection.add(item);
-                          }
-                          widget.onSelectionChanged?.call(newSelection);
-                        } else {
-                          widget.onRowTap?.call(item);
-                        }
+                        // Always call onRowTap when available - this opens sidebar
+                        widget.onRowTap?.call(item);
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(

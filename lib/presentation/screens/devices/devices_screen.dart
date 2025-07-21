@@ -14,6 +14,9 @@ import '../../widgets/devices/device_table_columns.dart';
 import '../../widgets/devices/device_kanban_view.dart';
 import '../../widgets/devices/flutter_map_device_view.dart';
 import '../../widgets/devices/device_filters_and_actions.dart';
+import '../../widgets/devices/device_summary_card.dart';
+import '../../widgets/devices/device_sidebar_content.dart';
+import '../../widgets/common/sidebar_drawer.dart';
 import 'create_edit_device_screen.dart';
 import 'device_360_details_screen.dart';
 import 'device_billing_readings_screen.dart';
@@ -74,6 +77,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
   // Sorting
   String? _sortBy;
   bool _sortAscending = true;
+
+  // Sidebar state
+  bool _isSidebarOpen = false;
+  Device? _sidebarDevice;
 
   // Available columns for table view
   final List<String> _availableColumns = [
@@ -272,41 +279,56 @@ class _DevicesScreenState extends State<DevicesScreen> {
       return _buildErrorMessage();
     }
 
-    // Main devices view - optimized for maximum table space
-    return Padding(
-      padding: const EdgeInsets.all(
-        AppSizes.spacing12,
-      ), // Reduced from spacing16
-      child: Column(
-        children: [
-          // Filters and actions
-          DeviceFiltersAndActions(
-            onSearchChanged: _onSearchChanged,
-            onStatusFilterChanged: _onStatusFilterChanged,
-            onTypeFilterChanged: _onTypeFilterChanged,
-            onLinkStatusFilterChanged: _onLinkStatusFilterChanged,
-            onViewModeChanged: _onViewModeChanged,
-            onColumnVisibilityChanged: _onColumnVisibilityChanged,
-            onAddDevice: _showAddDeviceModal,
-            onRefresh: _loadDevices,
-            onExport: _exportDevices,
-            onImport: _importDevices,
-            currentViewMode: _currentViewMode,
-            availableColumns: _availableColumns,
-            hiddenColumns: _hiddenColumns,
-            selectedStatus: _selectedStatus,
-            selectedType: _selectedType,
-            selectedLinkStatus: _selectedLinkStatus,
+    // Main devices view with sidebar support
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(
+            AppSizes.spacing12,
+          ), // Reduced from spacing16
+          child: Column(
+            children: [
+              // Filters and actions
+              DeviceFiltersAndActions(
+                onSearchChanged: _onSearchChanged,
+                onStatusFilterChanged: _onStatusFilterChanged,
+                onTypeFilterChanged: _onTypeFilterChanged,
+                onLinkStatusFilterChanged: _onLinkStatusFilterChanged,
+                onViewModeChanged: _onViewModeChanged,
+                onColumnVisibilityChanged: _onColumnVisibilityChanged,
+                onAddDevice: _showAddDeviceModal,
+                onRefresh: _loadDevices,
+                onExport: _exportDevices,
+                onImport: _importDevices,
+                currentViewMode: _currentViewMode,
+                availableColumns: _availableColumns,
+                hiddenColumns: _hiddenColumns,
+                selectedStatus: _selectedStatus,
+                selectedType: _selectedType,
+                selectedLinkStatus: _selectedLinkStatus,
+              ),
+
+              const SizedBox(height: AppSizes.spacing8),
+
+              // Summary card
+              DeviceSummaryCard(devices: _filteredDevices),
+
+              // Error message (compact banner for existing devices)
+              _buildErrorMessage(),
+
+              // Content based on view mode
+              Expanded(child: _buildContent()),
+            ],
           ),
+        ),
 
-          const SizedBox(height: AppSizes.spacing8), // Reduced from spacing12
-          // Error message (compact banner for existing devices)
-          _buildErrorMessage(),
-
-          // Content based on view mode
-          Expanded(child: _buildContent()),
-        ],
-      ),
+        // // Sidebar overlay
+        // if (_isSidebarOpen && _sidebarDevice != null)
+        //   SidebarDrawer(
+        //     onClose: _closeSidebar,
+        //     child: DeviceSidebarContent(device: _sidebarDevice!),
+        //   ),
+      ],
     );
   }
 
@@ -367,7 +389,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
   Widget _buildDeviceTable() {
     return BluNestDataTable<Device>(
       columns: DeviceTableColumns.getColumns(
-        onView: (device) => _viewDeviceDetails(device),
+        onView: (device) =>
+            _viewDeviceDetails(device), // Keep original view action
         onEdit: (device) => _editDevice(device),
         onDelete: (device) => _deleteDevice(device),
         currentPage: _currentPage,
@@ -375,10 +398,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
         devices: _filteredDevices,
       ),
       data: _filteredDevices,
-      onRowTap: (device) => _viewDeviceDetails(device),
+      onRowTap: (device) => _openSidebar(device), // Row click opens sidebar
       onEdit: (device) => _editDevice(device),
       onDelete: (device) => _deleteDevice(device),
-      onView: (device) => _viewDeviceDetails(device),
+      onView: (device) =>
+          _viewDeviceDetails(device), // Keep original view action
       enableMultiSelect: true,
       selectedItems: _selectedDevices,
       onSelectionChanged: (selectedItems) {
@@ -443,6 +467,21 @@ class _DevicesScreenState extends State<DevicesScreen> {
         },
       ),
     );
+  }
+
+  // Sidebar control methods
+  void _openSidebar(Device device) {
+    setState(() {
+      _isSidebarOpen = true;
+      _sidebarDevice = device;
+    });
+  }
+
+  void _closeSidebar() {
+    setState(() {
+      _isSidebarOpen = false;
+      _sidebarDevice = null;
+    });
   }
 
   void _viewDeviceDetails(Device device) {

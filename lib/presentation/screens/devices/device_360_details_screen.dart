@@ -2668,36 +2668,46 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     );
 
     if (metrics.isEmpty) {
-      return const AppCard(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.bar_chart,
-                size: AppSizes.iconSmall,
-                color: Color(0xFF64748b),
-              ),
-              // SizedBox(height: 16),
-              Text(
-                'No metrics data available for graphing',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  color: Color(0xFF64748b),
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Try adjusting the date range or refresh the data',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  color: Color(0xFF64748b),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return AppLottieStateWidget.noData(
+        title: 'No Metrics Data',
+        message: 'No metrics data available for graphing',
+        lottieSize: 200,
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
       );
+      // const AppCard(
+      //   child:
+
+      //   Center(
+      //     child: Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+
+      //         Icon(
+      //           Icons.bar_chart,
+      //           size: AppSizes.iconSmall,
+      //           color: Color(0xFF64748b),
+      //         ),
+      //         // SizedBox(height: 16),
+      //         Text(
+      //           'No metrics data available for graphing',
+      //           style: TextStyle(
+      //             fontSize: AppSizes.fontSizeSmall,
+      //             color: Color(0xFF64748b),
+      //           ),
+      //         ),
+      //         SizedBox(height: 8),
+      //         Text(
+      //           'Try adjusting the date range or refresh the data',
+      //           style: TextStyle(
+      //             fontSize: AppSizes.fontSizeSmall,
+      //             color: Color(0xFF64748b),
+      //           ),
+      //         ),
+      //       ],
+      //     ),
+      //   ),
+      // );
     }
 
     // Take only first 20 metrics for better visualization
@@ -3149,17 +3159,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           if (_deviceBilling != null) ...[
             _buildBillingDataTable(),
           ] else
-            const AppCard(
-              child: Center(
-                child: Text(
-                  'No billing data available',
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeMedium,
-                    color: Color(0xFF64748b),
-                  ),
-                ),
-              ),
-            ),
+            AppLottieStateWidget.noData(title: 'No Billing Data'),
+          //  AppCard(
+          //   child: Center(
+          //     child: Text(
+          //       'No billing data available',
+          //       style: TextStyle(
+          //         fontSize: AppSizes.fontSizeMedium,
+          //         color: Color(0xFF64748b),
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -3201,17 +3212,24 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     }
 
     if (billingRecords.isEmpty) {
-      return const AppCard(
-        child: Center(
-          child: Text(
-            'No billing records found',
-            style: TextStyle(
-              fontSize: AppSizes.fontSizeMedium,
-              color: Color(0xFF64748b),
-            ),
-          ),
-        ),
+      return AppLottieStateWidget.noData(
+        title: 'No Billing Records',
+        message: 'This device has no billing records available.',
+        // lottieSize: 100,
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
       );
+      //  const AppCard(
+      //   child: Center(
+      //     child: Text(
+      //       'No billing records found',
+      //       style: TextStyle(
+      //         fontSize: AppSizes.fontSizeMedium,
+      //         color: Color(0xFF64748b),
+      //       ),
+      //     ),
+      //   ),
+      // );
     }
 
     // Convert to Map<String, dynamic> for compatibility
