@@ -714,9 +714,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
         //   ),
         // ),
         DropdownMenuItem<int>(
-          value: widget.device?.deviceGroup?.id,
+          value: widget.device?.deviceGroupData?['Id'],
           child: Text(
-            widget.device?.deviceGroup?.name ?? 'None',
+            widget.device?.deviceGroupData?['Name']?.toString() ?? 'None',
             style: TextStyle(fontSize: AppSizes.fontSizeSmall),
           ),
         ),

@@ -521,9 +521,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         ),
       ),
       DropdownMenuItem<int?>(
-        value: widget.device.deviceGroup?.id ?? 0,
+        value: widget.device.deviceGroupData?['Id'] ?? 0,
         child: Text(
-          widget.device.deviceGroup?.name ?? 'None',
+          widget.device.deviceGroupData?['Name']?.toString() ?? 'None',
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             color: Color(0xFF374151),
@@ -1462,7 +1462,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   Widget _buildOverviewViewMode() {
     if (kDebugMode) {
       print(
-        'Building overview view mode for device: ${widget.device.deviceGroup?.toJson()}',
+        'Building overview view mode for device: ${widget.device.deviceGroupData}',
       );
     }
     return SingleChildScrollView(
@@ -1549,7 +1549,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   'Device Group',
-                  widget.device.deviceGroup?.name ?? 'None',
+                  widget.device.deviceGroupData?['Name']?.toString() ?? 'None',
                   // widget.device.deviceGroupId.toString() == '0'
                   //     ? 'None'
                   //     : _getDeviceGroupName(),

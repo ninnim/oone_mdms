@@ -345,7 +345,7 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
             _buildInfoRow('Group ID', widget.device.deviceGroupId.toString()),
             _buildInfoRow(
               'Group Name',
-              widget.device.deviceGroup?.name ?? 'Default Group',
+              widget.device.deviceGroupData?['Name']?.toString() ?? 'Default Group',
             ),
             _buildInfoRow('Group Type', 'Device Collection'),
           ]),

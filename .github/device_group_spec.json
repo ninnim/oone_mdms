@@ -46,6 +46,7 @@
 // Read Device Group by ID
 // Method GET https://mdms.oone.bz/api/rest/v1/DeviceGroup/69?includeDevices=true
 // Response Read Device Group by ID
+
 {
   "DeviceGroup": {
     "Id": 69,
@@ -94,6 +95,7 @@
 }
 
 // Response Create Device Group
+
 {
   "DeviceGroup": {
     "Id": 194,
@@ -122,9 +124,11 @@
           "DeviceGroupId"
         ]
       },
+      //devices to be added
       "data": [{"Id":"8be0994a-4869-4ae8-969b-32681b040ab5"}]
     }
   },
+  // devices to be removed
   "RemovedDevices": []
 }
 
@@ -156,3 +160,4 @@
     "affected_rows": 0
   }
 }
+

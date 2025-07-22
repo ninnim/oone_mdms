@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/device_group_service.dart';
 import '../../../core/services/service_locator.dart';
+import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
@@ -252,7 +253,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
         message: 'Are you sure you want to delete "${deviceGroup.name}"?\n\nThis action cannot be undone.',
         confirmText: 'Delete',
         cancelText: 'Cancel',
-        confirmType: AppButtonType.danger,
+        isDestructive: true,
       ),
     ) ?? false;
   }
@@ -267,7 +268,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
         message: 'Are you sure you want to delete ${_selectedDeviceGroups.length} device group(s)?\n\nThis action cannot be undone.',
         confirmText: 'Delete All',
         cancelText: 'Cancel',
-        confirmType: AppButtonType.danger,
+        isDestructive: true,
       ),
     ) ?? false;
 
@@ -370,31 +371,105 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show full-screen error state if no device groups and there's an error
-    if (_errorMessage.isNotEmpty && _deviceGroups.isEmpty) {
-      return _buildErrorMessage();
-    }
-
-    // Main device groups view matching devices screen structure
-    return Padding(
-      padding: const EdgeInsets.all(
-        AppSizes.spacing12,
-      ), // Match devices screen padding
-      child: Column(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Column(
         children: [
-          // Filters and actions (matching devices screen style)
-          _buildFiltersAndActions(),
-
-          const SizedBox(height: AppSizes.spacing8),
-
-          // Summary card (if needed)
-          // DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
-
-          // Error message (compact banner for existing device groups)
+          // Header and Actions
+          _buildHeader(),
+          
+          // Error message (if any)
           _buildErrorMessage(),
 
-          // Content based on view mode
-          Expanded(child: _buildContent()),
+          // Content
+          Expanded(
+            child: _isLoading && _deviceGroups.isEmpty
+                ? const AppLottieStateWidget.loading(message: 'Loading device groups...')
+                : _deviceGroups.isEmpty && !_isLoading
+                    ? AppLottieStateWidget.empty(
+                        title: 'No Device Groups',
+                        message: 'Create your first device group to get started.',
+                        buttonText: 'Create Device Group',
+                        onButtonPressed: _createDeviceGroup,
+                      )
+                    : Column(
+                        children: [
+                          // Filters and Search
+                          _buildFiltersAndSearch(),
+
+                          // Selected items toolbar (if any)
+                          if (_selectedDeviceGroups.isNotEmpty) _buildSelectedItemsToolbar(),
+
+                          // Content based on view mode
+                          Expanded(
+                            child: _currentViewMode == DeviceGroupViewMode.table
+                                ? _buildDeviceGroupTable()
+                                : _buildKanbanView(),
+                          ),
+
+                          // Pagination
+                          if (_totalPages > 1) _buildPagination(),
+                        ],
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing24),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(color: AppColors.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Title
+          Text(
+            'Device Groups',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const Spacer(),
+          
+          // View mode toggle
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildViewModeButton(
+                  icon: Icons.table_rows,
+                  mode: DeviceGroupViewMode.table,
+                  tooltip: 'Table View',
+                ),
+                _buildViewModeButton(
+                  icon: Icons.view_kanban,
+                  mode: DeviceGroupViewMode.kanban,
+                  tooltip: 'Kanban View',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSizes.spacing16),
+          
+          // Create button
+          AppButton(
+            text: 'Create Device Group',
+            type: AppButtonType.primary,
+            onPressed: _createDeviceGroup,
+            prefixIcon: Icons.add,
+          ),
         ],
       ),
     );
@@ -423,6 +498,75 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
             color: isSelected ? AppColors.surface : AppColors.textSecondary,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFiltersAndSearch() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(color: AppColors.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Search
+          Expanded(
+            flex: 2,
+            child: AppInputField(
+              controller: _searchController,
+              hintText: 'Search device groups...',
+              prefixIcon: Icons.search,
+              onChanged: _onSearchChanged,
+            ),
+          ),
+          const SizedBox(width: AppSizes.spacing16),
+
+          // Status filter
+          Expanded(
+            child: DropdownButtonFormField<String?>(
+              value: _selectedStatus,
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing12,
+                  vertical: AppSizes.spacing8,
+                ),
+              ),
+              items: const [
+                DropdownMenuItem(value: null, child: Text('All Statuses')),
+                DropdownMenuItem(value: 'active', child: Text('Active')),
+                DropdownMenuItem(value: 'inactive', child: Text('Inactive')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedStatus = value;
+                  _currentPage = 1;
+                });
+                _loadDeviceGroups();
+              },
+            ),
+          ),
+          const SizedBox(width: AppSizes.spacing16),
+
+          // Clear filters button
+          AppButton(
+            text: 'Clear',
+            type: AppButtonType.secondary,
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _selectedStatus = null;
+                _currentPage = 1;
+              });
+              _loadDeviceGroups();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -747,9 +891,6 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   }
 
   Widget _buildPagination() {
-    final startItem = ((_currentPage - 1) * _itemsPerPage) + 1;
-    final endItem = (_currentPage * _itemsPerPage).clamp(1, _totalItems);
-    
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: const BoxDecoration(
@@ -763,155 +904,9 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
         totalPages: _totalPages,
         totalItems: _totalItems,
         itemsPerPage: _itemsPerPage,
-        startItem: startItem,
-        endItem: endItem,
         onPageChanged: _onPageChanged,
         onItemsPerPageChanged: _onItemsPerPageChanged,
       ),
-    );
-  }
-
-  Widget _buildFiltersAndActions() {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(AppSizes.radiusMedium)),
-        border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
-      ),
-      child: Column(
-        children: [
-          // First row: Search, filters, and view toggle
-          Row(
-            children: [
-              // Search
-              Expanded(
-                flex: 2,
-                child: AppInputField(
-                  controller: _searchController,
-                  hintText: 'Search device groups...',
-                  prefixIcon: const Icon(Icons.search),
-                  onChanged: _onSearchChanged,
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacing16),
-
-              // Status filter
-              Expanded(
-                child: DropdownButtonFormField<String?>(
-                  value: _selectedStatus,
-                  decoration: const InputDecoration(
-                    labelText: 'Status',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: AppSizes.spacing12,
-                      vertical: AppSizes.spacing8,
-                    ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: null, child: Text('All Statuses')),
-                    DropdownMenuItem(value: 'active', child: Text('Active')),
-                    DropdownMenuItem(value: 'inactive', child: Text('Inactive')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedStatus = value;
-                      _currentPage = 1;
-                    });
-                    _loadDeviceGroups();
-                  },
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacing16),
-
-              // Clear filters button
-              AppButton(
-                text: 'Clear',
-                type: AppButtonType.secondary,
-                onPressed: () {
-                  setState(() {
-                    _searchController.clear();
-                    _selectedStatus = null;
-                    _currentPage = 1;
-                  });
-                  _loadDeviceGroups();
-                },
-              ),
-              const SizedBox(width: AppSizes.spacing16),
-
-              // View mode toggle
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildViewModeButton(
-                      icon: Icons.table_rows,
-                      mode: DeviceGroupViewMode.table,
-                      tooltip: 'Table View',
-                    ),
-                    _buildViewModeButton(
-                      icon: Icons.view_kanban,
-                      mode: DeviceGroupViewMode.kanban,
-                      tooltip: 'Kanban View',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacing16),
-
-              // Create button
-              AppButton(
-                text: 'Create Device Group',
-                type: AppButtonType.primary,
-                onPressed: _createDeviceGroup,
-                icon: const Icon(Icons.add, size: 16),
-              ),
-            ],
-          ),
-
-          // Selected items toolbar (if any)
-          if (_selectedDeviceGroups.isNotEmpty) ...[
-            const SizedBox(height: AppSizes.spacing16),
-            _buildSelectedItemsToolbar(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent() {
-    // Loading state
-    if (_isLoading && _deviceGroups.isEmpty) {
-      return const AppLottieStateWidget.loading(message: 'Loading device groups...');
-    }
-
-    // Empty state
-    if (_deviceGroups.isEmpty && !_isLoading) {
-      return const AppLottieStateWidget.noData(
-        title: 'No Device Groups',
-        message: 'Create your first device group to get started.',
-        buttonText: 'Create Device Group',
-      );
-    }
-
-    // Main content
-    return Column(
-      children: [
-        // Content based on view mode
-        Expanded(
-          child: _currentViewMode == DeviceGroupViewMode.table
-              ? _buildDeviceGroupTable()
-              : _buildKanbanView(),
-        ),
-
-        // Pagination
-        if (_totalPages > 1) _buildPagination(),
-      ],
     );
   }
 }

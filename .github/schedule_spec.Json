@@ -243,3 +243,89 @@
   "CreatedDate": "2025-07-04T02:58:31.4496475+00:00",
   "CreatedBy": "nin nin"
 } 
+
+
+// Read Schedule by Device ID
+// Method GET https://mdms.oone.bz/core/api/rest/v1/Schedule/Device/16f17586-12f3-4846-bb22-2e6087f81d81
+// Response Read Schedule by Device ID
+{
+  "Schedule": [
+    {
+      "BillingDeviceId": "c9c90dc7-7b75-430c-96ce-8058bc3c2662",
+      "JobId": 417,
+      "JobTriggerId": 546,
+      "Code": "SC-GROUP",
+      "Name": "SC-GROUP",
+      "JobStatus": "None",
+      "TargetType": "Group",
+      "CronExpression": "0 0 0 10 * ?",
+      "BillingDevice": {
+        "JobId": 417,
+        "JobTriggerId": 0,
+        "SiteId": 131,
+        "DeviceId": null,
+        "DeviceGroupId": 103,
+        "TimeOfUseId": 44,
+        "Status": "Enabled",
+        "NextBillingDate": "2025-07-10T00:00:00+00:00",
+        "Interval": "Monthly",
+        "RetryCount": 0,
+        "LastExecutionTime": null,
+        "UserId": "",
+        "Active": true,
+        "Id": "c9c90dc7-7b75-430c-96ce-8058bc3c2662",
+        "TenantId": "025aa4a1-8617-4e24-b890-2e69a09180ee",
+        "CreatedBy": "nin nin",
+        "CreatedDate": "2025-07-10T10:58:49.507701+00:00",
+        "RowDate": "2025-07-10T10:58:49.507688+00:00"
+      },
+      "Id": 417,
+      "Active": true,
+      "CreatedDate": "2025-07-10T10:58:49.409132+00:00",
+      "CreatedBy": "nin nin"
+    }
+  ]
+}
+
+// Read Schedule by Device Group ID
+// Method GET https://mdms.oone.bz/core/api/rest/v1/Schedule/DeviceGroup/103
+// Response Read Schedule by Device Group ID  
+{
+  "Schedule": [
+    {
+      "BillingDeviceId": "c9c90dc7-7b75-430c-96ce-8058bc3c2662",
+      "JobId": 417,
+      "JobTriggerId": 546,
+      "Code": "SC-GROUP",
+      "Name": "SC-GROUP",
+      "JobStatus": "None",
+      "TargetType": "Group",
+      "CronExpression": "0 0 0 10 * ?",
+      "BillingDevice": {
+        "JobId": 417,
+        "JobTriggerId": 0,
+        "SiteId": 131,
+        "DeviceId": null,
+        "DeviceGroupId": 103,
+        "TimeOfUseId": 44,
+        "Status": "Enabled",
+        "NextBillingDate": "2025-07-10T00:00:00+00:00",
+        "Interval": "Monthly",
+        "RetryCount": 0,
+        "LastExecutionTime": null,
+        "UserId": "",
+        "Active": true,
+        "Id": "c9c90dc7-7b75-430c-96ce-8058bc3c2662",
+        "TenantId": "025aa4a1-8617-4e24-b890-2e69a09180ee",
+        "CreatedBy": "nin nin",
+        "CreatedDate": "2025-07-10T10:58:49.507701+00:00",
+        "RowDate": "2025-07-10T10:58:49.507688+00:00"
+      },
+      "Id": 417,
+      "Active": true,
+      "CreatedDate": "2025-07-10T10:58:49.409132+00:00",
+      "CreatedBy": "nin nin"
+    }
+  ]
+}
+ 
