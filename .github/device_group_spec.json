@@ -161,3 +161,360 @@
   }
 }
 
+
+
+//Read Device Filter No Groups.
+
+// Method POST https://mdms.oone.bz/api/rest/v1/Device/Filter?search=%%&limit=25&offset=0   
+
+// Request paylod 
+{
+  "filter": {
+    "DeviceGroupId": {
+      "_eq": 0
+    }
+  }
+}
+
+// Response payload 
+
+{
+  "Paging": {
+    "Item": {
+      "Total": 23
+    }
+  },
+  "Device": [
+    {
+      "Id": "16f17586-12f3-4846-bb22-2e6087f81d81",
+      "SerialNumber": "ST-001",
+      "Name": "",
+      "DeviceType": "Smart Meter",
+      "Model": "DEIb",
+      "Manufacturer": "EDMI",
+      "Status": "None",
+      "LinkStatus": "None",
+      "Active": true,
+      "DeviceGroupId": 301,
+      "AddressId": "a8c204bd-df68-4ebf-be9d-d21ea855ed6f",
+      "AddressText": "",
+      "DeviceChannels": [],
+      "DeviceAttributes": [],
+      "DeviceBillings": []
+    },
+    {
+      "Id": "369b43d6-6564-418e-98d1-aede8d65434d",
+      "SerialNumber": "000252240670",
+      "Name": "",
+      "DeviceType": "IoT",
+      "Model": "EDMIk",
+      "Manufacturer": "k",
+      "Status": "Commissioned",
+      "LinkStatus": "MULTIDRIVE",
+      "Active": true,
+      "DeviceGroupId": 103,
+      "AddressId": "8408d290-bc95-47b4-aa7a-c616a07f0df6",
+      "AddressText": "Pr 1511, Cambodia",
+      "DeviceChannels": [
+        {
+          "Id": "dfc1c5ed-ad12-41ab-ad91-a182d9c27c48",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 5,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 5,
+            "Code": "9.8.0",
+            "Name": "Apparent Energy Received Total",
+            "Units": "VAH",
+            "FlowDirection": "RECEIVED",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "SUM",
+            "Active": true
+          }
+        },
+        {
+          "Id": "a8564fb2-ed6d-48dc-880c-ccdaf0d8c329",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 14,
+          "ApplyMetric": false,
+          "Cumulative": 1000,
+          "Active": true,
+          "Channel": {
+            "Id": 14,
+            "Code": "1.7.0",
+            "Name": "Active Power Total",
+            "Units": "W",
+            "FlowDirection": "NONE",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "5f68f39b-2de6-40a8-ad62-3b3f767442f1",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 10,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 10,
+            "Code": "31.7.0",
+            "Name": "Current Phase A",
+            "Units": "A",
+            "FlowDirection": "NONE",
+            "Phase": "A",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "736b56c0-2daf-42f7-b8f1-719e63dbf03f",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 9,
+          "ApplyMetric": false,
+          "Cumulative": 10000,
+          "Active": true,
+          "Channel": {
+            "Id": 9,
+            "Code": "72.7.0",
+            "Name": "Voltage Phase C",
+            "Units": "V",
+            "FlowDirection": "NONE",
+            "Phase": "C",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "e3111e8c-5041-4178-9b06-6229df6fcb9b",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 1,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 1,
+            "Code": "2.8.0[-A]",
+            "Name": "Accum, CH1: Export wh Total, Cumulative Total, Unified",
+            "Units": "WH",
+            "FlowDirection": "DELIVERED",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "SUM",
+            "Active": true
+          }
+        },
+        {
+          "Id": "37928d3f-12d1-4af4-b8f2-78cf12239341",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 12,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 12,
+            "Code": "71.7.0",
+            "Name": "Current Phase C",
+            "Units": "A",
+            "FlowDirection": "NONE",
+            "Phase": "C",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "eb6deea7-70b8-46e3-9753-bc9b53f849d4",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 8,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 8,
+            "Code": "52.7.0",
+            "Name": "Voltage Phase B",
+            "Units": "V",
+            "FlowDirection": "NONE",
+            "Phase": "B",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "4b3a8f7c-4733-4cd1-9929-52863a8d1dd7",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 2,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 2,
+            "Code": "3.8.0[+R]",
+            "Name": "Accum, CH4: Import varh Total, Cumulative Total, Unified",
+            "Units": "VARH",
+            "FlowDirection": "RECEIVED",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "SUM",
+            "Active": true
+          }
+        },
+        {
+          "Id": "5dbdbd78-f100-4699-b7a1-ee7361ab52ef",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 3,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 3,
+            "Code": "4.8.0[-R]",
+            "Name": "Accum, CH4: Import varh Total, Cumulative Total, Unified",
+            "Units": "VARH",
+            "FlowDirection": "DELIVERED",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "SUM",
+            "Active": true
+          }
+        },
+        {
+          "Id": "30ccbf66-ac92-4ea7-a477-fc2ae66410e7",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 7,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 7,
+            "Code": "32.7.0",
+            "Name": "Voltage Phase A",
+            "Units": "V",
+            "FlowDirection": "NONE",
+            "Phase": "A",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "f0d3f299-681b-4818-acf2-71bbe79b07a4",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 4,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 4,
+            "Code": "1.8.0[+A]",
+            "Name": "Accum, CH1: Import wh Total, Cumulative Total, Unified",
+            "Units": "WH",
+            "FlowDirection": "RECEIVED",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "SUM",
+            "Active": true
+          }
+        },
+        {
+          "Id": "5a20e973-a8b7-45ce-9223-6d0059b165f6",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 11,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 11,
+            "Code": "51.7.0",
+            "Name": "Current Phase B",
+            "Units": "A",
+            "FlowDirection": "NONE",
+            "Phase": "B",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "89565a1c-68fc-4dea-89df-19f91786749f",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 6,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 6,
+            "Code": "10.8.0",
+            "Name": "Apparent Energy Delivered Total",
+            "Units": "VAH",
+            "FlowDirection": "DELIVERED",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "SUM",
+            "Active": true
+          }
+        },
+        {
+          "Id": "6f8a7203-f84a-4cc4-8723-e93a37c14af6",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 15,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 15,
+            "Code": "13.7.0",
+            "Name": "Power Factor Total",
+            "Units": "PF",
+            "FlowDirection": "NONE",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "AVG",
+            "Active": true
+          }
+        },
+        {
+          "Id": "deeb7248-b975-432b-b8c4-30e6409717e8",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "ChannelId": 13,
+          "ApplyMetric": false,
+          "Cumulative": 0,
+          "Active": true,
+          "Channel": {
+            "Id": 13,
+            "Code": "14.7.0",
+            "Name": "Frequency Total",
+            "Units": "HZ",
+            "FlowDirection": "NONE",
+            "Phase": "TOTAL",
+            "ApportionPolicy": "INST",
+            "Active": true
+          }
+        }
+      ],
+      "DeviceAttributes": [
+        {
+          "Id": "8cf88da4-3dd8-4a92-9dc4-b9412a60764a",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "Name": "EDMI_DEVICE_ID",
+          "Value": "70"
+        },
+        {
+          "Id": "82d5542d-a02c-4716-98eb-8dca3be1b365",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "Name": "LINK_HES_DATE",
+          "Value": "06/23/2025 10:27:12"
+        },
+        {
+          "Id": "407a951c-9060-4771-90af-204b78bba782",
+          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+          "Name": "PLANT_NUMBER",
+          "Value": "000252240670"
+        }
+      ],
+      "DeviceBillings": [
+        {
+          "TimeOfUse": null
+        },
+        {
+          "TimeOfUse": null
+        }
+      ]
+    }
+  ]
+}

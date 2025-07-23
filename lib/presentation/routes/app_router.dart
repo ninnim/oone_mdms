@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:mdms_clone/presentation/screens/tou_management/time_bands_screen.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
@@ -10,8 +11,6 @@ import '../../core/constants/app_sizes.dart';
 import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
-import '../screens/device_groups/device_groups_screen.dart';
-import '../screens/device_groups/device_group_details_screen.dart';
 import '../screens/auth/simple_auth_redirect_screen.dart';
 import '../screens/settings/token_management_test_screen.dart';
 import '../screens/test/token_test_screen.dart';
@@ -20,8 +19,9 @@ import '../../core/models/device.dart';
 import '../../core/models/device_group.dart';
 import '../../core/services/device_service.dart';
 import '../../core/services/device_group_service.dart';
-import '../../core/services/service_locator.dart';
 import '../../core/services/keycloak_service.dart';
+import '../screens/device_groups/device_groups_screen.dart';
+import '../screens/device_groups/device_group_details_screen.dart';
 
 class AppRouter {
   static GoRouter getRouter(KeycloakService keycloakService) {
@@ -108,9 +108,12 @@ class AppRouter {
               builder: (context, state) {
                 final deviceId = state.pathParameters['deviceId']!;
                 final deviceData = state.extra as Device?;
+                final backRoute =
+                    state.uri.queryParameters['back'] ?? '/devices';
                 return DeviceDetailsRouteWrapper(
                   deviceId: deviceId,
                   device: deviceData,
+                  backRoute: backRoute,
                 );
               },
             ),
@@ -137,11 +140,20 @@ class AppRouter {
               path: '/device-groups/details/:deviceGroupId',
               name: 'device-group-details',
               builder: (context, state) {
-                final deviceGroupId = state.pathParameters['deviceGroupId']!;
-                final deviceGroup = state.extra as DeviceGroup?;
+                final deviceGroupIdStr = state.pathParameters['deviceGroupId']!;
+                final deviceGroupId = int.tryParse(deviceGroupIdStr);
+
+                if (deviceGroupId == null) {
+                  // Invalid device group ID, redirect to device groups list
+                  return const Scaffold(
+                    body: Center(child: Text('Invalid device group ID')),
+                  );
+                }
+
                 return DeviceGroupDetailsRouteWrapper(
                   deviceGroupId: deviceGroupId,
-                  deviceGroup: deviceGroup,
+                  deviceGroup:
+                      null, // Always fetch fresh data instead of relying on state.extra
                 );
               },
             ),
@@ -303,14 +315,6 @@ class AppRouter {
       context.pop();
     }
   }
-
-  static void goToDeviceGroups(BuildContext context) {
-    context.go('/device-groups');
-  }
-
-  static void goToDeviceGroupDetails(BuildContext context, DeviceGroup deviceGroup) {
-    context.go('/device-groups/details/${deviceGroup.id}', extra: deviceGroup);
-  }
 }
 
 // Route Wrappers to maintain existing screen functionality
@@ -377,11 +381,13 @@ class _DevicesScreenWithRouterState extends State<DevicesScreenWithRouter> {
 class DeviceDetailsRouteWrapper extends StatefulWidget {
   final String deviceId;
   final Device? device;
+  final String backRoute;
 
   const DeviceDetailsRouteWrapper({
     super.key,
     required this.deviceId,
     this.device,
+    this.backRoute = '/devices',
   });
 
   @override
@@ -471,8 +477,8 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
               Text(_error ?? 'Device not found'),
               SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => context.go('/devices'),
-                child: Text('Back to Devices'),
+                onPressed: () => context.go(widget.backRoute),
+                child: Text('Go Back'),
               ),
             ],
           ),
@@ -484,7 +490,7 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
     return Scaffold(
       body: Device360DetailsScreen(
         device: _device!,
-        onBack: () => context.go('/devices'),
+        onBack: () => context.go(widget.backRoute),
         onNavigateToBillingReadings: (device, billingRecord) {
           // Use the updated AppRouter method instead of the old logic
           AppRouter.goToDeviceBillingReadings(context, device, billingRecord);
@@ -682,28 +688,12 @@ class DeviceGroupsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DeviceGroupsScreenWithRouter();
-  }
-}
-
-// Wrapper to integrate DeviceGroupsScreen with routing
-class DeviceGroupsScreenWithRouter extends StatefulWidget {
-  const DeviceGroupsScreenWithRouter({super.key});
-
-  @override
-  State<DeviceGroupsScreenWithRouter> createState() =>
-      _DeviceGroupsScreenWithRouterState();
-}
-
-class _DeviceGroupsScreenWithRouterState extends State<DeviceGroupsScreenWithRouter> {
-  @override
-  Widget build(BuildContext context) {
-    return const DeviceGroupsScreen();
+    return DeviceGroupsScreen();
   }
 }
 
 class DeviceGroupDetailsRouteWrapper extends StatefulWidget {
-  final String deviceGroupId;
+  final int deviceGroupId;
   final DeviceGroup? deviceGroup;
 
   const DeviceGroupDetailsRouteWrapper({
@@ -717,14 +707,16 @@ class DeviceGroupDetailsRouteWrapper extends StatefulWidget {
       _DeviceGroupDetailsRouteWrapperState();
 }
 
-class _DeviceGroupDetailsRouteWrapperState extends State<DeviceGroupDetailsRouteWrapper> {
+class _DeviceGroupDetailsRouteWrapperState
+    extends State<DeviceGroupDetailsRouteWrapper> {
   DeviceGroup? _deviceGroup;
   bool _isLoading = true;
-  String? _error;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    // Use provided deviceGroup if available, otherwise load it
     if (widget.deviceGroup != null) {
       _deviceGroup = widget.deviceGroup;
       _isLoading = false;
@@ -735,69 +727,53 @@ class _DeviceGroupDetailsRouteWrapperState extends State<DeviceGroupDetailsRoute
 
   Future<void> _loadDeviceGroup() async {
     try {
-      // Use ServiceLocator instead of Provider
-      final serviceLocator = ServiceLocator();
-      final apiService = serviceLocator.apiService;
-      final deviceGroupService = DeviceGroupService(apiService);
-      
-      final deviceGroupId = int.tryParse(widget.deviceGroupId);
-      
-      if (deviceGroupId == null) {
-        setState(() {
-          _error = 'Invalid device group ID';
-          _isLoading = false;
-        });
-        return;
-      }
-      
-      final response = await deviceGroupService.getDeviceGroupById(deviceGroupId);
+      final deviceGroupService = Provider.of<DeviceGroupService>(
+        context,
+        listen: false,
+      );
+      final response = await deviceGroupService.getDeviceGroupById(
+        widget.deviceGroupId,
+      );
 
-      if (response.success && response.data != null) {
-        setState(() {
-          _deviceGroup = response.data;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = 'Device group not found';
-          _isLoading = false;
-        });
+      if (mounted) {
+        if (response.success && response.data != null) {
+          setState(() {
+            _deviceGroup = response.data!;
+            _isLoading = false;
+            _errorMessage = null;
+          });
+        } else {
+          setState(() {
+            _errorMessage = response.message ?? 'Failed to load device group';
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load device group: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error loading device group: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          child: AppLottieStateWidget.loading(
-            title: 'Loading Device Group Details',
-            message: 'Please wait while we load the device group details.',
-            lottieSize: 80,
-          ),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (_error != null || _deviceGroup == null) {
+    if (_errorMessage != null) {
       return Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error,
-                color: AppColors.error,
-                size: 48,
-              ),
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text(_error ?? 'Device group not found'),
+              Text('Error: $_errorMessage'),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => context.go('/device-groups'),
@@ -809,12 +785,27 @@ class _DeviceGroupDetailsRouteWrapperState extends State<DeviceGroupDetailsRoute
       );
     }
 
-    // Wrap the DeviceGroupDetailsScreen in a Scaffold to prevent layout overflow
-    return Scaffold(
-      body: DeviceGroupDetailsScreen(
-        deviceGroup: _deviceGroup!,
-      ),
-    );
+    if (_deviceGroup == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.search_off, size: 64),
+              const SizedBox(height: 16),
+              const Text('Device Group not found'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go('/device-groups'),
+                child: const Text('Back to Device Groups'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return DeviceGroupDetailsScreen(deviceGroup: _deviceGroup!);
   }
 }
 
@@ -2223,12 +2214,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       }
       return 'Devices';
     }
-    if (location.startsWith('/device-groups')) {
-      if (location.contains('/details')) {
-        return 'Device Group Details';
-      }
-      return 'Device Groups';
-    }
+    if (location.startsWith('/device-groups')) return 'Device Groups';
     if (location.startsWith('/tou-management')) return 'TOU Management';
     if (location.startsWith('/tickets')) return 'Tickets';
     if (location.startsWith('/analytics')) return 'Analytics';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -89,35 +90,15 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
             flex: 1,
             child: Container(
               alignment: Alignment.centerLeft,
-              height: AppSizes.inputHeight,
-              child: TextField(
+              //  height: AppSizes.inputHeight,
+              child: AppInputField(
                 controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search devices...',
-                  hintStyle: TextStyle(fontSize: AppSizes.fontSizeSmall),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    size: AppSizes.iconSmall,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing16,
-                    vertical: AppSizes.spacing12,
-                  ),
-                ),
+                hintText: 'Search devices...',
                 onChanged: widget.onSearchChanged,
+                enabled: true,
+                prefixIcon: const Icon(Icons.search, size: AppSizes.iconSmall),
               ),
+              
             ),
           ),
 

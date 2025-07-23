@@ -9,6 +9,7 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
+import '../../../core/models/schedule.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -114,7 +115,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   bool _hasMoreDeviceGroups = false;
 
   // Schedule dropdown data
-  List<Map<String, dynamic>> _schedules = [];
+  List<Schedule> _schedules = [];
   bool _isLoadingSchedules = false;
   String _scheduleSearchQuery = '';
   bool _hasMoreSchedules = true;
@@ -521,9 +522,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         ),
       ),
       DropdownMenuItem<int?>(
-        value: widget.device.deviceGroupData?['Id'] ?? 0,
+        value: widget.device.deviceGroup?.id ?? 0,
         child: Text(
-          widget.device.deviceGroupData?['Name']?.toString() ?? 'None',
+          widget.device.deviceGroup?.name ?? 'None',
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             color: Color(0xFF374151),
@@ -588,9 +589,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       ..._schedules
           .map(
             (schedule) => DropdownMenuItem<int?>(
-              value: schedule['id'],
+              value: schedule.id,
               child: Text(
-                schedule['name'],
+                schedule.name ?? 'Unnamed Schedule',
                 style: const TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   color: Color(0xFF374151),
@@ -1462,7 +1463,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   Widget _buildOverviewViewMode() {
     if (kDebugMode) {
       print(
-        'Building overview view mode for device: ${widget.device.deviceGroupData}',
+        'Building overview view mode for device: ${widget.device.deviceGroup?.toJson()}',
       );
     }
     return SingleChildScrollView(
@@ -1549,7 +1550,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   'Device Group',
-                  widget.device.deviceGroupData?['Name']?.toString() ?? 'None',
+                  widget.device.deviceGroup?.name ?? 'None',
                   // widget.device.deviceGroupId.toString() == '0'
                   //     ? 'None'
                   //     : _getDeviceGroupName(),

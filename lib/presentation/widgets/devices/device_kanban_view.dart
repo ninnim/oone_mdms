@@ -47,12 +47,12 @@ class DeviceKanbanView extends StatelessWidget {
         color: AppColors.textSecondary,
         icon: Icons.help_outline,
       ),
-      KanbanColumn<Device>(
-        id: 'Renovation',
-        title: 'Renovation',
-        color: AppColors.warning,
-        icon: Icons.build,
-      ),
+      // KanbanColumn<Device>(
+      //   id: 'Renovation',
+      //   title: 'Renovation',
+      //   color: AppColors.warning,
+      //   icon: Icons.build,
+      // ),
     ];
 
     return KanbanView<Device>(

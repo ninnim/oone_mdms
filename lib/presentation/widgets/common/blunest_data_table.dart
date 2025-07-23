@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
+import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -292,14 +293,12 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
       child: Row(
         children: [
           if (widget.enableMultiSelect) ...[
-            Text(
-              '${widget.selectedItems.length} selected',
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeMedium,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
+            StatusChip(
+              text: '${widget.selectedItems.length} selected',
+              type: StatusChipType.info,
+              compact: true,
             ),
+
             const SizedBox(width: 16),
             if (widget.selectedItems.isNotEmpty) ...[
               TextButton.icon(

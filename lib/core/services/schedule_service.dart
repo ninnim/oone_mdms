@@ -1,4 +1,5 @@
 import '../models/response_models.dart';
+import '../models/schedule.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
 
@@ -8,62 +9,78 @@ class ScheduleService {
   ScheduleService(this._apiService);
 
   // Get all schedules
-  Future<ApiResponse<List<Map<String, dynamic>>>> getSchedules({
+  Future<ApiResponse<List<Schedule>>> getSchedules({
     String search = ApiConstants.defaultSearch,
     int offset = ApiConstants.defaultOffset,
     int limit = ApiConstants.defaultLimit,
   }) async {
     try {
-      // TODO: Implement when schedule_spec.json is provided
-      // For now, return mock data
-      final mockSchedules = [
-        {
-          'id': 1,
-          'name': 'Daily Schedule',
-          'description': 'Daily data collection',
-        },
-        {
-          'id': 2,
-          'name': 'Weekly Schedule',
-          'description': 'Weekly data collection',
-        },
-        {
-          'id': 3,
-          'name': 'Monthly Schedule',
-          'description': 'Monthly data collection',
-        },
-      ];
+      final response = await _apiService.get(
+        '${ApiConstants.baseUrl}/core/api/rest/v1/Schedule',
+        queryParameters: {'offset': offset, 'limit': limit},
+      );
 
-      return ApiResponse.success(mockSchedules);
+      final schedulesList = (response.data['Schedule'] as List)
+          .map((json) => Schedule.fromJson(json))
+          .toList();
 
-      // Actual implementation will be:
-      // final response = await _apiService.get(
-      //   ApiConstants.schedules,
-      //   queryParameters: {'search': search, 'offset': offset, 'limit': limit},
-      // );
-      //
-      // final schedules = (response.data['Schedules'] as List)
-      //     .cast<Map<String, dynamic>>();
-      //
-      // return ApiResponse.success(schedules);
+      return ApiResponse.success(schedulesList);
     } catch (e) {
       return ApiResponse.error('Failed to fetch schedules: $e');
     }
   }
 
   // Get schedule by ID
-  Future<ApiResponse<Map<String, dynamic>>> getScheduleById(int id) async {
+  Future<ApiResponse<Schedule>> getScheduleById(String id) async {
     try {
-      // TODO: Implement when schedule_spec.json is provided
-      final mockSchedule = {
-        'id': id,
-        'name': 'Schedule $id',
-        'description': 'Schedule description',
-      };
+      final response = await _apiService.get(
+        '${ApiConstants.baseUrl}/core/api/rest/v1/Schedule/$id',
+      );
 
-      return ApiResponse.success(mockSchedule);
+      final schedule = Schedule.fromJson(response.data['Schedule']);
+      return ApiResponse.success(schedule);
     } catch (e) {
       return ApiResponse.error('Failed to fetch schedule: $e');
+    }
+  }
+
+  // Get schedules by device group ID
+  Future<ApiResponse<List<Schedule>>> getSchedulesByDeviceGroupId(
+    int deviceGroupId,
+  ) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConstants.baseUrl}/core/api/rest/v1/Schedule/DeviceGroup/$deviceGroupId',
+      );
+
+      final schedulesList = (response.data['Schedule'] as List)
+          .map((json) => Schedule.fromJson(json))
+          .toList();
+
+      return ApiResponse.success(schedulesList);
+    } catch (e) {
+      return ApiResponse.error(
+        'Failed to fetch schedules for device group: $e',
+      );
+    }
+  }
+
+  // Get schedules by device ID
+  Future<ApiResponse<List<Schedule>>> getSchedulesByDeviceId(
+    String deviceId,
+  ) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConstants.baseUrl}/core/api/rest/v1/Schedule/Device/$deviceId',
+      );
+
+      final schedulesList = (response.data['Schedule'] as List)
+          .map((json) => Schedule.fromJson(json))
+          .toList();
+
+      return ApiResponse.success(schedulesList);
+    } catch (e) {
+      return ApiResponse.error('Failed to fetch schedules for device: $e');
     }
   }
 }

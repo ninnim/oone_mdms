@@ -4,6 +4,7 @@ import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
+import '../../../core/models/schedule.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -12,14 +13,20 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_dropdown_field.dart';
-import '../../widgets/common/app_lottie_state_widget.dart';
+
 import '../../widgets/devices/interactive_map_dialog.dart';
 
 class CreateEditDeviceDialog extends StatefulWidget {
   final Device? device;
   final VoidCallback? onSaved;
+  final int? presetDeviceGroupId;
 
-  const CreateEditDeviceDialog({super.key, this.device, this.onSaved});
+  const CreateEditDeviceDialog({
+    super.key,
+    this.device,
+    this.onSaved,
+    this.presetDeviceGroupId,
+  });
 
   @override
   State<CreateEditDeviceDialog> createState() => _CreateEditDeviceDialogState();
@@ -65,7 +72,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
   // Dropdown data
   List<DeviceGroup> _deviceGroups = [];
-  List<Map<String, dynamic>> _schedules = [];
+  List<Schedule> _schedules = [];
 
   // Device type options
   final List<String> _deviceTypes = ['None', 'Smart Meter', 'IoT'];
@@ -92,6 +99,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
     if (widget.device != null) {
       _populateFields();
+    } else if (widget.presetDeviceGroupId != null) {
+      // Set the preset device group ID for new devices
+      _selectedDeviceGroupId = widget.presetDeviceGroupId;
     }
 
     // Load dropdown data immediately to ensure proper display
@@ -287,7 +297,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
           if (_selectedScheduleId != null) {
             final uniqueSchedules = _getUniqueSchedules();
             final scheduleExists = uniqueSchedules.any(
-              (schedule) => schedule['id'] == _selectedScheduleId,
+              (schedule) => schedule.id == _selectedScheduleId,
             );
             if (!scheduleExists) {
               if (kDebugMode) {
@@ -714,9 +724,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
         //   ),
         // ),
         DropdownMenuItem<int>(
-          value: widget.device?.deviceGroupData?['Id'],
+          value: widget.device?.deviceGroup?.id,
           child: Text(
-            widget.device?.deviceGroupData?['Name']?.toString() ?? 'None',
+            widget.device?.deviceGroup?.name ?? 'None',
             style: TextStyle(fontSize: AppSizes.fontSizeSmall),
           ),
         ),
@@ -773,9 +783,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
         ),
         ..._getUniqueSchedules().map((schedule) {
           return DropdownMenuItem<int>(
-            value: schedule['id'],
+            value: schedule.id,
             child: Text(
-              schedule['name'],
+              schedule.name ?? 'Unnamed Schedule',
               style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
             ),
           );
@@ -993,14 +1003,14 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
   }
 
   // Get unique schedules to prevent dropdown duplicates
-  List<Map<String, dynamic>> _getUniqueSchedules() {
+  List<Schedule> _getUniqueSchedules() {
     final seen = <int>{};
     return _schedules.where((schedule) {
-      final id = schedule['id'] as int?;
+      final id = schedule.id;
       if (id == null || seen.contains(id)) {
         if (kDebugMode && id != null) {
           print(
-            'Duplicate schedule found with ID: $id, Name: ${schedule['name']}',
+            'Duplicate schedule found with ID: $id, Name: ${schedule.name}',
           );
         }
         return false;
@@ -1016,7 +1026,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
     final uniqueSchedules = _getUniqueSchedules();
     final scheduleExists = uniqueSchedules.any(
-      (schedule) => schedule['id'] == _selectedScheduleId,
+      (schedule) => schedule.id == _selectedScheduleId,
     );
 
     if (!scheduleExists) {

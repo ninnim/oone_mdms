@@ -4,6 +4,7 @@ import 'presentation/themes/app_theme.dart';
 import 'presentation/routes/app_router.dart';
 import 'core/services/keycloak_service.dart';
 import 'core/services/device_service.dart';
+import 'core/services/device_group_service.dart';
 import 'core/services/service_locator.dart';
 import 'core/services/token_management_service.dart';
 import 'core/services/startup_validation_service.dart';
@@ -27,12 +28,14 @@ void main() async {
   final apiService = serviceLocator.apiService;
   final tokenManagementService = serviceLocator.tokenManagementService;
   final deviceService = DeviceService(apiService);
+  final deviceGroupService = DeviceGroupService(apiService);
 
   runApp(
     MyApp(
       keycloakService: keycloakService,
       tokenManagementService: tokenManagementService,
       deviceService: deviceService,
+      deviceGroupService: deviceGroupService,
     ),
   );
 }
@@ -41,12 +44,14 @@ class MyApp extends StatelessWidget {
   final KeycloakService keycloakService;
   final TokenManagementService tokenManagementService;
   final DeviceService deviceService;
+  final DeviceGroupService deviceGroupService;
 
   const MyApp({
     super.key,
     required this.keycloakService,
     required this.tokenManagementService,
     required this.deviceService,
+    required this.deviceGroupService,
   });
 
   @override
@@ -56,6 +61,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: keycloakService),
         ChangeNotifierProvider.value(value: tokenManagementService),
         Provider.value(value: deviceService),
+        Provider.value(value: deviceGroupService),
       ],
       child: MaterialApp.router(
         title: 'MDMS Clone',

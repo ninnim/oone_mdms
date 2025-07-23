@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
@@ -139,7 +140,21 @@ class DeviceTableColumns {
         builder: (device) => Container(
           alignment: Alignment.centerLeft,
           //height: AppSizes.spacing40,
-          child: _buildStatusChip(device.status),
+          child: StatusChip(
+            text: device.status,
+            type: device.status == 'Commissioned'
+                ? StatusChipType.success
+                : device.status == 'Discommissioned'
+                ? StatusChipType.construction
+                : device.status == 'None'
+                ? StatusChipType.none
+                : StatusChipType.none,
+            //  height: AppSizes.spacing40,
+            compact: true,
+            //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          ),
+
+          //child: _buildStatusChip(device.status),
         ),
       ),
 
@@ -151,8 +166,22 @@ class DeviceTableColumns {
         sortable: true,
         builder: (device) => Container(
           alignment: Alignment.centerLeft,
+
           //  height: AppSizes.spacing40,
-          child: _buildLinkStatusChip(device.linkStatus),
+          child: StatusChip(
+            text: device.linkStatus,
+            type: device.linkStatus == 'MULTIDRIVE'
+                ? StatusChipType.commissioned
+                : device.linkStatus == 'E-POWER'
+                ? StatusChipType.warning
+                : device.linkStatus == 'None'
+                ? StatusChipType.none
+                : StatusChipType.none,
+            compact: true,
+            //  height: AppSizes.spacing40,
+            //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          ),
+          // child: _buildLinkStatusChip(device.linkStatus),
         ),
       ),
 

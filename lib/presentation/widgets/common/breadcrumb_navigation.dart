@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
+import '../../../core/models/device_group.dart';
 
 class BreadcrumbNavigation extends StatelessWidget {
   const BreadcrumbNavigation({super.key});
@@ -101,11 +102,21 @@ class BreadcrumbNavigation extends StatelessWidget {
               nextSegment == 'billing') {
             // Try to get device serial number from state if available
             final routeState = GoRouterState.of(context);
-            final device = routeState.extra as Device?;
-            if (device != null && device.serialNumber.isNotEmpty) {
-              return device.serialNumber;
+            final extra = routeState.extra;
+
+            // Check if it's a Device
+            if (extra is Device && extra.serialNumber.isNotEmpty) {
+              return extra.serialNumber;
             }
-            // Don't show raw device ID - return null to skip this breadcrumb
+
+            // Check if it's a DeviceGroup
+            if (extra is DeviceGroup &&
+                extra.name != null &&
+                extra.name!.isNotEmpty) {
+              return extra.name!;
+            }
+
+            // Don't show raw ID - return null to skip this breadcrumb
             return '';
           }
 

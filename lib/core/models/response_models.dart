@@ -80,3 +80,27 @@ class DeviceGroupListResponse {
     );
   }
 }
+
+class DeviceGroupResponse {
+  final dynamic deviceGroup;
+
+  DeviceGroupResponse({required this.deviceGroup});
+
+  factory DeviceGroupResponse.fromJson(Map<String, dynamic> json) {
+    return DeviceGroupResponse(deviceGroup: json['DeviceGroup']);
+  }
+}
+
+class DeviceGroupCreateResponse {
+  final dynamic deviceGroup;
+  final dynamic removedDevices;
+
+  DeviceGroupCreateResponse({required this.deviceGroup, this.removedDevices});
+
+  factory DeviceGroupCreateResponse.fromJson(Map<String, dynamic> json) {
+    return DeviceGroupCreateResponse(
+      deviceGroup: json['DeviceGroup'],
+      removedDevices: json['RemovedDevices'],
+    );
+  }
+}
