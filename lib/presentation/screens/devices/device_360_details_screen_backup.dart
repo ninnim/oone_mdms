@@ -10,8 +10,6 @@ import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
 import '../../../core/models/schedule.dart';
-import '../../../core/models/load_profile_metric.dart';
-import '../../../core/models/chart_type.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -22,8 +20,6 @@ import '../../widgets/common/app_dropdown_field.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
-import '../../widgets/common/modern_chart_type_dropdown.dart';
-import '../../widgets/common/time_interval_filter.dart';
 import '../../widgets/devices/device_location_viewer.dart';
 import '../../widgets/devices/interactive_map_dialog.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
@@ -94,17 +90,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   String? _metricsSortBy;
   bool _metricsSortAscending = true;
 
-  // Advanced analytics data
-  List<LoadProfileMetric> _analyticsMetrics = [];
-  bool _isLoadingAnalytics = false;
-  String? _analyticsError;
-  DateTimeRange? _selectedDateRange;
-  TimeInterval _selectedTimeInterval = TimeInterval.oneHour;
-  List<String> _selectedPhases = ['L1', 'L2', 'L3'];
-  List<String> _selectedMetricTypes = ['Voltage', 'Current', 'Power'];
-  ChartType _selectedChartType = ChartType.line;
-  bool _showHover = true;
-  Map<String, bool> _phaseVisibility = {'L1': true, 'L2': true, 'L3': true};
+  // Enhanced Analytics State
+  String _selectedChartType = 'line'; // line, bar, pie, area, scatter
+  String? _selectedUnits;
+  String? _selectedPhase;
+  String? _selectedFlowDirection;
+  String? _selectedQuickDate;
+  
+  // Dynamic filter options extracted from data
+  Set<String> _availableUnits = {};
+  Set<String> _availablePhases = {};
+  Set<String> _availableFlowDirections = {};
+  
+  // Chart hover state
+  int? _hoveredDataIndex;
+  Map<String, dynamic>? _hoveredDataPoint;
 
   // Overview edit mode state
   bool _isEditingOverview = false;
@@ -204,10 +204,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         if (!_channelsLoaded) _loadChannelsData();
         break;
       case 2: // Metrics
-        if (!_metricsLoaded) {
-          _loadMetricsData();
-          _loadAnalyticsData(); // Load analytics data when metrics tab is opened
-        }
+        if (!_metricsLoaded) _loadMetricsData();
         break;
       case 3: // Billing
         if (!_billingLoaded) _loadBillingData();
@@ -861,49 +858,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         _deviceMetrics = {
           'DeviceMetrics': {'Metrics': [], 'Status': 'Error: $e'},
         };
-      });
-    }
-  }
-
-  // Load analytics data for advanced charts
-  Future<void> _loadAnalyticsData() async {
-    if (_isLoadingAnalytics) return;
-
-    setState(() {
-      _isLoadingAnalytics = true;
-      _analyticsError = null;
-    });
-
-    try {
-      final startDate =
-          _selectedDateRange?.start ??
-          DateTime.now().subtract(const Duration(days: 7));
-      final endDate = _selectedDateRange?.end ?? DateTime.now();
-
-      final response = await _deviceService.getDeviceLoadProfile(
-        deviceId: widget.device.id ?? '',
-        startDate: startDate,
-        endDate: endDate,
-        phases: _selectedPhases,
-        metricTypes: _selectedMetricTypes,
-        limit: 1000,
-      );
-
-      if (response.success && response.data != null) {
-        setState(() {
-          _analyticsMetrics = response.data!;
-          _isLoadingAnalytics = false;
-        });
-      } else {
-        setState(() {
-          _analyticsError = response.message ?? 'Failed to load analytics data';
-          _isLoadingAnalytics = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _analyticsError = 'Error loading analytics data: $e';
-        _isLoadingAnalytics = false;
       });
     }
   }
@@ -2567,8 +2521,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               Expanded(
                 child: Row(
                   children: [
-                    //const SizedBox(width: 16),
-                    // Date filters
                     _buildDateFilter(),
                   ],
                 ),
@@ -2588,16 +2540,14 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       label: 'Table',
                       isActive: _isTableView,
                       onTap: () {
-                        print('Switching to TABLE view');
                         setState(() => _isTableView = true);
                       },
                     ),
                     _buildViewToggleButton(
-                      icon: Icons.bar_chart,
-                      label: 'Graph',
+                      icon: Icons.analytics,
+                      label: 'Analytics',
                       isActive: !_isTableView,
                       onTap: () {
-                        print('Switching to GRAPH view');
                         setState(() => _isTableView = false);
                       },
                     ),
@@ -2613,15 +2563,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
             if (_isTableView)
               _buildMetricsTableWithPagination()
             else
-              _buildMetricsGraph(),
+              _buildAdvancedAnalyticsDashboard(),
           ] else
             AppLottieStateWidget.noData(
               title: 'No Metrics Data',
               message: 'No metrics data available',
             ),
-          //     ),
-          //   ),
-          // ),
         ],
       ),
     );
@@ -2721,254 +2668,445 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     );
   }
 
-  Widget _buildMetricsGraph() {
+  Widget _buildAdvancedAnalyticsDashboard() {
+    final deviceMetrics = _deviceMetrics!['DeviceMetrics'];
+    final metrics = deviceMetrics['Metrics'] as List? ?? [];
+
+    if (metrics.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Analytics Data',
+        message: 'No metrics data available for analytics',
+        lottieSize: 200,
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
+      );
+    }
+
+    // Extract filter options from data
+    _extractFilterOptions(metrics);
+
+    // Apply filters to get filtered metrics
+    final filteredMetrics = _getFilteredMetrics(metrics);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Advanced Analytics Dashboard
-        _buildAdvancedAnalyticsDashboard(),
-        const SizedBox(height: AppSizes.spacing24),
-        // Analytics Grid
-        _buildAnalyticsGrid(),
+        // Modern Header with Gradient Background
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withOpacity(0.1),
+                AppColors.primary.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.analytics,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Energy Consumption Analytics',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Real-time device metrics with advanced visualization',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  _buildChartTypeSelector(),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildEnergyConsumptionSummary(filteredMetrics),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 24),
+
+        // Advanced Filters Card with Modern Design
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: _buildValueFiltersCard(),
+        ),
+        
+        const SizedBox(height: 24),
+
+        // Main Chart with Enhanced Design
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: _buildChartsGrid(filteredMetrics),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Data Summary Card with Enhanced Design
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: _buildDataSummaryCard(filteredMetrics),
+        ),
       ],
     );
   }
 
-  Widget _buildAdvancedAnalyticsDashboard() {
+  // Energy Consumption Summary Widget
+  Widget _buildEnergyConsumptionSummary(List<Map<String, dynamic>> metrics) {
+    if (metrics.isEmpty) return const SizedBox.shrink();
+
+    final consumptionData = _calculateEnergyConsumption(metrics);
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.border.withOpacity(0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildConsumptionItem(
+            'Total Energy',
+            '${(consumptionData['total'] ?? 0.0).toStringAsFixed(2)} kWh',
+            Icons.flash_on,
+            const Color(0xFF3B82F6),
+          ),
+          _buildConsumptionItem(
+            'Peak Consumption',
+            '${(consumptionData['peak'] ?? 0.0).toStringAsFixed(2)} kW',
+            Icons.trending_up,
+            const Color(0xFF10B981),
+          ),
+          _buildConsumptionItem(
+            'Average Load',
+            '${(consumptionData['average'] ?? 0.0).toStringAsFixed(2)} kW',
+            Icons.speed,
+            const Color(0xFF8B5CF6),
+          ),
+          _buildConsumptionItem(
+            'Efficiency',
+            '${(consumptionData['efficiency'] ?? 0.0).toStringAsFixed(1)}%',
+            Icons.eco,
+            const Color(0xFF06B6D4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConsumptionItem(String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Calculate energy consumption metrics
+  Map<String, double> _calculateEnergyConsumption(List<Map<String, dynamic>> metrics) {
+    if (metrics.isEmpty) {
+      return {
+        'total': 0.0,
+        'peak': 0.0,
+        'average': 0.0,
+        'efficiency': 0.0,
+      };
+    }
+
+    final values = metrics.map((m) => (m['Value'] ?? 0).toDouble()).where((v) => v.isFinite).toList();
+    
+    if (values.isEmpty) {
+      return {
+        'total': 0.0,
+        'peak': 0.0,
+        'average': 0.0,
+        'efficiency': 0.0,
+      };
+    }
+
+    final total = values.reduce((a, b) => a + b);
+    final peak = values.reduce((a, b) => a > b ? a : b);
+    final average = total / values.length;
+    final efficiency = peak > 0 ? (average / peak) * 100 : 0.0;
+
+    return {
+      'total': total / 1000, // Convert to kWh
+      'peak': peak,
+      'average': average,
+      'efficiency': efficiency,
+    };
+  }
+
+  // Extract available filter options from metrics data
+  void _extractFilterOptions(List metrics) {
+    _availableUnits.clear();
+    _availablePhases.clear();
+    _availableFlowDirections.clear();
+
+    for (final metric in metrics) {
+      final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+      
+      // Extract units
+      final units = labels['Units']?.toString() ?? metric['Units']?.toString();
+      if (units != null && units.isNotEmpty) {
+        _availableUnits.add(units);
+      }
+
+      // Extract phases
+      final phase = labels['Phase']?.toString() ?? metric['Phase']?.toString();
+      if (phase != null && phase.isNotEmpty) {
+        _availablePhases.add(phase);
+      }
+
+      // Extract flow directions
+      final flowDirection = labels['FlowDirection']?.toString() ?? 
+                          metric['FlowDirection']?.toString();
+      if (flowDirection != null && flowDirection.isNotEmpty) {
+        _availableFlowDirections.add(flowDirection);
+      }
+    }
+  }
+
+  // Apply active filters to metrics data
+  List<Map<String, dynamic>> _getFilteredMetrics(List metrics) {
+    List<Map<String, dynamic>> filteredMetrics = metrics.cast<Map<String, dynamic>>();
+
+    // Apply Units filter
+    if (_selectedUnits != null && _selectedUnits != 'None') {
+      filteredMetrics = filteredMetrics.where((metric) {
+        final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+        final units = labels['Units']?.toString() ?? metric['Units']?.toString();
+        return units == _selectedUnits;
+      }).toList();
+    }
+
+    // Apply Phase filter
+    if (_selectedPhase != null && _selectedPhase != 'None') {
+      filteredMetrics = filteredMetrics.where((metric) {
+        final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+        final phase = labels['Phase']?.toString() ?? metric['Phase']?.toString();
+        return phase == _selectedPhase;
+      }).toList();
+    }
+
+    // Apply FlowDirection filter
+    if (_selectedFlowDirection != null && _selectedFlowDirection != 'None') {
+      filteredMetrics = filteredMetrics.where((metric) {
+        final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+        final flowDirection = labels['FlowDirection']?.toString() ?? 
+                             metric['FlowDirection']?.toString();
+        return flowDirection == _selectedFlowDirection;
+      }).toList();
+    }
+
+    return filteredMetrics;
+  }
+
+  Widget _buildValueFiltersCard() {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              const Icon(
+                Icons.filter_list,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               const Text(
-                'Advanced Analytics Dashboard',
+                'Advanced Filters',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Time Interval Filter
-                  TimeIntervalFilter(
-                    selectedInterval: _selectedTimeInterval,
-                    onIntervalChanged: (interval) {
-                      setState(() {
-                        _selectedTimeInterval = interval;
-                        // Update the date range based on the selected interval
-                        _selectedDateRange = DateTimeRange(
-                          start: DateTime.now().subtract(interval.duration),
-                          end: DateTime.now(),
-                        );
-                      });
-                      _loadAnalyticsData();
-                    },
-                    enabled: true,
-                  ),
-                  const SizedBox(width: AppSizes.spacing16),
-                  // Chart Type Dropdown
-                  ModernChartTypeDropdown(
-                    selectedType: _selectedChartType,
-                    onChanged: (type) {
-                      setState(() {
-                        _selectedChartType = type;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: AppSizes.spacing16),
-                  // Refresh Button
-                  AppButton(
-                    text: 'Refresh',
-                    onPressed: _loadAnalyticsData,
-                    type: AppButtonType.primary,
-                    size: AppButtonSize.small,
-                    isLoading: _isLoadingAnalytics,
-                  ),
-                ],
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _clearMetricsFilters,
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text('Clear Filters'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.secondary,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.spacing16),
-
-          // Filter Controls
-          _buildAnalyticsFilters(),
-          const SizedBox(height: AppSizes.spacing16),
-
-          // Moving Average Indicators
-          _buildMovingAverageIndicators(),
-          const SizedBox(height: AppSizes.spacing16),
-
-          // Energy Summary Cards
-          _buildEnergySummaryCards(),
-          const SizedBox(height: AppSizes.spacing24),
-
-          // Main Chart
-          _buildMainAnalyticsChart(),
+          const SizedBox(height: 16),
+          
+          // Filter dropdowns in a row
+          Row(
+            children: [
+              // Units filter
+              Expanded(
+                child: _buildFilterDropdown(
+                  label: 'Units',
+                  value: _selectedUnits,
+                  items: ['None', ..._availableUnits.toList()],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedUnits = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Phase filter
+              Expanded(
+                child: _buildFilterDropdown(
+                  label: 'Phase',
+                  value: _selectedPhase,
+                  items: ['None', ..._availablePhases.toList()],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPhase = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // FlowDirection filter
+              Expanded(
+                child: _buildFilterDropdown(
+                  label: 'Flow Direction',
+                  value: _selectedFlowDirection,
+                  items: ['None', ..._availableFlowDirections.toList()],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedFlowDirection = value;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          
+          // Quick date selection
+          const SizedBox(height: 16),
+          _buildQuickDateSelection(),
         ],
       ),
     );
   }
 
-  Widget _buildAnalyticsFilters() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Phase Filter
-        Flexible(
-          fit: FlexFit.loose,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Phases',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSizes.spacing8),
-              Wrap(
-                spacing: AppSizes.spacing8,
-                children: ['L1', 'L2', 'L3'].map((phase) {
-                  final isSelected = _selectedPhases.contains(phase);
-                  final currentValue = _getPhaseCurrentValue(phase);
-                  return Tooltip(
-                    message: _buildPhaseTooltipMessage(phase, currentValue),
-                    decoration: BoxDecoration(
-                      color: AppColors.textPrimary.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    ),
-                    textStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    child: FilterChip(
-                      label: Text(phase),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedPhases.add(phase);
-                          } else {
-                            _selectedPhases.remove(phase);
-                          }
-                          _phaseVisibility[phase] = selected;
-                        });
-                        _loadAnalyticsData();
-                      },
-                      selectedColor: AppColors.primary.withOpacity(0.2),
-                      checkmarkColor: AppColors.primary,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing16),
-
-        // Metric Type Filter
-        Flexible(
-          fit: FlexFit.loose,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Metrics',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSizes.spacing8),
-              Wrap(
-                spacing: AppSizes.spacing8,
-                children: ['Voltage', 'Current', 'Power'].map((metric) {
-                  final isSelected = _selectedMetricTypes.contains(metric);
-                  final currentValue = _getMetricCurrentValue(metric);
-                  return Tooltip(
-                    message: _buildMetricTooltipMessage(metric, currentValue),
-                    decoration: BoxDecoration(
-                      color: AppColors.textPrimary.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    ),
-                    textStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    child: FilterChip(
-                      label: Text(metric),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedMetricTypes.add(metric);
-                          } else {
-                            _selectedMetricTypes.remove(metric);
-                          }
-                        });
-                        _loadAnalyticsData();
-                      },
-                      selectedColor: AppColors.success.withOpacity(0.2),
-                      checkmarkColor: AppColors.success,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMovingAverageIndicators() {
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    // Calculate moving averages for different periods
-    final powerMetrics = _analyticsMetrics
-        .where((m) => m.metricType == 'Power')
-        .toList();
-    if (powerMetrics.isEmpty) return const SizedBox.shrink();
-
-    // Sort by timestamp to ensure correct order
-    powerMetrics.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    final ma7 = _calculateMovingAverage(powerMetrics, 7);
-    final ma25 = _calculateMovingAverage(powerMetrics, 25);
-    final ma99 = _calculateMovingAverage(powerMetrics, 99);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          _buildMAIndicator('MA (7)', ma7, AppColors.primary),
-          const SizedBox(width: AppSizes.spacing24),
-          _buildMAIndicator('MA (25)', ma25, AppColors.info),
-          const SizedBox(width: AppSizes.spacing24),
-          _buildMAIndicator('MA (99)', ma99, AppColors.error),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMAIndicator(String label, double value, Color color) {
-    return Row(
+  Widget _buildFilterDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -2978,121 +3116,1813 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(width: AppSizes.spacing8),
-        Text(
-          value.toStringAsFixed(2),
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: value,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              border: InputBorder.none,
+            ),
+            items: items.map((item) {
+              return DropdownMenuItem<String>(
+                value: item,
+                child: Text(
+                  item,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              );
+            }).toList(),
+            onChanged: onChanged,
+            hint: Text(
+              'Select $label',
+              style: const TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 14,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  double _calculateMovingAverage(List<LoadProfileMetric> metrics, int period) {
-    if (metrics.isEmpty || period <= 0) return 0.0;
+  Widget _buildQuickDateSelection() {
+    final quickDateOptions = [
+      {'label': 'Today', 'value': 'today'},
+      {'label': 'This Week', 'value': 'this_week'},
+      {'label': 'Last Week', 'value': 'last_week'},
+      {'label': 'This Month', 'value': 'this_month'},
+      {'label': 'Last Month', 'value': 'last_month'},
+      {'label': 'This Year', 'value': 'this_year'},
+    ];
 
-    final count = metrics.length < period ? metrics.length : period;
-    final recent = metrics.take(count);
-    final sum = recent.fold<double>(0, (sum, metric) => sum + metric.value);
-
-    return sum / count;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quick Date Selection',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: quickDateOptions.map((option) {
+            final isSelected = _selectedQuickDate == option['value'];
+            return GestureDetector(
+              onTap: () => _applyQuickDateSelection(option['value']!),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.border,
+                  ),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                child: Text(
+                  option['label']!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 
-  Widget _buildEnergySummaryCards() {
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox.shrink();
+  void _applyQuickDateSelection(String dateOption) {
+    final now = DateTime.now();
+    DateTime startDate;
+    DateTime endDate = now;
+
+    switch (dateOption) {
+      case 'today':
+        startDate = DateTime(now.year, now.month, now.day);
+        break;
+      case 'this_week':
+        final weekday = now.weekday;
+        startDate = now.subtract(Duration(days: weekday - 1));
+        startDate = DateTime(startDate.year, startDate.month, startDate.day);
+        break;
+      case 'last_week':
+        final weekday = now.weekday;
+        endDate = now.subtract(Duration(days: weekday));
+        endDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+        startDate = endDate.subtract(const Duration(days: 6));
+        startDate = DateTime(startDate.year, startDate.month, startDate.day);
+        break;
+      case 'this_month':
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+      case 'last_month':
+        final lastMonth = DateTime(now.year, now.month - 1, 1);
+        startDate = lastMonth;
+        endDate = DateTime(now.year, now.month, 0, 23, 59, 59);
+        break;
+      case 'this_year':
+        startDate = DateTime(now.year, 1, 1);
+        break;
+      default:
+        return;
     }
 
-    // Calculate energy summary from metrics
-    final powerMetrics = _analyticsMetrics
-        .where((m) => m.metricType == 'Power')
-        .toList();
-    final totalConsumption = powerMetrics.fold<double>(
-      0,
-      (sum, metric) => sum + metric.value,
-    );
-    final avgConsumption = powerMetrics.isNotEmpty
-        ? totalConsumption / powerMetrics.length
-        : 0;
-    final peakConsumption = powerMetrics.isNotEmpty
-        ? powerMetrics.map((m) => m.value).reduce((a, b) => a > b ? a : b)
-        : 0;
+    setState(() {
+      _selectedQuickDate = dateOption;
+      _metricsStartDate = startDate;
+      _metricsEndDate = endDate;
+      _metricsCurrentPage = 1;
+    });
+    
+    _refreshMetricsData();
+  }
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSummaryCard(
-            'Total Consumption',
-            '${totalConsumption.toStringAsFixed(2)} kWh',
-            Icons.bolt,
-            AppColors.primary,
-          ),
+  void _clearMetricsFilters() {
+    setState(() {
+      _selectedUnits = null;
+      _selectedPhase = null;
+      _selectedFlowDirection = null;
+      _selectedQuickDate = null;
+    });
+  }
+
+  Widget _buildChartTypeSelector() {
+    final chartTypes = [
+      {'icon': Icons.show_chart, 'type': 'line', 'label': 'Line', 'color': const Color(0xFF3B82F6)},
+      {'icon': Icons.bar_chart, 'type': 'bar', 'label': 'Bar', 'color': const Color(0xFF10B981)},
+      {'icon': Icons.pie_chart, 'type': 'pie', 'label': 'Pie', 'color': const Color(0xFFF59E0B)},
+      {'icon': Icons.area_chart, 'type': 'area', 'label': 'Area', 'color': const Color(0xFF8B5CF6)},
+      {'icon': Icons.scatter_plot, 'type': 'scatter', 'label': 'Scatter', 'color': const Color(0xFFEF4444)},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.border.withOpacity(0.3),
         ),
-        const SizedBox(width: AppSizes.spacing16),
-        Expanded(
-          child: _buildSummaryCard(
-            'Average Power',
-            '${avgConsumption.toStringAsFixed(2)} kW',
-            Icons.trending_up,
-            AppColors.success,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(width: AppSizes.spacing16),
-        Expanded(
-          child: _buildSummaryCard(
-            'Peak Demand',
-            '${peakConsumption.toStringAsFixed(2)} kW',
-            Icons.flash_on,
-            AppColors.warning,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing16),
-        Expanded(
-          child: _buildSummaryCard(
-            'Data Points',
-            '${_analyticsMetrics.length}',
-            Icons.data_usage,
-            AppColors.info,
-          ),
-        ),
-      ],
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: chartTypes.map((chart) {
+          final isSelected = _selectedChartType == chart['type'];
+          final color = chart['color'] as Color;
+          
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedChartType = chart['type'] as String;
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              margin: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: isSelected ? color : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: isSelected ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ] : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    chart['icon'] as IconData,
+                    size: 18,
+                    color: isSelected ? Colors.white : color,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    chart['label'] as String,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : color,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
-  Widget _buildSummaryCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  // NEW ADVANCED ANALYTICS METHODS START HERE
+
+  Widget _buildChartsGrid(List<Map<String, dynamic>> filteredMetrics) {
+    if (filteredMetrics.isEmpty) {
+      return AppCard(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.analytics,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Data Available',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Adjust your filters to see analytics',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    switch (_selectedChartType) {
+      case 'line':
+        return _buildModernLineChart(filteredMetrics);
+      case 'bar':
+        return _buildModernBarChart(filteredMetrics);
+      case 'pie':
+        return _buildModernPieChart(filteredMetrics);
+      case 'area':
+        return _buildModernAreaChart(filteredMetrics);
+      case 'scatter':
+        return _buildModernScatterChart(filteredMetrics);
+      default:
+        return _buildModernLineChart(filteredMetrics);
+    }
+  }
+
+  Widget _buildModernLineChart(List<Map<String, dynamic>> metrics) {
+    final chartData = _prepareTimeSeriesChartData(metrics);
+    
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildEnhancedGraphHeader('Energy Consumption Over Time', metrics.length),
+          const SizedBox(height: 24),
+          
+          // Phase Legend
+          _buildPhaseLegend(chartData['phaseData']),
+          const SizedBox(height: 20),
+          
+          SizedBox(
+            height: 450,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  drawHorizontalLine: true,
+                  horizontalInterval: (chartData['maxY'] - chartData['minY']) / 6,
+                  verticalInterval: chartData['timeSpan'] / 8,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border.withOpacity(0.3),
+                    strokeWidth: 1,
+                  ),
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: AppColors.border.withOpacity(0.3),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      interval: chartData['timeSpan'] / 6,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        final timestamp = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Transform.rotate(
+                            angle: -0.5,
+                            child: Text(
+                              '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      interval: (chartData['maxY'] - chartData['minY']) / 6,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          '${value.toStringAsFixed(0)} W',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(
+                    color: AppColors.border.withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                minX: chartData['minX'],
+                maxX: chartData['maxX'],
+                minY: chartData['minY'],
+                maxY: chartData['maxY'],
+                lineBarsData: chartData['phaseData'].entries.map<LineChartBarData>((entry) {
+                  final phase = entry.key;
+                  final spots = entry.value as List<FlSpot>;
+                  final color = _getPhaseColor(phase);
+                  
+                  return LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    color: color,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: spots.length <= 20,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: color,
+                          strokeWidth: 2,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          color.withOpacity(0.3),
+                          color.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+                    if (touchResponse != null && touchResponse.lineBarSpots != null) {
+                      final spot = touchResponse.lineBarSpots!.first;
+                      final timestamp = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt());
+                      
+                      setState(() {
+                        _hoveredDataIndex = spot.x.toInt();
+                        _hoveredDataPoint = {
+                          'timestamp': timestamp,
+                          'value': spot.y,
+                          'phase': _getPhaseFromIndex(touchResponse.lineBarSpots!.first.barIndex),
+                        };
+                      });
+                    } else {
+                      setState(() {
+                        _hoveredDataIndex = null;
+                        _hoveredDataPoint = null;
+                      });
+                    }
+                  },
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        final timestamp = DateTime.fromMillisecondsSinceEpoch(barSpot.x.toInt());
+                        final phase = _getPhaseFromIndex(barSpot.barIndex);
+                        
+                        return LineTooltipItem(
+                          '${barSpot.y.toStringAsFixed(2)} W\n',
+                          TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Phase: $phase\n',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          if (_hoveredDataPoint != null) ...[
+            const SizedBox(height: 20),
+            _buildEnhancedHoverDataInfo(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Enhanced chart data preparation with time series and phase separation
+  Map<String, dynamic> _prepareTimeSeriesChartData(List<Map<String, dynamic>> metrics) {
+    if (metrics.isEmpty) {
+      return {
+        'phaseData': <String, List<FlSpot>>{},
+        'minX': 0.0,
+        'maxX': 1.0,
+        'minY': 0.0,
+        'maxY': 1.0,
+        'timeSpan': 1.0,
+      };
+    }
+
+    // Group metrics by phase
+    final Map<String, List<FlSpot>> phaseData = {};
+    double minX = double.infinity;
+    double maxX = double.negativeInfinity;
+    double minY = double.infinity;
+    double maxY = double.negativeInfinity;
+
+    for (final metric in metrics) {
+      final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+      final phase = labels['Phase']?.toString() ?? metric['Phase']?.toString() ?? 'Total';
+      final value = (metric['Value'] ?? 0).toDouble();
+      
+      // Parse timestamp
+      DateTime timestamp;
+      if (metric['Timestamp'] != null) {
+        try {
+          timestamp = DateTime.parse(metric['Timestamp'].toString());
+        } catch (e) {
+          timestamp = DateTime.now();
+        }
+      } else {
+        timestamp = DateTime.now();
+      }
+      
+      final x = timestamp.millisecondsSinceEpoch.toDouble();
+      
+      if (value.isFinite && x.isFinite) {
+        if (!phaseData.containsKey(phase)) {
+          phaseData[phase] = [];
+        }
+        
+        phaseData[phase]!.add(FlSpot(x, value));
+        
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (value < minY) minY = value;
+        if (value > maxY) maxY = value;
+      }
+    }
+
+    // Sort spots by X value for each phase
+    phaseData.forEach((phase, spots) {
+      spots.sort((a, b) => a.x.compareTo(b.x));
+    });
+
+    // Ensure reasonable bounds
+    if (minY == maxY) {
+      minY = maxY - 10;
+      maxY = maxY + 10;
+    }
+
+    final yPadding = (maxY - minY) * 0.1;
+    final chartMinY = (minY - yPadding).clamp(0, double.infinity);
+    final chartMaxY = maxY + yPadding;
+
+    final timeSpan = maxX - minX;
+
+    return {
+      'phaseData': phaseData,
+      'minX': minX,
+      'maxX': maxX,
+      'minY': chartMinY,
+      'maxY': chartMaxY,
+      'timeSpan': timeSpan,
+    };
+  }
+
+  // Phase color mapping
+  Color _getPhaseColor(String phase) {
+    switch (phase.toLowerCase()) {
+      case 'a':
+      case 'phase a':
+        return const Color(0xFF3B82F6); // Blue
+      case 'b':
+      case 'phase b':
+        return const Color(0xFF10B981); // Green
+      case 'c':
+      case 'phase c':
+        return const Color(0xFFF59E0B); // Orange
+      case 'total':
+      case 'sum':
+        return const Color(0xFF8B5CF6); // Purple
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  String _getPhaseFromIndex(int index) {
+    final phases = ['Total', 'Phase A', 'Phase B', 'Phase C'];
+    return index < phases.length ? phases[index] : 'Unknown';
+  }
+
+  // Enhanced phase legend
+  Widget _buildPhaseLegend(Map<String, dynamic> phaseData) {
+    final phases = phaseData.keys.toList();
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: AppColors.surfaceVariant.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.border.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Phase Legend',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: phases.map((phase) {
+              final color = _getPhaseColor(phase);
+              final spots = phaseData[phase] as List<FlSpot>? ?? [];
+              
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$phase (${spots.length} points)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: color.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced graph header with modern design
+  Widget _buildEnhancedGraphHeader(String title, int dataCount) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.05),
+            Colors.transparent,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Real-time data • $dataCount measurements',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary.withOpacity(0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'Live',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced hover data info with modern design
+  Widget _buildEnhancedHoverDataInfo() {
+    if (_hoveredDataPoint == null) return const SizedBox.shrink();
+
+    final dataPoint = _hoveredDataPoint!;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: AppSizes.spacing8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.insights,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Data Point Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _buildEnhancedDataInfoItem(
+                  'Energy Consumption',
+                  '${(dataPoint['value'] ?? 0.0).toStringAsFixed(2)} W',
+                  Icons.flash_on,
+                  const Color(0xFF3B82F6),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildEnhancedDataInfoItem(
+                  'Phase',
+                  dataPoint['phase']?.toString() ?? 'N/A',
+                  Icons.electrical_services,
+                  const Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _buildEnhancedDataInfoItem(
+                  'Time',
+                  dataPoint['timestamp'] != null 
+                      ? '${(dataPoint['timestamp'] as DateTime).hour.toString().padLeft(2, '0')}:${(dataPoint['timestamp'] as DateTime).minute.toString().padLeft(2, '0')}'
+                      : 'N/A',
+                  Icons.schedule,
+                  const Color(0xFF8B5CF6),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildEnhancedDataInfoItem(
+                  'Date',
+                  dataPoint['timestamp'] != null 
+                      ? '${(dataPoint['timestamp'] as DateTime).day}/${(dataPoint['timestamp'] as DateTime).month}/${(dataPoint['timestamp'] as DateTime).year}'
+                      : 'N/A',
+                  Icons.calendar_today,
+                  const Color(0xFFF59E0B),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedDataInfoItem(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: color,
+              ),
+              const SizedBox(width: 6),
               Text(
-                title,
+                label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: color.withOpacity(0.8),
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.spacing8),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+                maxX: (metrics.length - 1).toDouble(),
+                minY: chartData['minY'],
+                maxY: chartData['maxY'],
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: chartData['spots'],
+                    isCurved: true,
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF3b82f6)],
+                    ),
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: AppColors.primary,
+                          strokeWidth: 2,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary.withOpacity(0.3),
+                          AppColors.primary.withOpacity(0.1),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+                    if (touchResponse != null && touchResponse.lineBarSpots != null) {
+                      final spot = touchResponse.lineBarSpots!.first;
+                      setState(() {
+                        _hoveredDataIndex = spot.x.toInt();
+                        if (_hoveredDataIndex! < metrics.length) {
+                          _hoveredDataPoint = metrics[_hoveredDataIndex!];
+                        }
+                      });
+                    } else {
+                      setState(() {
+                        _hoveredDataIndex = null;
+                        _hoveredDataPoint = null;
+                      });
+                    }
+                  },
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        final index = barSpot.x.toInt();
+                        if (index < metrics.length) {
+                          final metric = metrics[index];
+                          return LineTooltipItem(
+                            'Value: ${barSpot.y.toStringAsFixed(2)}\n',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Time: ${metric['Timestamp']?.toString().substring(0, 16) ?? 'N/A'}\n',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'Units: ${metric['Labels']?['Units'] ?? 'N/A'}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                        return null;
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          if (_hoveredDataPoint != null) ...[
+            const SizedBox(height: 16),
+            _buildHoverDataInfo(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernBarChart(List<Map<String, dynamic>> metrics) {
+    final chartData = _prepareChartData(metrics);
+    
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildGraphHeader('Bar Chart Analysis', metrics.length),
+          const SizedBox(height: 20),
+          
+          SizedBox(
+            height: 400,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: chartData['maxY'],
+                minY: chartData['minY'],
+                gridData: FlGridData(
+                  show: true,
+                  horizontalInterval: (chartData['maxY'] - chartData['minY']) / 5,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border,
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < metrics.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toStringAsFixed(0),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(color: AppColors.border),
+                ),
+                barGroups: List.generate(
+                  metrics.length,
+                  (index) {
+                    final value = (metrics[index]['Value'] ?? 0).toDouble();
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: value,
+                          color: AppColors.primary,
+                          width: 16,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4),
+                            topRight: Radius.circular(4),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchCallback: (FlTouchEvent event, BarTouchResponse? touchResponse) {
+                    if (touchResponse != null && touchResponse.spot != null) {
+                      final index = touchResponse.spot!.touchedBarGroupIndex;
+                      setState(() {
+                        _hoveredDataIndex = index;
+                        if (index < metrics.length) {
+                          _hoveredDataPoint = metrics[index];
+                        }
+                      });
+                    } else {
+                      setState(() {
+                        _hoveredDataIndex = null;
+                        _hoveredDataPoint = null;
+                      });
+                    }
+                  },
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      if (groupIndex < metrics.length) {
+                        final metric = metrics[groupIndex];
+                        return BarTooltipItem(
+                          'Value: ${rod.toY.toStringAsFixed(2)}\n',
+                          const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Time: ${metric['Timestamp']?.toString().substring(0, 16) ?? 'N/A'}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          if (_hoveredDataPoint != null) ...[
+            const SizedBox(height: 16),
+            _buildHoverDataInfo(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernPieChart(List<Map<String, dynamic>> metrics) {
+    final pieData = _preparePieChartData(metrics);
+    
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildGraphHeader('Distribution Analysis', metrics.length),
+          const SizedBox(height: 20),
+          
+          SizedBox(
+            height: 400,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 80,
+                      sections: pieData,
+                      pieTouchData: PieTouchData(
+                        touchCallback: (FlTouchEvent event, PieTouchResponse? touchResponse) {
+                          if (touchResponse != null && touchResponse.touchedSection != null) {
+                            final index = touchResponse.touchedSection!.touchedSectionIndex;
+                            setState(() {
+                              _hoveredDataIndex = index;
+                              // Set hover data based on pie section
+                              if (index < metrics.length && index >= 0) {
+                                _hoveredDataPoint = metrics[index];
+                              }
+                            });
+                          } else {
+                            setState(() {
+                              _hoveredDataIndex = null;
+                              _hoveredDataPoint = null;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: _buildPieChartLegend(pieData, metrics),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernAreaChart(List<Map<String, dynamic>> metrics) {
+    final chartData = _prepareChartData(metrics);
+    
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildGraphHeader('Area Chart Analysis', metrics.length),
+          const SizedBox(height: 20),
+          
+          SizedBox(
+            height: 400,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  drawHorizontalLine: true,
+                  horizontalInterval: (chartData['maxY'] - chartData['minY']) / 5,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border,
+                    strokeWidth: 1,
+                  ),
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: AppColors.border,
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < metrics.length) {
+                          return Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toStringAsFixed(0),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(color: AppColors.border),
+                ),
+                minX: 0,
+                maxX: (metrics.length - 1).toDouble(),
+                minY: chartData['minY'],
+                maxY: chartData['maxY'],
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: chartData['spots'],
+                    isCurved: true,
+                    color: AppColors.primary,
+                    barWidth: 2,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary.withOpacity(0.4),
+                          AppColors.primary.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernScatterChart(List<Map<String, dynamic>> metrics) {
+    final chartData = _prepareChartData(metrics);
+    
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildGraphHeader('Scatter Plot Analysis', metrics.length),
+          const SizedBox(height: 20),
+          
+          SizedBox(
+            height: 400,
+            child: ScatterChart(
+              ScatterChartData(
+                scatterSpots: chartData['spots'].map<ScatterSpot>((spot) {
+                  return ScatterSpot(
+                    spot.x,
+                    spot.y,
+                  );
+                }).toList(),
+                minX: 0,
+                maxX: (metrics.length - 1).toDouble(),
+                minY: chartData['minY'],
+                maxY: chartData['maxY'],
+                gridData: FlGridData(
+                  show: true,
+                  horizontalInterval: (chartData['maxY'] - chartData['minY']) / 5,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border,
+                    strokeWidth: 1,
+                  ),
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: AppColors.border,
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < metrics.length) {
+                          return Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toStringAsFixed(0),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(color: AppColors.border),
+                ),
+                scatterTouchData: ScatterTouchData(
+                  enabled: true,
+                  touchCallback: (FlTouchEvent event, ScatterTouchResponse? touchResponse) {
+                    if (touchResponse != null && touchResponse.touchedSpot != null) {
+                      final spot = touchResponse.touchedSpot!.spot;
+                      final index = spot.x.toInt();
+                      setState(() {
+                        _hoveredDataIndex = index;
+                        if (index < metrics.length) {
+                          _hoveredDataPoint = metrics[index];
+                        }
+                      });
+                    } else {
+                      setState(() {
+                        _hoveredDataIndex = null;
+                        _hoveredDataPoint = null;
+                      });
+                    }
+                  },
+                  touchTooltipData: ScatterTouchTooltipData(
+                    getTooltipItems: (ScatterSpot touchedBarSpot) {
+                      final index = touchedBarSpot.x.toInt();
+                      if (index < metrics.length) {
+                        final metric = metrics[index];
+                        return ScatterTooltipItem(
+                          'Value: ${touchedBarSpot.y.toStringAsFixed(2)}\n'
+                          'Time: ${metric['Timestamp']?.toString().substring(0, 16) ?? 'N/A'}',
+                          textStyle: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods for chart data preparation
+  Map<String, dynamic> _prepareChartData(List<Map<String, dynamic>> metrics) {
+    final spots = <FlSpot>[];
+    double minValue = double.infinity;
+    double maxValue = double.negativeInfinity;
+
+    for (int i = 0; i < metrics.length; i++) {
+      final value = (metrics[i]['Value'] ?? 0).toDouble();
+      if (value.isFinite) {
+        spots.add(FlSpot(i.toDouble(), value));
+        if (value < minValue) minValue = value;
+        if (value > maxValue) maxValue = value;
+      }
+    }
+
+    // Ensure reasonable bounds
+    if (minValue == maxValue) {
+      minValue = maxValue - 1;
+      maxValue = maxValue + 1;
+    }
+
+    final yPadding = (maxValue - minValue) * 0.1;
+    final chartMinY = (minValue - yPadding).clamp(0, double.infinity);
+    final chartMaxY = maxValue + yPadding;
+
+    return {
+      'spots': spots,
+      'minY': chartMinY,
+      'maxY': chartMaxY,
+    };
+  }
+
+  List<PieChartSectionData> _preparePieChartData(List<Map<String, dynamic>> metrics) {
+    final Map<String, double> groupedData = {};
+    
+    // Group data by units or phase for pie chart
+    for (final metric in metrics) {
+      final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+      final key = labels['Units']?.toString() ?? 
+                  labels['Phase']?.toString() ?? 
+                  'Unknown';
+      final value = (metric['Value'] ?? 0).toDouble();
+      groupedData[key] = (groupedData[key] ?? 0) + value;
+    }
+
+    final total = groupedData.values.fold(0.0, (sum, value) => sum + value);
+    final colors = [
+      AppColors.primary,
+      AppColors.success,
+      AppColors.warning,
+      AppColors.error,
+      AppColors.secondary,
+    ];
+
+    return groupedData.entries.map((entry) {
+      final index = groupedData.keys.toList().indexOf(entry.key);
+      final percentage = (entry.value / total) * 100;
+      
+      return PieChartSectionData(
+        color: colors[index % colors.length],
+        value: entry.value,
+        title: '${percentage.toStringAsFixed(1)}%',
+        radius: 100,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _buildGraphHeader(String title, int dataCount) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Showing $dataCount data points',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        if (_selectedUnits != null || _selectedPhase != null || _selectedFlowDirection != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Filtered',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPieChartLegend(List<PieChartSectionData> pieData, List<Map<String, dynamic>> metrics) {
+    final Map<String, double> groupedData = {};
+    
+    for (final metric in metrics) {
+      final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+      final key = labels['Units']?.toString() ?? 
+                  labels['Phase']?.toString() ?? 
+                  'Unknown';
+      final value = (metric['Value'] ?? 0).toDouble();
+      groupedData[key] = (groupedData[key] ?? 0) + value;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Legend',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...groupedData.entries.map((entry) {
+          final index = groupedData.keys.toList().indexOf(entry.key);
+          final colors = [
+            AppColors.primary,
+            AppColors.success,
+            AppColors.warning,
+            AppColors.error,
+            AppColors.secondary,
+          ];
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: colors[index % colors.length],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        entry.value.toStringAsFixed(2),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildHoverDataInfo() {
+    if (_hoveredDataPoint == null) return const SizedBox.shrink();
+
+    final metric = _hoveredDataPoint!;
+    final labels = metric['Labels'] as Map<String, dynamic>? ?? {};
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 16,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Hovered Data Point',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDataInfoItem(
+                  'Value',
+                  '${metric['Value'] ?? 'N/A'} ${labels['Units'] ?? ''}',
+                ),
+              ),
+              Expanded(
+                child: _buildDataInfoItem(
+                  'Timestamp',
+                  metric['Timestamp']?.toString().substring(0, 16) ?? 'N/A',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDataInfoItem(
+                  'Phase',
+                  labels['Phase']?.toString() ?? 'N/A',
+                ),
+              ),
+              Expanded(
+                child: _buildDataInfoItem(
+                  'Flow Direction',
+                  labels['FlowDirection']?.toString() ?? 'N/A',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataInfoItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDataSummaryCard(List<Map<String, dynamic>> filteredMetrics) {
+    if (filteredMetrics.isEmpty) return const SizedBox.shrink();
+
+    // Calculate summary statistics
+    final values = filteredMetrics.map((m) => (m['Value'] ?? 0).toDouble()).where((v) => v.isFinite).toList();
+    final average = values.isNotEmpty ? values.reduce((a, b) => a + b) / values.length : 0;
+    final maxValue = values.isNotEmpty ? values.reduce((a, b) => a > b ? a : b) : 0;
+    final minValue = values.isNotEmpty ? values.reduce((a, b) => a < b ? a : b) : 0;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.summarize,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Data Summary',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryItem(
+                  'Total Records',
+                  filteredMetrics.length.toString(),
+                  Icons.dataset,
+                  AppColors.primary,
+                ),
+              ),
+              Expanded(
+                child: _buildSummaryItem(
+                  'Average Value',
+                  average.toStringAsFixed(2),
+                  Icons.trending_up,
+                  AppColors.success,
+                ),
+              ),
+              Expanded(
+                child: _buildSummaryItem(
+                  'Max Value',
+                  maxValue.toStringAsFixed(2),
+                  Icons.arrow_upward,
+                  AppColors.error,
+                ),
+              ),
+              Expanded(
+                child: _buildSummaryItem(
+                  'Min Value',
+                  minValue.toStringAsFixed(2),
+                  Icons.arrow_downward,
+                  AppColors.warning,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
@@ -3101,1021 +4931,17 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               color: color,
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMainAnalyticsChart() {
-    if (_isLoadingAnalytics) {
-      return const SizedBox(
-        height: 400,
-        child: Center(
-          child: AppLottieStateWidget.loading(
-            title: 'Loading Analytics',
-            message: 'Fetching real-time data...',
-          ),
-        ),
-      );
-    }
-
-    if (_analyticsError != null) {
-      return SizedBox(
-        height: 400,
-        child: Center(
-          child: AppLottieStateWidget.error(
-            title: 'Analytics Error',
-            message: _analyticsError!,
-          ),
-        ),
-      );
-    }
-
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox(
-        height: 400,
-        child: Center(
-          child: AppLottieStateWidget.noData(
-            title: 'No Analytics Data',
-            message: 'No data available for the selected period',
-          ),
-        ),
-      );
-    }
-
-    // Display charts as card grid for easier viewing
-    return _buildChartsCardGrid();
-  }
-
-  Widget _buildChartsCardGrid() {
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Grid Header with Controls
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Analytics Charts Grid',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Row(
-              children: [
-                // Date-Time Display
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing12,
-                    vertical: AppSizes.spacing6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: AppSizes.spacing4),
-                      Text(
-                        _getDateTimeRangeDisplay(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                // Hover Toggle
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _showHover,
-                      onChanged: (value) {
-                        setState(() {
-                          _showHover = value ?? true;
-                        });
-                      },
-                    ),
-                    const Text('Hover', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.spacing16),
-
-        // Grid of Charts
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppSizes.spacing16,
-            mainAxisSpacing: AppSizes.spacing16,
-            childAspectRatio: 1.3, // Adjusted for better chart visibility
-          ),
-          itemCount: _selectedMetricTypes.length,
-          itemBuilder: (context, index) {
-            final metricType = _selectedMetricTypes[index];
-            return _buildAnalyticsGridCard(metricType);
-          },
-        ),
-      ],
-    );
-  }
-
-  String _getDateTimeRangeDisplay() {
-    if (_selectedDateRange == null) {
-      return 'No date range selected';
-    }
-
-    final start = _selectedDateRange!.start;
-    final end = _selectedDateRange!.end;
-
-    // Format: "Jul 25, 10:30 - Jul 25, 14:30"
-    final startFormatted =
-        '${_getMonthAbbr(start.month)} ${start.day}, ${start.hour}:${start.minute.toString().padLeft(2, '0')}';
-    final endFormatted =
-        '${_getMonthAbbr(end.month)} ${end.day}, ${end.hour}:${end.minute.toString().padLeft(2, '0')}';
-
-    return '$startFormatted - $endFormatted';
-  }
-
-  String _getMonthAbbr(int month) {
-    const months = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month];
-  }
-
-  Widget _buildTimeSeriesChart() {
-    // Group metrics by phase and metric type
-    final groupedData = <String, List<FlSpot>>{};
-    final timeLabels = <String>[];
-
-    // Sort metrics by timestamp
-    final sortedMetrics = List<LoadProfileMetric>.from(_analyticsMetrics)
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    // Get unique timestamps for x-axis
-    final uniqueTimestamps =
-        sortedMetrics.map((m) => m.timestamp).toSet().toList()..sort();
-
-    for (int i = 0; i < uniqueTimestamps.length; i++) {
-      final timestamp = uniqueTimestamps[i];
-      timeLabels.add(
-        '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-      );
-
-      // For each phase and metric type combination
-      for (final phase in _selectedPhases) {
-        for (final metricType in _selectedMetricTypes) {
-          final key = '${phase}_$metricType';
-          if (!groupedData.containsKey(key)) {
-            groupedData[key] = [];
-          }
-
-          // Find metric for this timestamp, phase, and type
-          final metric = sortedMetrics
-              .where(
-                (m) =>
-                    m.timestamp == timestamp &&
-                    m.phase == phase &&
-                    m.metricType == metricType,
-              )
-              .firstOrNull;
-
-          if (metric != null) {
-            groupedData[key]!.add(FlSpot(i.toDouble(), metric.value));
-          }
-        }
-      }
-    }
-
-    // Define colors for phases
-    final phaseColors = {
-      'L1': AppColors.primary,
-      'L2': AppColors.success,
-      'L3': AppColors.warning,
-    };
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(color: AppColors.border, strokeWidth: 1);
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(color: AppColors.border, strokeWidth: 1);
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              interval: (timeLabels.length / 6).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < timeLabels.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      timeLabels[index],
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 60,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(1),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 10,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(color: AppColors.border),
-        ),
-        lineBarsData: groupedData.entries.map((entry) {
-          final parts = entry.key.split('_');
-          final phase = parts[0];
-          // final metricType = parts[1]; // Unused for now
-          final color = phaseColors[phase] ?? AppColors.primary;
-
-          return LineChartBarData(
-            spots: entry.value,
-            isCurved: true,
-            color: color,
-            barWidth: 2,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: _showHover,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 3,
-                  color: color,
-                  strokeWidth: 1,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-          );
-        }).toList(),
-        lineTouchData: LineTouchData(
-          enabled: _showHover,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-              return touchedBarSpots.map((barSpot) {
-                final index = barSpot.x.toInt();
-                final timestamp = index < timeLabels.length
-                    ? timeLabels[index]
-                    : '';
-                return LineTooltipItem(
-                  '$timestamp\n${barSpot.y.toStringAsFixed(2)}',
-                  const TextStyle(color: Colors.white, fontSize: 12),
-                );
-              }).toList();
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnalyticsGrid() {
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Grid Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Advanced Analytics Grid',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Row(
-              children: [
-                // Hover Toggle
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _showHover,
-                      onChanged: (value) {
-                        setState(() {
-                          _showHover = value ?? true;
-                        });
-                      },
-                    ),
-                    const Text('Show Hover', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.spacing16),
-
-        // Grid of Charts
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppSizes.spacing16,
-            mainAxisSpacing: AppSizes.spacing16,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: _selectedMetricTypes.length,
-          itemBuilder: (context, index) {
-            final metricType = _selectedMetricTypes[index];
-            return _buildAnalyticsGridCard(metricType);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAnalyticsGridCard(String metricType) {
-    // Filter metrics by type
-    final metricsForType =
-        _analyticsMetrics.where((m) => m.metricType == metricType).toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    if (metricsForType.isEmpty) {
-      return AppCard(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.analytics_outlined,
-                size: 48,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(height: AppSizes.spacing8),
-              Text(
-                'No $metricType Data',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Group by phase
-    final phaseData = <String, List<FlSpot>>{};
-    final phaseColors = {
-      'L1': AppColors.primary,
-      'L2': AppColors.success,
-      'L3': AppColors.warning,
-    };
-
-    // Get unique timestamps
-    final uniqueTimestamps =
-        metricsForType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    for (int i = 0; i < uniqueTimestamps.length; i++) {
-      final timestamp = uniqueTimestamps[i];
-
-      for (final phase in _selectedPhases) {
-        if (!phaseData.containsKey(phase)) {
-          phaseData[phase] = [];
-        }
-
-        final metric = metricsForType
-            .where((m) => m.timestamp == timestamp && m.phase == phase)
-            .firstOrNull;
-
-        if (metric != null && _phaseVisibility[phase] == true) {
-          phaseData[phase]!.add(FlSpot(i.toDouble(), metric.value));
-        }
-      }
-    }
-
-    // Calculate stats
-    final allValues = metricsForType.map((m) => m.value).toList();
-    final avgValue = allValues.isNotEmpty
-        ? allValues.reduce((a, b) => a + b) / allValues.length
-        : 0;
-    final maxValue = allValues.isNotEmpty
-        ? allValues.reduce((a, b) => a > b ? a : b)
-        : 0;
-    final minValue = allValues.isNotEmpty
-        ? allValues.reduce((a, b) => a < b ? a : b)
-        : 0;
-
-    // Get unit
-    final unit = metricsForType.isNotEmpty ? metricsForType.first.unit : '';
-
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                metricType,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                unit,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spacing8),
-
-          // Stats Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStatItem(
-                'Avg',
-                avgValue.toStringAsFixed(1),
-                AppColors.info,
-              ),
-              _buildStatItem(
-                'Max',
-                maxValue.toStringAsFixed(1),
-                AppColors.success,
-              ),
-              _buildStatItem(
-                'Min',
-                minValue.toStringAsFixed(1),
-                AppColors.warning,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spacing12),
-
-          // Chart
-          Expanded(
-            child: _selectedChartType == ChartType.line
-                ? _buildGridLineChart(phaseData, phaseColors)
-                : _selectedChartType == ChartType.bar
-                ? _buildGridBarChart(phaseData, phaseColors)
-                : _buildGridAreaChart(phaseData, phaseColors),
-          ),
-
-          // Phase Legend
-          const SizedBox(height: AppSizes.spacing8),
-          _buildPhaseLegend(phaseColors),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12,
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGridLineChart(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    // Get time labels for X-axis
-    final metricsForCurrentType =
-        _analyticsMetrics
-            .where((m) => phaseData.keys.any((phase) => m.phase == phase))
-            .toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    final uniqueTimestamps =
-        metricsForCurrentType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.2),
-              strokeWidth: 1,
-            );
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 32,
-              interval: (uniqueTimestamps.length / 3).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < uniqueTimestamps.length) {
-                  final timestamp = uniqueTimestamps[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(
-            color: AppColors.border.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        lineBarsData: phaseData.entries.map((entry) {
-          final phase = entry.key;
-          final spots = entry.value;
-          final color = phaseColors[phase] ?? AppColors.primary;
-
-          return LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: color,
-            barWidth: 2,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: _showHover,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 2,
-                  color: color,
-                  strokeWidth: 0,
-                );
-              },
-            ),
-          );
-        }).toList(),
-        lineTouchData: LineTouchData(
-          enabled: _showHover,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-              return touchedBarSpots.map((barSpot) {
-                final index = barSpot.x.toInt();
-                final timestamp = index < uniqueTimestamps.length
-                    ? uniqueTimestamps[index]
-                    : DateTime.now();
-                return LineTooltipItem(
-                  '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}\n${barSpot.y.toStringAsFixed(2)}',
-                  const TextStyle(color: Colors.white, fontSize: 10),
-                );
-              }).toList();
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridBarChart(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    // Get time labels for X-axis
-    final metricsForCurrentType =
-        _analyticsMetrics
-            .where((m) => phaseData.keys.any((phase) => m.phase == phase))
-            .toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    final uniqueTimestamps =
-        metricsForCurrentType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    return BarChart(
-      BarChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.2),
-              strokeWidth: 1,
-            );
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 32,
-              interval: (uniqueTimestamps.length / 3).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < uniqueTimestamps.length) {
-                  final timestamp = uniqueTimestamps[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(
-            color: AppColors.border.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        barGroups: _buildBarGroups(phaseData, phaseColors),
-        barTouchData: BarTouchData(
-          enabled: _showHover,
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              final timestamp = groupIndex < uniqueTimestamps.length
-                  ? uniqueTimestamps[groupIndex]
-                  : DateTime.now();
-              return BarTooltipItem(
-                '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}\n${rod.toY.toStringAsFixed(2)}',
-                const TextStyle(color: Colors.white, fontSize: 10),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridAreaChart(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    // Get time labels for X-axis
-    final metricsForCurrentType =
-        _analyticsMetrics
-            .where((m) => phaseData.keys.any((phase) => m.phase == phase))
-            .toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    final uniqueTimestamps =
-        metricsForCurrentType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.2),
-              strokeWidth: 1,
-            );
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 32,
-              interval: (uniqueTimestamps.length / 3).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < uniqueTimestamps.length) {
-                  final timestamp = uniqueTimestamps[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(
-            color: AppColors.border.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        lineBarsData: phaseData.entries.map((entry) {
-          final phase = entry.key;
-          final spots = entry.value;
-          final color = phaseColors[phase] ?? AppColors.primary;
-
-          return LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: color,
-            barWidth: 1,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [color.withOpacity(0.4), color.withOpacity(0.1)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          );
-        }).toList(),
-        lineTouchData: LineTouchData(
-          enabled: _showHover,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-              return touchedBarSpots.map((barSpot) {
-                final index = barSpot.x.toInt();
-                final timestamp = index < uniqueTimestamps.length
-                    ? uniqueTimestamps[index]
-                    : DateTime.now();
-                return LineTooltipItem(
-                  '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}\n${barSpot.y.toStringAsFixed(2)}',
-                  const TextStyle(color: Colors.white, fontSize: 10),
-                );
-              }).toList();
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<BarChartGroupData> _buildBarGroups(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    final groups = <BarChartGroupData>[];
-    final maxDataPoints = phaseData.values.isNotEmpty
-        ? phaseData.values
-              .map((spots) => spots.length)
-              .reduce((a, b) => a > b ? a : b)
-        : 0;
-
-    for (int i = 0; i < maxDataPoints; i++) {
-      final rods = <BarChartRodData>[];
-
-      for (final entry in phaseData.entries) {
-        final phase = entry.key;
-        final spots = entry.value;
-        final color = phaseColors[phase] ?? AppColors.primary;
-
-        if (i < spots.length) {
-          rods.add(
-            BarChartRodData(
-              toY: spots[i].y,
-              color: color,
-              width: 8,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(2),
-                topRight: Radius.circular(2),
-              ),
-            ),
-          );
-        }
-      }
-
-      if (rods.isNotEmpty) {
-        groups.add(BarChartGroupData(x: i, barRods: rods, barsSpace: 2));
-      }
-    }
-
-    return groups;
-  }
-
-  Widget _buildPhaseLegend(Map<String, Color> phaseColors) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: phaseColors.entries
-          .where(
-            (entry) =>
-                _selectedPhases.contains(entry.key) &&
-                _phaseVisibility[entry.key] == true,
-          )
-          .map((entry) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: entry.value,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    entry.key,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          })
-          .toList(),
     );
   }
 
@@ -4718,93 +5544,5 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     });
 
     return sortedMetrics;
-  }
-
-  // Helper methods for filter tooltips
-  Map<String, double> _getPhaseCurrentValue(String phase) {
-    final phaseMetrics = _analyticsMetrics
-        .where((m) => m.phase == phase)
-        .toList();
-
-    if (phaseMetrics.isEmpty) {
-      return {'voltage': 0.0, 'current': 0.0, 'power': 0.0};
-    }
-
-    // Get latest values for each metric type
-    final voltageMetrics = phaseMetrics
-        .where((m) => m.metricType == 'Voltage')
-        .toList();
-    final currentMetrics = phaseMetrics
-        .where((m) => m.metricType == 'Current')
-        .toList();
-    final powerMetrics = phaseMetrics
-        .where((m) => m.metricType == 'Power')
-        .toList();
-
-    voltageMetrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    currentMetrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    powerMetrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    return {
-      'voltage': voltageMetrics.isNotEmpty ? voltageMetrics.first.value : 0.0,
-      'current': currentMetrics.isNotEmpty ? currentMetrics.first.value : 0.0,
-      'power': powerMetrics.isNotEmpty ? powerMetrics.first.value : 0.0,
-    };
-  }
-
-  Map<String, double> _getMetricCurrentValue(String metricType) {
-    final typeMetrics = _analyticsMetrics
-        .where((m) => m.metricType == metricType)
-        .toList();
-
-    if (typeMetrics.isEmpty) {
-      return {'L1': 0.0, 'L2': 0.0, 'L3': 0.0};
-    }
-
-    // Get latest values for each phase
-    final l1Metrics = typeMetrics.where((m) => m.phase == 'L1').toList();
-    final l2Metrics = typeMetrics.where((m) => m.phase == 'L2').toList();
-    final l3Metrics = typeMetrics.where((m) => m.phase == 'L3').toList();
-
-    l1Metrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    l2Metrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    l3Metrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    return {
-      'L1': l1Metrics.isNotEmpty ? l1Metrics.first.value : 0.0,
-      'L2': l2Metrics.isNotEmpty ? l2Metrics.first.value : 0.0,
-      'L3': l3Metrics.isNotEmpty ? l3Metrics.first.value : 0.0,
-    };
-  }
-
-  String _buildPhaseTooltipMessage(String phase, Map<String, double> values) {
-    return '$phase Phase Current Values:\n'
-        'Voltage: ${values['voltage']?.toStringAsFixed(2) ?? 'N/A'} V\n'
-        'Current: ${values['current']?.toStringAsFixed(2) ?? 'N/A'} A\n'
-        'Power: ${values['power']?.toStringAsFixed(2) ?? 'N/A'} W';
-  }
-
-  String _buildMetricTooltipMessage(
-    String metricType,
-    Map<String, double> values,
-  ) {
-    final unit = _getMetricUnit(metricType);
-    return '$metricType Current Values:\n'
-        'L1: ${values['L1']?.toStringAsFixed(2) ?? 'N/A'} $unit\n'
-        'L2: ${values['L2']?.toStringAsFixed(2) ?? 'N/A'} $unit\n'
-        'L3: ${values['L3']?.toStringAsFixed(2) ?? 'N/A'} $unit';
-  }
-
-  String _getMetricUnit(String metricType) {
-    switch (metricType.toLowerCase()) {
-      case 'voltage':
-        return 'V';
-      case 'current':
-        return 'A';
-      case 'power':
-        return 'W';
-      default:
-        return '';
-    }
   }
 }

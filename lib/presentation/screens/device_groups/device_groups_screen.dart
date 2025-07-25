@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mdms_clone/presentation/widgets/device_groups/device_group_filters_and_actions_v2.dart';
 import 'dart:async';
 import '../../../core/models/device_group.dart';
 import '../../../core/constants/app_colors.dart';
@@ -12,12 +13,12 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
-import '../../widgets/common/kanban_view.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/device_groups/device_group_filters_and_actions.dart';
 import '../../widgets/device_groups/device_group_summary_card.dart';
+import '../../widgets/device_groups/device_group_kanban_view.dart'; // Import the new kanban view
 import 'create_edit_device_group_dialog.dart';
 import 'device_group_manage_devices_dialog.dart';
 
@@ -86,9 +87,12 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
 
     try {
       final offset = (_currentPage - 1) * _itemsPerPage;
+      final search = _searchQuery.isEmpty
+          ? ApiConstants.defaultSearch
+          : '%${_searchQuery}%';
+
       final response = await _deviceGroupService.getDeviceGroups(
-        search: ApiConstants
-            .defaultSearch, // Always use default search, filter locally
+        search: search,
         offset: offset,
         limit: _itemsPerPage,
       );
@@ -121,10 +125,16 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   }
 
   void _onSearchChanged(String query) {
-    setState(() {
-      _searchQuery = query;
-      _filteredDeviceGroups = _applyFilters(_deviceGroups);
-      _sortDeviceGroups();
+    // Cancel the previous timer
+    _debounceTimer?.cancel();
+
+    // Set a new timer to delay the search
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _searchQuery = query;
+        _currentPage = 1; // Reset to first page when searching
+      });
+      _loadDeviceGroups(); // Trigger API call
     });
   }
 
@@ -313,29 +323,38 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   }
 
   Widget _buildHeader() {
-    return DeviceGroupFiltersAndActions(
-      onSearchChanged: _onSearchChanged,
-      onStatusFilterChanged: _onStatusFilterChanged,
-      onViewModeChanged: _onViewModeChanged,
-      onAddDeviceGroup: _createDeviceGroup,
-      onRefresh: _loadDeviceGroups,
-      currentViewMode: _currentViewMode,
-      selectedStatus: null, // We can add status filtering later
-      availableColumns: _availableColumns,
-      hiddenColumns: _hiddenColumns,
-      onColumnVisibilityChanged: (hiddenColumns) {
-        setState(() {
-          _hiddenColumns = hiddenColumns;
-        });
-      },
+    return Column(
+      children: [
+        DeviceGroupFiltersAndActionsV2(
+          onSearchChanged: _onSearchChanged,
+          onStatusFilterChanged: _onStatusFilterChanged,
+          onViewModeChanged: _onViewModeChanged,
+          onAddDeviceGroup: _createDeviceGroup,
+          onRefresh: _loadDeviceGroups,
+          onExport: () {},
+          onImport: () {},
+          currentViewMode: _currentViewMode,
+          selectedStatus: null, // We can add status filtering later
+          // availableColumns: _availableColumns,
+          // hiddenColumns: _hiddenColumns,
+          // onColumnVisibilityChanged: (hiddenColumns) {
+          //   setState(() {
+          //     _hiddenColumns = hiddenColumns;
+          //   });
+          // },
+        ),
+        DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
+      ],
     );
   }
 
   Widget _buildContent() {
-    if (_isLoading) {
+    // Show full-screen loading only if no data exists yet
+    if (_isLoading && _deviceGroups.isEmpty) {
       return const Center(
         child: AppLottieStateWidget.loading(
-          title: 'Loading Device Groups...',
+          title: 'Loading Device Groups',
+          lottieSize: 100,
           message: 'Please wait while we fetch your device groups.',
         ),
       );
@@ -350,7 +369,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       );
     }
 
-    if (_filteredDeviceGroups.isEmpty) {
+    if (_filteredDeviceGroups.isEmpty && !_isLoading) {
       return AppLottieStateWidget.noData(
         title: _searchQuery.isNotEmpty
             ? 'No Results Found'
@@ -363,22 +382,11 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       );
     }
 
-    return Column(
-      children: [
-        // Summary card
-        Padding(
-          padding: const EdgeInsets.all(AppSizes.spacing16),
-          child: DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
-        ),
-
-        // Main content based on view mode
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            child: _buildViewContent(),
-          ),
-        ),
-      ],
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.spacing16),
+        child: _buildViewContent(),
+      ),
     );
   }
 
@@ -594,159 +602,14 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   }
 
   Widget _buildKanbanView() {
-    return KanbanView<DeviceGroup>(
-      columns: [
-        KanbanColumn(id: 'Active', title: 'Active', color: AppColors.success),
-        KanbanColumn(id: 'Inactive', title: 'Inactive', color: AppColors.error),
-      ],
-      items: _filteredDeviceGroups,
-      onItemTapped: _viewDeviceGroup,
-      cardBuilder: (group) => _buildKanbanCard(group),
-      getItemColumn: (group) => group.active == true ? 'Active' : 'Inactive',
-    );
-  }
-
-  Widget _buildKanbanCard(DeviceGroup group) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 0,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            group.name ?? 'Unnamed Group',
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeMedium,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          if (group.description?.isNotEmpty == true) ...[
-            const SizedBox(height: AppSizes.spacing8),
-            Text(
-              group.description!,
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: AppSizes.spacing12),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing8,
-                  vertical: AppSizes.spacing4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                ),
-                child: Text(
-                  '${group.devices?.length ?? 0} devices',
-                  style: const TextStyle(
-                    fontSize: AppSizes.fontSizeSmall,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.more_vert,
-                  color: AppColors.textSecondary,
-                  size: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                ),
-                onSelected: (value) {
-                  switch (value) {
-                    case 'view':
-                      _viewDeviceGroup(group);
-                      break;
-                    case 'edit':
-                      _editDeviceGroup(group);
-                      break;
-                    case 'manage_devices':
-                      _manageDevices(group);
-                      break;
-                    case 'delete':
-                      _deleteDeviceGroup(group);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem<String>(
-                    value: 'view',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.visibility,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
-                        SizedBox(width: AppSizes.spacing8),
-                        Text('View Details'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 16, color: AppColors.warning),
-                        SizedBox(width: AppSizes.spacing8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'manage_devices',
-                    child: Row(
-                      children: [
-                        Icon(Icons.device_hub, size: 16, color: AppColors.info),
-                        SizedBox(width: AppSizes.spacing8),
-                        Text('Manage Devices'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 16, color: AppColors.error),
-                        SizedBox(width: AppSizes.spacing8),
-                        Text(
-                          'Delete',
-                          style: TextStyle(color: AppColors.error),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+    return DeviceGroupKanbanView(
+      deviceGroups: _filteredDeviceGroups,
+      onDeviceGroupSelected: _viewDeviceGroup,
+      isLoading: _isLoading,
+      enablePagination:
+          false, // Disable pagination for Kanban view as requested
+      itemsPerPage:
+          _itemsPerPage, // Keep for consistency but not used since pagination is disabled
     );
   }
 

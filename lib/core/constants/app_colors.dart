@@ -32,6 +32,7 @@ class AppColors {
   static const Color textPrimary = Color(0xFF0f172a);
   static const Color textSecondary = Color(0xFF64748b);
   static const Color textTertiary = Color(0xFF94a3b8);
+  static const Color textDisabled = Color(0xFFcbd5e1);
   static const Color textInverse = Color(0xFFffffff);
 
   // Border Colors
@@ -44,7 +45,6 @@ class AppColors {
   static const Color vacant = error;
   static const Color occupied = primary;
   static const Color construction = secondary;
-  
 
   // Additional colors for tickets and components
   static const Color onPrimary = Color(0xFFffffff);

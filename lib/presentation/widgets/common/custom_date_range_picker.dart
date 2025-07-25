@@ -83,7 +83,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                   ? (isDark ? const Color(0xFF4a5568) : AppColors.border)
                   : (isDark ? const Color(0xFF2d3748) : AppColors.borderLight),
             ),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
             color: widget.enabled
                 ? (isDark ? const Color(0xFF2d3748) : AppColors.surface)
                 : (isDark ? const Color(0xFF1e293b) : AppColors.surfaceVariant),

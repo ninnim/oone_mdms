@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'app_button.dart';
 import 'app_input_field.dart';
+import 'app_dropdown_field.dart';
+import 'custom_date_range_picker.dart';
 
 class AdvancedFilters extends StatefulWidget {
   final List<FilterConfig> filterConfigs;
@@ -12,6 +15,12 @@ class AdvancedFilters extends StatefulWidget {
   final VoidCallback? onSave;
   final bool showSaveOption;
   final String? savedFilterName;
+  final bool startExpanded;
+  final String title;
+  final Widget? leadingIcon;
+  final bool showApplyButton;
+  final bool autoApply;
+  final Duration debounceDelay;
 
   const AdvancedFilters({
     super.key,
@@ -22,6 +31,12 @@ class AdvancedFilters extends StatefulWidget {
     this.onSave,
     this.showSaveOption = false,
     this.savedFilterName,
+    this.startExpanded = false,
+    this.title = 'Advanced Filters',
+    this.leadingIcon,
+    this.showApplyButton = true,
+    this.autoApply = false,
+    this.debounceDelay = const Duration(milliseconds: 500),
   });
 
   @override
@@ -30,12 +45,40 @@ class AdvancedFilters extends StatefulWidget {
 
 class _AdvancedFiltersState extends State<AdvancedFilters> {
   late Map<String, dynamic> _filterValues;
-  bool _isExpanded = false;
+  late bool _isExpanded;
+  Timer? _debounceTimer;
+  final Map<String, TextEditingController> _textControllers = {};
 
   @override
   void initState() {
     super.initState();
     _filterValues = Map.from(widget.initialValues);
+    _isExpanded = widget.startExpanded;
+    _initializeControllers();
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _disposeControllers();
+    super.dispose();
+  }
+
+  void _initializeControllers() {
+    for (final config in widget.filterConfigs) {
+      if (config.type == FilterType.text || config.type == FilterType.number) {
+        _textControllers[config.key] = TextEditingController(
+          text: _filterValues[config.key]?.toString() ?? '',
+        );
+      }
+    }
+  }
+
+  void _disposeControllers() {
+    for (final controller in _textControllers.values) {
+      controller.dispose();
+    }
+    _textControllers.clear();
   }
 
   @override
@@ -54,27 +97,29 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
 
   Widget _buildHeader() {
     final activeFiltersCount = _filterValues.values
-        .where((value) => value != null && value.toString().isNotEmpty)
+        .where((value) => value != null && _isValueNotEmpty(value))
         .length;
 
     return InkWell(
       onTap: () => setState(() => _isExpanded = !_isExpanded),
+      borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       child: Container(
         padding: const EdgeInsets.all(AppSizes.spacing16),
         child: Row(
           children: [
-            Icon(
-              Icons.filter_list,
-              color: activeFiltersCount > 0
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
-              size: AppSizes.iconMedium,
-            ),
+            widget.leadingIcon ??
+                Icon(
+                  Icons.filter_list,
+                  color: activeFiltersCount > 0
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                  size: AppSizes.iconMedium,
+                ),
             const SizedBox(width: AppSizes.spacing8),
             Text(
-              'Advanced Filters',
+              widget.title,
               style: TextStyle(
-                fontSize: AppSizes.fontSizeMedium,
+                fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -88,7 +133,7 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                 ),
                 child: Text(
                   '$activeFiltersCount',
@@ -108,9 +153,11 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                   vertical: AppSizes.spacing4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Text(
                   widget.savedFilterName!,
@@ -126,6 +173,7 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
             Icon(
               _isExpanded ? Icons.expand_less : Icons.expand_more,
               color: AppColors.textSecondary,
+              size: AppSizes.iconSmall,
             ),
           ],
         ),
@@ -139,26 +187,33 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
-      child: Column(
+      child: Row(
         children: [
           _buildFilterFields(),
-          const SizedBox(height: AppSizes.spacing16),
-          _buildActionButtons(),
+          if (widget.showApplyButton || widget.onClear != null) ...[
+            const Spacer(),
+            _buildActionButtons(),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildFilterFields() {
-    return Wrap(
-      spacing: AppSizes.spacing16,
-      runSpacing: AppSizes.spacing16,
-      children: widget.filterConfigs.map((config) {
-        return SizedBox(
-          width: _getFieldWidth(config),
-          child: _buildFilterField(config),
-        );
-      }).toList(),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        alignment: WrapAlignment.start,
+        crossAxisAlignment: WrapCrossAlignment.start,
+        spacing: AppSizes.spacing16,
+        runSpacing: AppSizes.spacing16,
+        children: widget.filterConfigs.map((config) {
+          return SizedBox(
+            width: _getFieldWidth(config),
+            child: _buildFilterField(config),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -166,16 +221,20 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
     switch (config.type) {
       case FilterType.text:
       case FilterType.number:
-        return 200;
+        return config.width ?? 200;
       case FilterType.dropdown:
+      case FilterType.searchableDropdown:
+        return config.width ?? 180;
       case FilterType.multiSelect:
-        return 180;
+        return config.width ?? 200;
       case FilterType.dateRange:
-        return 250;
+        return config.width ?? 250;
+      case FilterType.datePicker:
+        return config.width ?? 150;
       case FilterType.toggle:
-        return 120;
-      default:
-        return 200;
+        return config.width ?? 150;
+      case FilterType.slider:
+        return config.width ?? 200;
     }
   }
 
@@ -187,78 +246,84 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
         return _buildNumberFilter(config);
       case FilterType.dropdown:
         return _buildDropdownFilter(config);
+      case FilterType.searchableDropdown:
+        return _buildSearchableDropdownFilter(config);
       case FilterType.multiSelect:
         return _buildMultiSelectFilter(config);
       case FilterType.dateRange:
         return _buildDateRangeFilter(config);
+      case FilterType.datePicker:
+        return _buildDatePickerFilter(config);
       case FilterType.toggle:
         return _buildToggleFilter(config);
-      default:
-        return const SizedBox();
+      case FilterType.slider:
+        return _buildSliderFilter(config);
     }
   }
 
   Widget _buildTextFilter(FilterConfig config) {
+    final controller = _textControllers[config.key]!;
+
     return AppInputField(
       label: config.label,
-      hintText: config.placeholder,
-      controller: TextEditingController(
-        text: _filterValues[config.key]?.toString() ?? '',
-      ),
+      hintText: config.placeholder ?? 'Enter ${config.label.toLowerCase()}',
+      controller: controller,
+      prefixIcon: config.icon != null ? Icon(config.icon) : null,
+      enabled: config.enabled,
+      required: config.required,
       onChanged: (value) =>
-          _updateFilter(config.key, value.isEmpty ? null : value),
+          _updateFilter(config.key, value.isEmpty ? null : value, config),
     );
   }
 
   Widget _buildNumberFilter(FilterConfig config) {
+    final controller = _textControllers[config.key]!;
+
     return AppInputField(
       label: config.label,
-      hintText: config.placeholder,
+      hintText: config.placeholder ?? 'Enter ${config.label.toLowerCase()}',
+      controller: controller,
       keyboardType: TextInputType.number,
-      controller: TextEditingController(
-        text: _filterValues[config.key]?.toString() ?? '',
-      ),
+      prefixIcon: config.icon != null ? Icon(config.icon) : null,
+      enabled: config.enabled,
+      required: config.required,
       onChanged: (value) {
         final numValue = value.isEmpty ? null : double.tryParse(value);
-        _updateFilter(config.key, numValue);
+        _updateFilter(config.key, numValue, config);
       },
     );
   }
 
   Widget _buildDropdownFilter(FilterConfig config) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          config.label,
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: AppSizes.spacing4),
-        DropdownButtonFormField<String>(
-          value: _filterValues[config.key],
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing12,
-              vertical: AppSizes.spacing8,
-            ),
-          ),
-          items: [
-            const DropdownMenuItem(value: null, child: Text('All')),
-            ...config.options!.map(
-              (option) => DropdownMenuItem(value: option, child: Text(option)),
-            ),
-          ],
-          onChanged: (value) => _updateFilter(config.key, value),
+    return AppSearchableDropdown<String>(
+      label: config.label,
+      hintText: config.placeholder ?? 'Select ${config.label.toLowerCase()}',
+      value: _filterValues[config.key],
+      items: [
+        const DropdownMenuItem(value: null, child: Text('All')),
+        ...config.options!.map(
+          (option) => DropdownMenuItem(value: option, child: Text(option)),
         ),
       ],
+      enabled: config.enabled,
+      onChanged: (value) => _updateFilter(config.key, value, config),
+    );
+  }
+
+  Widget _buildSearchableDropdownFilter(FilterConfig config) {
+    return AppSearchableDropdown<String>(
+      label: config.label,
+      hintText: config.placeholder ?? 'Select ${config.label.toLowerCase()}',
+      value: _filterValues[config.key],
+      items: [
+        const DropdownMenuItem(value: null, child: Text('All')),
+        ...config.options!.map(
+          (option) => DropdownMenuItem(value: option, child: Text(option)),
+        ),
+      ],
+      enabled: config.enabled,
+      onChanged: (value) => _updateFilter(config.key, value, config),
+      onSearchChanged: config.onSearchChanged,
     );
   }
 
@@ -268,19 +333,28 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          config.label,
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
+        RichText(
+          text: TextSpan(
+            text: config.label,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+            children: [
+              if (config.required)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: AppColors.error),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: AppSizes.spacing4),
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           ),
           child: Column(
             children: config.options!.map((option) {
@@ -292,18 +366,22 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                   option,
                   style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
                 ),
-                onChanged: (checked) {
-                  final newValues = List<String>.from(selectedValues);
-                  if (checked == true) {
-                    newValues.add(option);
-                  } else {
-                    newValues.remove(option);
-                  }
-                  _updateFilter(
-                    config.key,
-                    newValues.isEmpty ? null : newValues,
-                  );
-                },
+                enabled: config.enabled,
+                onChanged: config.enabled
+                    ? (checked) {
+                        final newValues = List<String>.from(selectedValues);
+                        if (checked == true) {
+                          newValues.add(option);
+                        } else {
+                          newValues.remove(option);
+                        }
+                        _updateFilter(
+                          config.key,
+                          newValues.isEmpty ? null : newValues,
+                          config,
+                        );
+                      }
+                    : null,
               );
             }).toList(),
           ),
@@ -318,51 +396,117 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          config.label,
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
+        if (config.label.isNotEmpty) ...[
+          RichText(
+            text: TextSpan(
+              text: config.label,
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+              children: [
+                if (config.required)
+                  const TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSizes.spacing8),
+        ],
+        SizedBox(
+          height: AppSizes.inputHeight,
+          child: CustomDateRangePicker(
+            initialStartDate: dateRange?.start,
+            initialEndDate: dateRange?.end,
+            hintText: config.placeholder ?? 'Select date range',
+            enabled: config.enabled,
+            onDateRangeSelected: (startDate, endDate) {
+              final newDateRange = DateTimeRange(
+                start: startDate,
+                end: endDate,
+              );
+              _updateFilter(config.key, newDateRange, config);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePickerFilter(FilterConfig config) {
+    final selectedDate = _filterValues[config.key] as DateTime?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: config.label,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+            children: [
+              if (config.required)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: AppColors.error),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: AppSizes.spacing4),
         InkWell(
-          onTap: () async {
-            final picked = await showDateRangePicker(
-              context: context,
-              firstDate: DateTime(2020),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
-              initialDateRange: dateRange,
-            );
-            if (picked != null) {
-              _updateFilter(config.key, picked);
-            }
-          },
+          onTap: config.enabled
+              ? () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    _updateFilter(config.key, picked, config);
+                  }
+                }
+              : null,
           child: Container(
             padding: const EdgeInsets.all(AppSizes.spacing12),
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+              color: config.enabled
+                  ? AppColors.surface
+                  : AppColors.surface.withValues(alpha: 0.5),
             ),
             child: Row(
               children: [
                 Icon(
-                  Icons.date_range,
+                  config.icon ?? Icons.calendar_today,
                   size: AppSizes.iconSmall,
-                  color: AppColors.textSecondary,
+                  color: config.enabled
+                      ? AppColors.textSecondary
+                      : AppColors.textTertiary,
                 ),
                 const SizedBox(width: AppSizes.spacing8),
                 Expanded(
                   child: Text(
-                    dateRange != null
-                        ? '${_formatDate(dateRange.start)} - ${_formatDate(dateRange.end)}'
-                        : 'Select date range',
+                    selectedDate != null
+                        ? _formatDate(selectedDate)
+                        : config.placeholder ?? 'Select date',
                     style: TextStyle(
                       fontSize: AppSizes.fontSizeSmall,
-                      color: dateRange != null
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
+                      color: selectedDate != null
+                          ? (config.enabled
+                                ? AppColors.textPrimary
+                                : AppColors.textTertiary)
+                          : (config.enabled
+                                ? AppColors.textSecondary
+                                : AppColors.textTertiary),
                     ),
                   ),
                 ),
@@ -381,16 +525,120 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
       children: [
         Switch(
           value: isEnabled,
-          onChanged: (value) => _updateFilter(config.key, value),
+          onChanged: config.enabled
+              ? (value) => _updateFilter(config.key, value, config)
+              : null,
           activeColor: AppColors.primary,
         ),
         const SizedBox(width: AppSizes.spacing8),
-        Text(
-          config.label,
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  text: config.label,
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeSmall,
+                    fontWeight: FontWeight.w500,
+                    color: config.enabled
+                        ? AppColors.textPrimary
+                        : AppColors.textTertiary,
+                  ),
+                  children: [
+                    if (config.required)
+                      const TextSpan(
+                        text: ' *',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                  ],
+                ),
+              ),
+              if (config.description != null)
+                Text(
+                  config.description!,
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeSmall - 1,
+                    color: config.enabled
+                        ? AppColors.textSecondary
+                        : AppColors.textTertiary,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSliderFilter(FilterConfig config) {
+    final value =
+        (_filterValues[config.key] as double?) ?? (config.sliderMin ?? 0.0);
+    final min = config.sliderMin ?? 0.0;
+    final max = config.sliderMax ?? 100.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: config.label,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+            children: [
+              if (config.required)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: AppColors.error),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSizes.spacing4),
+        Row(
+          children: [
+            Text(
+              min.toStringAsFixed(0),
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Expanded(
+              child: Slider(
+                value: value.clamp(min, max),
+                min: min,
+                max: max,
+                divisions: config.sliderDivisions,
+                label: value.toStringAsFixed(
+                  config.sliderDivisions != null ? 0 : 1,
+                ),
+                onChanged: config.enabled
+                    ? (newValue) => _updateFilter(config.key, newValue, config)
+                    : null,
+                activeColor: AppColors.primary,
+              ),
+            ),
+            Text(
+              max.toStringAsFixed(0),
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        Center(
+          child: Text(
+            'Current: ${value.toStringAsFixed(config.sliderDivisions != null ? 0 : 1)}',
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -399,29 +647,32 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
 
   Widget _buildActionButtons() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (widget.onClear != null)
           AppButton(
-            text: 'Clear All',
-            type: AppButtonType.secondary,
+            text: 'Clear',
+            type: AppButtonType.outline,
+            size: AppButtonSize.small,
             onPressed: () {
-              setState(() {
-                _filterValues.clear();
-              });
+              _clearAllFilters();
               widget.onClear?.call();
-              widget.onFiltersChanged(_filterValues);
             },
           ),
         const SizedBox(width: AppSizes.spacing8),
-        AppButton(
-          text: 'Apply Filters',
-          onPressed: () => widget.onFiltersChanged(_filterValues),
-        ),
+        if (widget.showApplyButton)
+          AppButton(
+            text: 'Apply',
+            size: AppButtonSize.small,
+            onPressed: () => widget.onFiltersChanged(_filterValues),
+          ),
         if (widget.showSaveOption) ...[
           const SizedBox(width: AppSizes.spacing8),
           AppButton(
             text: 'Save Filter',
-            type: AppButtonType.secondary,
+            type: AppButtonType.primary,
+            size: AppButtonSize.small,
             onPressed: widget.onSave,
           ),
         ],
@@ -429,24 +680,68 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  void _clearAllFilters() {
+    setState(() {
+      _filterValues.clear();
+      // Clear all text controllers
+      for (final controller in _textControllers.values) {
+        controller.clear();
+      }
+    });
+
+    if (widget.autoApply) {
+      widget.onFiltersChanged(_filterValues);
+    }
   }
 
-  void _updateFilter(String key, dynamic value) {
+  void _updateFilter(String key, dynamic value, FilterConfig config) {
     setState(() {
-      if (value == null ||
-          (value is String && value.isEmpty) ||
-          (value is List && value.isEmpty)) {
+      if (value == null || _isValueEmpty(value)) {
         _filterValues.remove(key);
       } else {
         _filterValues[key] = value;
       }
     });
+
+    // Auto-apply filters if enabled
+    if (widget.autoApply) {
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(widget.debounceDelay, () {
+        widget.onFiltersChanged(_filterValues);
+      });
+    }
+
+    // Call config-specific callback
+    config.onChanged?.call(value);
+  }
+
+  bool _isValueEmpty(dynamic value) {
+    if (value == null) return true;
+    if (value is String && value.isEmpty) return true;
+    if (value is List && value.isEmpty) return true;
+    return false;
+  }
+
+  bool _isValueNotEmpty(dynamic value) {
+    return !_isValueEmpty(value);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
-enum FilterType { text, number, dropdown, multiSelect, dateRange, toggle }
+enum FilterType {
+  text,
+  number,
+  dropdown,
+  searchableDropdown,
+  multiSelect,
+  dateRange,
+  datePicker,
+  toggle,
+  slider,
+}
 
 class FilterConfig {
   final String key;
@@ -455,6 +750,18 @@ class FilterConfig {
   final String? placeholder;
   final List<String>? options;
   final dynamic defaultValue;
+  final bool enabled;
+  final bool required;
+  final IconData? icon;
+  final String? description;
+  final double? width;
+  final Function(dynamic)? onChanged;
+  final Function(String)? onSearchChanged;
+
+  // For slider type
+  final double? sliderMin;
+  final double? sliderMax;
+  final int? sliderDivisions;
 
   FilterConfig({
     required this.key,
@@ -463,5 +770,245 @@ class FilterConfig {
     this.placeholder,
     this.options,
     this.defaultValue,
+    this.enabled = true,
+    this.required = false,
+    this.icon,
+    this.description,
+    this.width,
+    this.onChanged,
+    this.onSearchChanged,
+    this.sliderMin,
+    this.sliderMax,
+    this.sliderDivisions,
   });
+
+  // Factory constructors for common filter types
+  factory FilterConfig.text({
+    required String key,
+    required String label,
+    String? placeholder,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    IconData? icon,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.text,
+      placeholder: placeholder,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      icon: icon,
+      width: width,
+      onChanged: onChanged,
+    );
+  }
+
+  factory FilterConfig.number({
+    required String key,
+    required String label,
+    String? placeholder,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    IconData? icon,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.number,
+      placeholder: placeholder,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      icon: icon,
+      width: width,
+      onChanged: onChanged,
+    );
+  }
+
+  factory FilterConfig.dropdown({
+    required String key,
+    required String label,
+    required List<String> options,
+    String? placeholder,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    IconData? icon,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.dropdown,
+      options: options,
+      placeholder: placeholder,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      icon: icon,
+      width: width,
+      onChanged: onChanged,
+    );
+  }
+
+  factory FilterConfig.searchableDropdown({
+    required String key,
+    required String label,
+    required List<String> options,
+    String? placeholder,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    IconData? icon,
+    double? width,
+    Function(dynamic)? onChanged,
+    Function(String)? onSearchChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.searchableDropdown,
+      options: options,
+      placeholder: placeholder,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      icon: icon,
+      width: width,
+      onChanged: onChanged,
+      onSearchChanged: onSearchChanged,
+    );
+  }
+
+  factory FilterConfig.multiSelect({
+    required String key,
+    required String label,
+    required List<String> options,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.multiSelect,
+      options: options,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      width: width,
+      onChanged: onChanged,
+    );
+  }
+
+  factory FilterConfig.dateRange({
+    required String key,
+    required String label,
+    String? placeholder,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    IconData? icon,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.dateRange,
+      placeholder: placeholder,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      icon: icon,
+      width: width,
+      onChanged: onChanged,
+    );
+  }
+
+  factory FilterConfig.datePicker({
+    required String key,
+    required String label,
+    String? placeholder,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    IconData? icon,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.datePicker,
+      placeholder: placeholder,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      icon: icon,
+      width: width,
+      onChanged: onChanged,
+    );
+  }
+
+  factory FilterConfig.toggle({
+    required String key,
+    required String label,
+    String? description,
+    dynamic defaultValue,
+    bool enabled = true,
+    bool required = false,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.toggle,
+      description: description,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      width: width,
+      onChanged: onChanged,
+    );
+  }
+
+  factory FilterConfig.slider({
+    required String key,
+    required String label,
+    required double min,
+    required double max,
+    dynamic defaultValue,
+    int? divisions,
+    bool enabled = true,
+    bool required = false,
+    double? width,
+    Function(dynamic)? onChanged,
+  }) {
+    return FilterConfig(
+      key: key,
+      label: label,
+      type: FilterType.slider,
+      defaultValue: defaultValue,
+      enabled: enabled,
+      required: required,
+      width: width,
+      onChanged: onChanged,
+      sliderMin: min,
+      sliderMax: max,
+      sliderDivisions: divisions,
+    );
+  }
 }

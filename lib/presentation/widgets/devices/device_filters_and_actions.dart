@@ -98,7 +98,6 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
                 enabled: true,
                 prefixIcon: const Icon(Icons.search, size: AppSizes.iconSmall),
               ),
-              
             ),
           ),
 
@@ -116,11 +115,12 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
             ),
             tooltip: 'Filters',
           ),
-          Expanded(flex: 2, child: Container()),
+          const Spacer(),
           const SizedBox(width: AppSizes.spacing16),
 
           // View mode selector
           Container(
+            height: AppSizes.buttonHeightSmall,
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.border),
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -261,6 +261,8 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
     final isSelected = widget.currentViewMode == mode;
 
     return Container(
+      height: AppSizes.buttonHeightSmall,
+      width: AppSizes.buttonHeightSmall,
       decoration: BoxDecoration(
         color: isSelected ? AppColors.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -268,6 +270,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
       child: IconButton(
         onPressed: () => widget.onViewModeChanged(mode),
         icon: Icon(
+          
           icon,
           color: isSelected ? AppColors.surface : AppColors.textSecondary,
           size: AppSizes.iconMedium,

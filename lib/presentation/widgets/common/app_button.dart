@@ -38,7 +38,7 @@ class AppButton extends StatelessWidget {
   double _getHeight() {
     switch (size) {
       case AppButtonSize.small:
-        return 36;
+        return AppSizes.buttonHeightSmall;
       case AppButtonSize.medium:
         return AppSizes.buttonHeightSmall;
       case AppButtonSize.large:
@@ -132,7 +132,7 @@ class AppButton extends StatelessWidget {
             foregroundColor: AppColors.primary,
             padding: _getPadding(),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
             ),
           ),
           child: content,

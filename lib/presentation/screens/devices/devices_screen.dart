@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/devices/device_filters_and_actions_v2.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../../core/models/device.dart';
@@ -13,7 +14,8 @@ import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/devices/device_table_columns.dart';
 import '../../widgets/devices/device_kanban_view.dart';
 import '../../widgets/devices/flutter_map_device_view.dart';
-import '../../widgets/devices/device_filters_and_actions.dart';
+import '../../widgets/devices/device_filters_and_actions.dart'
+    hide DeviceViewMode;
 import '../../widgets/devices/device_summary_card.dart';
 import '../../widgets/devices/device_sidebar_content.dart';
 import '../../widgets/common/sidebar_drawer.dart';
@@ -139,11 +141,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
         setState(() {
           _devices = response.data!;
           _filteredDevices = _applyFilters(_devices);
-          _totalItems = response.paging?.item.total ?? 0;
-          // Fix pagination calculation
-          _totalPages = _totalItems > 0
-              ? ((_totalItems + _itemsPerPage - 1) ~/ _itemsPerPage)
-              : 1;
+          _updatePaginationTotals();
           _isLoading = false;
         });
       } else {
@@ -182,6 +180,35 @@ class _DevicesScreenState extends State<DevicesScreen> {
     }
 
     return filtered;
+  }
+
+  List<Device> _getPaginatedDevices() {
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+
+    if (startIndex >= _filteredDevices.length) {
+      return [];
+    }
+
+    return _filteredDevices.sublist(
+      startIndex,
+      endIndex > _filteredDevices.length ? _filteredDevices.length : endIndex,
+    );
+  }
+
+  void _updatePaginationTotals() {
+    _totalItems = _filteredDevices.length;
+    _totalPages = _totalItems > 0
+        ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
+        : 1;
+
+    // Ensure current page is valid
+    if (_currentPage > _totalPages) {
+      _currentPage = _totalPages;
+    }
+    if (_currentPage < 1) {
+      _currentPage = 1;
+    }
   }
 
   Widget _buildErrorMessage() {
@@ -289,22 +316,22 @@ class _DevicesScreenState extends State<DevicesScreen> {
           child: Column(
             children: [
               // Filters and actions
-              DeviceFiltersAndActions(
+              DeviceFiltersAndActionsV2(
                 onSearchChanged: _onSearchChanged,
                 onStatusFilterChanged: _onStatusFilterChanged,
-                onTypeFilterChanged: _onTypeFilterChanged,
+                // onTypeFilterChanged: _onTypeFilterChanged,
                 onLinkStatusFilterChanged: _onLinkStatusFilterChanged,
                 onViewModeChanged: _onViewModeChanged,
-                onColumnVisibilityChanged: _onColumnVisibilityChanged,
+                // onColumnVisibilityChanged: _onColumnVisibilityChanged,
                 onAddDevice: _showAddDeviceModal,
                 onRefresh: _loadDevices,
                 onExport: _exportDevices,
                 onImport: _importDevices,
                 currentViewMode: _currentViewMode,
-                availableColumns: _availableColumns,
-                hiddenColumns: _hiddenColumns,
+                // availableColumns: _availableColumns,
+                // hiddenColumns: _hiddenColumns,
                 selectedStatus: _selectedStatus,
-                selectedType: _selectedType,
+                // selectedType: _selectedType,
                 selectedLinkStatus: _selectedLinkStatus,
               ),
 
@@ -398,7 +425,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
         devices: _filteredDevices,
       ),
       data: _filteredDevices,
-      onRowTap: (device) => _openSidebar(device), // Row click opens sidebar
+      onRowTap: (device) => _viewDeviceDetails(device),
+      // _openSidebar(device), // Row click opens sidebar
       onEdit: (device) => _editDevice(device),
       onDelete: (device) => _deleteDevice(device),
       onView: (device) =>
@@ -731,6 +759,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     setState(() {
       _selectedStatus = status;
       _filteredDevices = _applyFilters(_devices);
+      _updatePaginationTotals();
     });
   }
 
@@ -738,6 +767,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     setState(() {
       _selectedType = type;
       _filteredDevices = _applyFilters(_devices);
+      _updatePaginationTotals();
     });
   }
 
@@ -745,6 +775,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     setState(() {
       _selectedLinkStatus = linkStatus;
       _filteredDevices = _applyFilters(_devices);
+      _updatePaginationTotals();
     });
   }
 
@@ -897,11 +928,25 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildKanbanView() {
-    return DeviceKanbanView(
-      devices: _filteredDevices,
-      onDeviceSelected: _viewDeviceDetails,
-      isLoading: _isLoading,
-      itemsPerPage: _itemsPerPage, // Use the screen's items per page setting
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          if (_selectedDevices.isNotEmpty) _buildMultiSelectToolbar(),
+          Expanded(
+            child: DeviceKanbanView(
+              devices: _getPaginatedDevices(),
+              onDeviceSelected: _viewDeviceDetails,
+              isLoading: _isLoading,
+              enablePagination:
+                  false, // Disable internal pagination, use external pagination instead
+              itemsPerPage:
+                  _itemsPerPage, // Use the screen's items per page setting
+            ),
+          ),
+          _buildPagination(),
+        ],
+      ),
     );
   }
 

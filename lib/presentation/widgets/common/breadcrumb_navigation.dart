@@ -109,11 +109,9 @@ class BreadcrumbNavigation extends StatelessWidget {
               return extra.serialNumber;
             }
 
-            // Check if it's a DeviceGroup
-            if (extra is DeviceGroup &&
-                extra.name != null &&
-                extra.name!.isNotEmpty) {
-              return extra.name!;
+            // Check if it's a DeviceGroup - don't show device group name in breadcrumb
+            if (extra is DeviceGroup) {
+              return '';
             }
 
             // Don't show raw ID - return null to skip this breadcrumb

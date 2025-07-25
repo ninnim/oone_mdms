@@ -13,6 +13,7 @@ import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/app_tabs.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/app_input_field.dart';
 
 class DeviceGroupManageDevicesDialog extends StatefulWidget {
   final DeviceGroup deviceGroup;
@@ -495,53 +496,27 @@ class _DeviceGroupManageDevicesDialogState
             const SizedBox(height: AppSizes.spacing16),
 
             // Search field - styled exactly like device screen
-            Container(
-              alignment: Alignment.centerLeft,
-              height: AppSizes.inputHeight,
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search devices...',
-                  hintStyle: const TextStyle(fontSize: AppSizes.fontSizeSmall),
-                  prefixIcon: _isSearching
-                      ? const Padding(
-                          padding: EdgeInsets.all(12.0),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : const Icon(Icons.search, size: AppSizes.iconSmall),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing12,
-                    vertical: AppSizes.spacing12,
-                  ),
-                ),
-                onChanged: (value) {
-                  // Search based on current tab
-                  if (_currentTabIndex == 0) {
-                    _onAvailableSearchChanged(value);
-                  } else {
-                    _onCurrentSearchChanged(value);
-                  }
-                },
-              ),
+            AppInputField(
+              controller: _searchController,
+              hintText: 'Search devices...',
+              prefixIcon: _isSearching
+                  ? const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : const Icon(Icons.search, size: AppSizes.iconSmall),
+              onChanged: (value) {
+                // Search based on current tab
+                if (_currentTabIndex == 0) {
+                  _onAvailableSearchChanged(value);
+                } else {
+                  _onCurrentSearchChanged(value);
+                }
+              },
             ),
             const SizedBox(height: AppSizes.spacing16),
 

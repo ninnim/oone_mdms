@@ -17,6 +17,7 @@ import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_input_field.dart';
+import '../../widgets/common/app_dropdown_field.dart';
 import '../devices/create_edit_device_screen.dart';
 
 class DeviceGroupDetailsScreen extends StatefulWidget {
@@ -357,9 +358,9 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.deviceGroup.name ?? 'Device Group',
+                          widget.deviceGroup.name?? 'Device Groups!',
                           style: const TextStyle(
-                            fontSize: AppSizes.fontSizeHeading,
+                            fontSize: AppSizes.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
@@ -379,7 +380,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
                     ),
                   ),
                   AppButton(
-                    text: 'Save Changes',
+                    text: 'Save Change',
                     onPressed: _isLoading ? null : _saveChanges,
                     isLoading: _isLoading,
                   ),
@@ -451,7 +452,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.spacing16),
-                _buildInfoRow('Name', widget.deviceGroup.name ?? 'Unknown'),
+                _buildInfoRow('Name', widget.deviceGroup.name ?? 'None'),
                 _buildInfoRow(
                   'Description',
                   widget.deviceGroup.description ?? 'No description',
@@ -579,16 +580,10 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
 
               // Status Filter
               Expanded(
-                child: DropdownButtonFormField<String?>(
+                child: AppSearchableDropdown<String?>(
                   value: _deviceStatusFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Status',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
+                  label: 'Status',
+                  hintText: 'All Status',
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -611,16 +606,10 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
 
               // Type Filter
               Expanded(
-                child: DropdownButtonFormField<String?>(
+                child: AppSearchableDropdown<String?>(
                   value: _deviceTypeFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Type',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
+                  label: 'Type',
+                  hintText: 'All Types',
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -643,16 +632,10 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
 
               // Manufacturer Filter
               Expanded(
-                child: DropdownButtonFormField<String?>(
+                child: AppSearchableDropdown<String?>(
                   value: _deviceManufacturerFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Manufacturer',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
+                  label: 'Manufacturer',
+                  hintText: 'All Manufacturers',
                   items: [
                     const DropdownMenuItem(
                       value: null,

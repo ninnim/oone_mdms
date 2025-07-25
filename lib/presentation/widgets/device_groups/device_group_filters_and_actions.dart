@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_dropdown_field.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
@@ -81,7 +82,6 @@ class _DeviceGroupFiltersAndActionsState
                     enabled: true,
                   ),
                 ),
-                
               ),
               IconButton(
                 onPressed: () {
@@ -105,7 +105,7 @@ class _DeviceGroupFiltersAndActionsState
               Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                 ),
                 child: Row(
                   children: [
@@ -123,7 +123,7 @@ class _DeviceGroupFiltersAndActionsState
                 ),
               ),
 
-              const SizedBox(width: AppSizes.spacing16),
+              ///   const SizedBox(width: AppSizes.spacing16),
 
               // Action buttons
               Row(
@@ -227,6 +227,8 @@ class _DeviceGroupFiltersAndActionsState
     final isSelected = widget.currentViewMode == mode;
 
     return Container(
+      width: AppSizes.buttonHeightSmall,
+      height: AppSizes.buttonHeightSmall,
       decoration: BoxDecoration(
         color: isSelected ? AppColors.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -256,16 +258,11 @@ class _DeviceGroupFiltersAndActionsState
           // Status filter
           SizedBox(
             width: 200,
-            child: DropdownButtonFormField<String>(
+            height: AppSizes.inputHeight,
+            child: AppSearchableDropdown<String>(
+              label: 'Status',
+              hintText: 'All Statuses',
               value: widget.selectedStatus,
-              decoration: const InputDecoration(
-                labelText: 'Status',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing12,
-                  vertical: AppSizes.spacing8,
-                ),
-              ),
               items: const [
                 DropdownMenuItem(value: null, child: Text('All Statuses')),
                 DropdownMenuItem(value: 'Active', child: Text('Active')),

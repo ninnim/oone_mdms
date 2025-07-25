@@ -1,5 +1,6 @@
 import '../models/device.dart';
 import '../models/device_group.dart';
+import '../models/load_profile_metric.dart';
 import '../models/response_models.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
@@ -459,6 +460,104 @@ class DeviceService {
           ErrorTranslationService.getContextualErrorMessage(
             e,
             'device_map_clustering',
+          );
+      return ApiResponse.error(userFriendlyMessage);
+    }
+  }
+
+  // Get device load profile metrics
+  Future<ApiResponse<List<LoadProfileMetric>>> getDeviceLoadProfile({
+    required String deviceId,
+    DateTime? startDate,
+    DateTime? endDate,
+    List<String>? phases,
+    List<String>? metricTypes,
+    int limit = 100,
+  }) async {
+    try {
+      // For now, return mock data with realistic load profile patterns
+      final now = DateTime.now();
+      final start = startDate ?? now.subtract(const Duration(hours: 24));
+      final end = endDate ?? now;
+
+      final List<LoadProfileMetric> mockMetrics = [];
+      final phases = ['L1', 'L2', 'L3'];
+      final metricTypes = ['Voltage', 'Current', 'Power'];
+
+      // Generate hourly data points
+      final duration = end.difference(start);
+      final intervals = (duration.inHours / 1).round();
+
+      for (int i = 0; i < intervals; i++) {
+        final timestamp = start.add(Duration(hours: i));
+
+        for (final phase in phases) {
+          for (final metricType in metricTypes) {
+            double value;
+            String unit;
+
+            switch (metricType) {
+              case 'Voltage':
+                // Voltage: 220V ± 10V with some variation
+                value =
+                    220 +
+                    (i * 2) +
+                    (phase == 'L1'
+                        ? 2
+                        : phase == 'L2'
+                        ? -1
+                        : 0);
+                unit = 'V';
+                break;
+              case 'Current':
+                // Current: 5-15A with load patterns
+                value =
+                    10 +
+                    (i % 12) * 0.5 +
+                    (phase == 'L1'
+                        ? 1
+                        : phase == 'L2'
+                        ? 0.5
+                        : -0.5);
+                unit = 'A';
+                break;
+              case 'Power':
+                // Power: calculated from V*I with some realistic patterns
+                final voltage = 220 + (i * 2);
+                final current = 10 + (i % 12) * 0.5;
+                value = (voltage * current / 1000) + (i % 6) * 0.2; // in kW
+                unit = 'kW';
+                break;
+              default:
+                value = 0;
+                unit = 'V';
+            }
+
+            mockMetrics.add(
+              LoadProfileMetric(
+                id: '${deviceId}_${timestamp.millisecondsSinceEpoch}_${phase}_$metricType',
+                deviceId: deviceId,
+                timestamp: timestamp,
+                phase: phase,
+                value: value,
+                unit: unit,
+                metricType: metricType,
+                flowDirection: 'Import',
+              ),
+            );
+          }
+        }
+      }
+
+      // Sort by timestamp
+      mockMetrics.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      return ApiResponse.success(mockMetrics.take(limit).toList());
+    } catch (e) {
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_load_profile',
           );
       return ApiResponse.error(userFriendlyMessage);
     }
