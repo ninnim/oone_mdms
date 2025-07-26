@@ -146,6 +146,97 @@ class DeviceService {
     }
   }
 
+  // Update device with custom channel data using exact payload structure
+  Future<ApiResponse<Device>> updateDeviceWithChannels(
+    Device device,
+    List<Map<String, dynamic>> channelsData,
+  ) async {
+    try {
+      final requestData = {
+        'Device': {
+          'Id': device.id,
+          'SerialNumber': device.serialNumber,
+          'Model': device.model,
+          'DeviceType': device.deviceType,
+          'Manufacturer': device.manufacturer,
+          'Status': device.status,
+          'LinkStatus': device.linkStatus,
+          'DeviceGroupId': device.deviceGroupId,
+          'AddressText': device.addressText,
+          if (device.address != null)
+            'Address': {
+              'on_conflict': {
+                'constraint': 'PK_Address',
+                'update_columns': [
+                  'Latitute',
+                  'Longtitute',
+                  'LongText',
+                  'ShortText',
+                ],
+              },
+              'data': {...device.address!.toJson(), 'Id': device.addressId},
+            },
+          'DeviceChannels': {
+            'on_conflict': {
+              'constraint': 'PK_DeviceChannel',
+              'update_columns': ['ApplyMetric', 'Cumulative'],
+            },
+            'data': channelsData, // Use provided minimal channel data
+          },
+        },
+      };
+
+      final response = await _apiService.post(
+        ApiConstants.devices,
+        data: requestData,
+      );
+
+      final deviceResponse = DeviceResponse.fromJson(response.data);
+      final updatedDevice = Device.fromJson(deviceResponse.device);
+
+      return ApiResponse.success(updatedDevice);
+    } catch (e) {
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_update');
+      return ApiResponse.error(userFriendlyMessage);
+    }
+  }
+
+  // Update device channels only with minimal payload
+  Future<ApiResponse<Device>> updateDeviceChannels(
+    String deviceId,
+    List<Map<String, dynamic>> channelsData,
+  ) async {
+    try {
+      final requestData = {
+        'Device': {
+          'Id': deviceId,
+          'DeviceChannels': {
+            'on_conflict': {
+              'constraint': 'PK_DeviceChannel',
+              'update_columns': ['ApplyMetric', 'Cumulative'],
+            },
+            'data': channelsData,
+          },
+        },
+      };
+
+      final response = await _apiService.post(
+        ApiConstants.devices,
+        data: requestData,
+      );
+
+      final deviceResponse = DeviceResponse.fromJson(response.data);
+      final updatedDevice = Device.fromJson(deviceResponse.device);
+
+      return ApiResponse.success(updatedDevice);
+    } catch (e) {
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(e, 'device_update');
+      return ApiResponse.error(userFriendlyMessage);
+    }
+  }
+
   // Delete device
   Future<ApiResponse<bool>> deleteDevice(String id) async {
     try {
@@ -460,6 +551,49 @@ class DeviceService {
           ErrorTranslationService.getContextualErrorMessage(
             e,
             'device_map_clustering',
+          );
+      return ApiResponse.error(userFriendlyMessage);
+    }
+  }
+
+  // Get devices for a specific device group with location data for map clustering
+  Future<ApiResponse<List<Device>>> getDevicesForGroupMap({
+    required int deviceGroupId,
+    String search = ApiConstants.defaultSearch,
+    int offset = ApiConstants.defaultOffset,
+    int limit = ApiConstants.defaultLimit,
+  }) async {
+    try {
+      final filter = {
+        "_and": [
+          {
+            "AddressText": {"_neq": ""},
+          },
+          {
+            "DeviceGroupId": {"_eq": deviceGroupId},
+          },
+        ],
+      };
+
+      final requestData = {'filter': filter};
+
+      final response = await _apiService.post(
+        ApiConstants.deviceFilter,
+        data: requestData,
+        queryParameters: {'search': search, 'offset': offset, 'limit': limit},
+      );
+
+      final listResponse = DeviceListResponse.fromJson(response.data);
+      final devices = listResponse.devices
+          .map((json) => Device.fromJson(json))
+          .toList();
+
+      return ApiResponse.success(devices, paging: listResponse.paging);
+    } catch (e) {
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_group_map_clustering',
           );
       return ApiResponse.error(userFriendlyMessage);
     }

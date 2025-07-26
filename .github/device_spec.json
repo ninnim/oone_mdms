@@ -576,7 +576,13 @@ Method POST https://mdms.oone.bz/api/rest/Device
           "Cumulative"
         ]
       },
-      "data": []
+      "data": [
+         {
+          "Id": "dfc1c5ed-ad12-41ab-ad91-a182d9c27c48",
+          "ApplyMetric": false,
+          "Cumulative": 10000
+        }
+      ]
     }
   }
 }

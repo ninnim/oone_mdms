@@ -28,6 +28,7 @@ import '../../widgets/devices/device_location_viewer.dart';
 import '../../widgets/devices/interactive_map_dialog.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
 import '../../widgets/devices/billing_table_columns.dart';
+import 'widgets/device_channel_table_columns.dart';
 import '../../widgets/common/custom_date_range_picker.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_confirm_dialog.dart';
@@ -60,6 +61,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   Map<String, dynamic>? _deviceBilling;
   bool _isLoading = true;
   String? _error;
+
+  // Channels tab state
+  bool _isEditingChannels = false;
+  bool _savingChannels = false;
+  Map<String, double> _editedCumulativeValues = {};
+  Map<String, double> _originalCumulativeValues =
+      {}; // Store original values for comparison
+  Set<String> _selectedChannelIds = {};
+  Map<String, TextEditingController> _channelControllers = {};
+  bool _showApplyMetricWarning = false;
+
+  // Channels table state
+  List<String> _hiddenChannelColumns = [];
+  String? _channelSortBy;
+  bool _channelSortAscending = true;
 
   // Tab-specific loading states
   bool _overviewLoaded = false;
@@ -223,6 +239,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     _serialNumberEditController.dispose();
     _modelEditController.dispose();
     _addressEditController.dispose();
+    // Dispose channel controllers
+    for (final controller in _channelControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -250,7 +270,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     setState(() {
       _isEditingOverview = true;
     });
-    // _loadDropdownDataForEdit();
+    _loadDropdownDataForEdit();
     _populateEditFields();
   }
 
@@ -327,56 +347,112 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   // Load device groups with search and pagination
-  Future<void> _loadDeviceGroups({bool reset = false}) async {
-    if (reset) {
-      _deviceGroups.clear();
-      // Don't clear search query when resetting for search
-    }
+  Future<void> _loadDeviceGroups({
+    bool reset = false,
+    bool loadMore = false,
+    String? searchQuery,
+  }) async {
+    if (_isLoadingDeviceGroups) return;
+
+    // If loading more, but no more data available, return
+    if (loadMore && !_hasMoreDeviceGroups) return;
 
     setState(() {
       _isLoadingDeviceGroups = true;
+
+      // Reset for new search or first load
+      if (reset || !loadMore) {
+        _deviceGroups.clear();
+        _hasMoreDeviceGroups = true;
+      }
+
+      if (searchQuery != null) {
+        _deviceGroupSearchQuery = searchQuery;
+      }
     });
 
     try {
-      final response = await _deviceService.getDeviceGroups(
+      if (kDebugMode) {
+        print(
+          'Loading device groups: reset=$reset, loadMore=$loadMore, searchQuery=$searchQuery',
+        );
+        print('Current selected device group ID: $_selectedDeviceGroupIdEdit');
+      }
+
+      final deviceGroupsResponse = await _deviceService.getDeviceGroups(
         limit: 20,
-        offset: reset ? 0 : _deviceGroups.length,
+        offset: loadMore ? _deviceGroups.length : 0,
         search: _deviceGroupSearchQuery.isNotEmpty
             ? _deviceGroupSearchQuery
             : '',
         includeDevices: false,
       );
 
-      if (response.success) {
-        final newGroups = response.data ?? [];
-        setState(() {
-          if (reset) {
-            _deviceGroups = newGroups;
-          } else {
-            _deviceGroups.addAll(newGroups);
+      if (deviceGroupsResponse.success && mounted) {
+        final newGroups = deviceGroupsResponse.data ?? [];
+
+        if (kDebugMode) {
+          print('Device groups loaded: ${newGroups.length} groups');
+          print(
+            'Total device groups: ${loadMore ? _deviceGroups.length + newGroups.length : newGroups.length}',
+          );
+          if (_selectedDeviceGroupIdEdit != null) {
+            final hasSelected = newGroups.any(
+              (g) => g.id == _selectedDeviceGroupIdEdit,
+            );
+            print(
+              'Selected device group $_selectedDeviceGroupIdEdit found in loaded groups: $hasSelected',
+            );
           }
+        }
+
+        setState(() {
+          if (loadMore) {
+            _deviceGroups.addAll(newGroups);
+          } else {
+            _deviceGroups = newGroups;
+          }
+
           _hasMoreDeviceGroups = newGroups.length >= 20;
+
+          // Validate selected device group still exists
+          if (_selectedDeviceGroupIdEdit != null) {
+            final uniqueGroups = _getUniqueDeviceGroups();
+            final groupExists = uniqueGroups.any(
+              (group) => group.id == _selectedDeviceGroupIdEdit,
+            );
+            if (!groupExists) {
+              if (kDebugMode) {
+                print(
+                  'Selected device group $_selectedDeviceGroupIdEdit not found in loaded groups, keeping for now',
+                );
+              }
+            }
+          }
         });
       }
     } catch (e) {
-      print('Error loading device groups: $e');
+      if (kDebugMode) {
+        print('Error loading device groups: $e');
+      }
     } finally {
-      setState(() {
-        _isLoadingDeviceGroups = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingDeviceGroups = false;
+        });
+      }
     }
   }
 
   // Handle device group search
   void _onDeviceGroupSearchChanged(String query) {
-    _deviceGroupSearchQuery = query;
-    _loadDeviceGroups(reset: true);
+    _loadDeviceGroups(reset: true, searchQuery: query);
   }
 
   // Handle load more device groups
   void _onLoadMoreDeviceGroups() {
     if (!_isLoadingDeviceGroups && _hasMoreDeviceGroups) {
-      _loadDeviceGroups();
+      _loadDeviceGroups(loadMore: true);
     }
   }
 
@@ -528,50 +604,29 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   // Build device group dropdown for edit mode
   Widget _buildDeviceGroupEditDropdown() {
-    // Create dropdown items from device groups
-    final List<DropdownMenuItem<int?>> items = [
-      DropdownMenuItem<int?>(
-        value: null,
-        child: Text(
-          'None',
-          style: TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            color: Color(0xFF374151),
-          ),
-        ),
-      ),
-      DropdownMenuItem<int?>(
-        value: widget.device.deviceGroup?.id ?? 0,
-        child: Text(
-          widget.device.deviceGroup?.name ?? 'None',
-          style: TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            color: Color(0xFF374151),
-          ),
-        ),
-      ),
-      // ..._deviceGroups
-      //     .map(
-      //       (group) => DropdownMenuItem<int?>(
-      //         value: group.id,
-      //         child: Text(
-      //           group.name ?? 'None',
-      //           style: const TextStyle(
-      //             fontSize: AppSizes.fontSizeSmall,
-      //             color: Color(0xFF374151),
-      //           ),
-      //         ),
-      //       ),
-      //     )
-      //     .toList(),
-    ];
-
     return AppSearchableDropdown<int?>(
       label: 'Device Group',
       hintText: 'None',
-      value: _selectedDeviceGroupIdEdit,
+      value: _getSafeDeviceGroupValue(),
       height: AppSizes.inputHeight,
-      items: items,
+      items: [
+        const DropdownMenuItem<int?>(
+          value: null,
+          child: Text(
+            'None',
+            style: TextStyle(fontSize: AppSizes.fontSizeSmall),
+          ),
+        ),
+        ..._getUniqueDeviceGroups().map((group) {
+          return DropdownMenuItem<int?>(
+            value: group.id,
+            child: Text(
+              group.name ?? 'None',
+              style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            ),
+          );
+        }),
+      ],
       isLoading: _isLoadingDeviceGroups,
       hasMore: _hasMoreDeviceGroups,
       searchQuery: _deviceGroupSearchQuery,
@@ -581,6 +636,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         });
       },
       onTap: () {
+        // Load device groups when dropdown is tapped
         if (_deviceGroups.isEmpty && !_isLoadingDeviceGroups) {
           _loadDeviceGroups(reset: true);
         }
@@ -770,8 +826,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   // Channels tab - Load device channels
-  Future<void> _loadChannelsData() async {
-    if (_channelsLoaded || _loadingChannels) return;
+  Future<void> _loadChannelsData({bool forceRefresh = false}) async {
+    if (_channelsLoaded || _loadingChannels) {
+      // Skip loading if already loaded, unless force refresh is requested
+      if (!forceRefresh) return;
+    }
 
     setState(() {
       _loadingChannels = true;
@@ -780,8 +839,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     try {
       print('Loading channels data for device: ${widget.device.id}');
 
-      // Device channels are typically included in device details
-      if (_deviceDetails == null) {
+      // Always fetch fresh device details when force refresh or no cached data
+      if (_deviceDetails == null || forceRefresh) {
         final deviceDetailsResponse = await _deviceService.getDeviceById(
           widget.device.id ?? '',
         );
@@ -2481,66 +2540,380 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Device Channels',
-            style: TextStyle(
-              fontSize: AppSizes.fontSizeLarge,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
-            ),
+          // Header with actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Device Channels',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeLarge,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1e293b),
+                  ),
+                ),
+              ),
+              if (_deviceChannels != null && _deviceChannels!.isNotEmpty) ...[
+                if (!_isEditingChannels) ...[
+                  AppButton(
+                    text: 'Edit Channels',
+                    type: AppButtonType.secondary,
+                    icon: Icon(Icons.edit, size: 18),
+                    onPressed: _startEditingChannels,
+                  ),
+                ] else ...[
+                  AppButton(
+                    text: 'Cancel',
+                    type: AppButtonType.secondary,
+                    onPressed: _cancelEditingChannels,
+                  ),
+                  const SizedBox(width: 12),
+                  AppButton(
+                    text: _savingChannels ? 'Saving...' : 'Save Changes',
+                    type: AppButtonType.primary,
+                    icon: _savingChannels ? null : Icon(Icons.save, size: 18),
+                    onPressed: _savingChannels ? null : _saveChannelChanges,
+                    isLoading: _savingChannels,
+                  ),
+                ],
+              ],
+            ],
           ),
-          // const SizedBox(height: AppSizes.spacing16),
+          const SizedBox(height: AppSizes.spacing16),
+
+          // Warning message when ApplyMetric will be updated
+          if (_showApplyMetricWarning) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(0.1),
+                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: AppColors.warning),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Note: After updating channel values, ApplyMetric will be set to true automatically, and cumulative values may change based on system calculations.',
+                      style: TextStyle(
+                        color: AppColors.warning.withOpacity(0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        _showApplyMetricWarning = false;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Channels table
           if (_deviceChannels == null || _deviceChannels!.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 100.0),
               child: AppLottieStateWidget.noData(
-                //  title: 'No Channels Found',
-                // message: 'This device has no channels associated with it.',
-                //   lottieSize: 100,
                 titleColor: AppColors.primary,
                 messageColor: AppColors.secondary,
               ),
             )
           else
-            ..._deviceChannels!.map(
-              (channel) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSizes.spacing16),
-                child: AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        channel.channel?.name ?? 'Channel ${channel.channelId}',
-                        style: const TextStyle(
-                          fontSize: AppSizes.fontSizeSmall,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.spacing8),
-                      _buildInfoRow('Channel ID', channel.channelId.toString()),
-                      _buildInfoRow('Code', channel.channel?.code ?? 'N/A'),
-                      _buildInfoRow('Units', channel.channel?.units ?? 'N/A'),
-                      _buildInfoRow(
-                        'Cumulative',
-                        channel.cumulative.toString(),
-                      ),
-                      _buildInfoRow('Active', channel.active ? 'Yes' : 'No'),
-                      if (channel.channel != null) ...[
-                        _buildInfoRow(
-                          'Flow Direction',
-                          channel.channel!.flowDirection,
-                        ),
-                        _buildInfoRow('Phase', channel.channel!.phase),
-                      ],
-                    ],
-                  ),
-                ),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
+                minHeight: 400,
               ),
+              child: _buildChannelsTable(),
             ),
         ],
       ),
     );
+  }
+
+  Widget _buildChannelsTable() {
+    if (_deviceChannels == null || _deviceChannels!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return BluNestDataTable<DeviceChannel>(
+      columns: DeviceChannelTableColumns.getColumns(
+        isEditMode: _isEditingChannels,
+        selectedChannelIds: _selectedChannelIds,
+        onChannelSelect: (channel, value) {
+          _toggleChannelSelection(channel.id, value ?? false);
+        },
+        onCumulativeChanged: (channel, value) {
+          final numValue = double.tryParse(value);
+          if (numValue != null) {
+            setState(() {
+              _editedCumulativeValues[channel.id] = numValue;
+
+              // Auto-select/deselect row based on whether value changed from original
+              final originalValue = _originalCumulativeValues[channel.id];
+              if (originalValue != null) {
+                if (numValue != originalValue) {
+                  // Value changed from original - select the row
+                  _selectedChannelIds.add(channel.id);
+                } else {
+                  // Value matches original - deselect the row
+                  _selectedChannelIds.remove(channel.id);
+                }
+              }
+            });
+          }
+        },
+        channelControllers: _channelControllers,
+        onView: null, // No view action for channels
+        onEdit: null, // No individual edit action
+        onDelete: null, // No individual delete action
+      ),
+      data: _deviceChannels!,
+      enableMultiSelect: _isEditingChannels,
+      selectedItems: _isEditingChannels
+          ? _deviceChannels!
+                .where((c) => _selectedChannelIds.contains(c.id))
+                .toSet()
+          : <DeviceChannel>{},
+      onSelectionChanged: (selectedItems) {
+        setState(() {
+          _selectedChannelIds = selectedItems.map((c) => c.id).toSet();
+        });
+      },
+      hiddenColumns: _hiddenChannelColumns,
+      onColumnVisibilityChanged: (hiddenColumns) {
+        setState(() {
+          _hiddenChannelColumns = hiddenColumns;
+        });
+      },
+      sortBy: _channelSortBy,
+      sortAscending: _channelSortAscending,
+      onSort: (sortBy, ascending) {
+        setState(() {
+          _channelSortBy = sortBy;
+          _channelSortAscending = ascending;
+          _sortChannelsData();
+        });
+      },
+      isLoading: _loadingChannels,
+    );
+  }
+
+  void _startEditingChannels() {
+    setState(() {
+      _isEditingChannels = true;
+      _editedCumulativeValues.clear();
+      _originalCumulativeValues.clear();
+      _selectedChannelIds.clear();
+      _showApplyMetricWarning = true;
+    });
+
+    // Initialize controllers with current values and store original values
+    for (final channel in _deviceChannels!) {
+      if (!_channelControllers.containsKey(channel.id)) {
+        _channelControllers[channel.id] = TextEditingController(
+          text: channel.cumulative.toStringAsFixed(2),
+        );
+      }
+      // Store original value for comparison
+      _originalCumulativeValues[channel.id] = channel.cumulative;
+    }
+  }
+
+  void _cancelEditingChannels() {
+    setState(() {
+      _isEditingChannels = false;
+      _savingChannels = false;
+      _editedCumulativeValues.clear();
+      _originalCumulativeValues.clear();
+      _selectedChannelIds.clear();
+      _showApplyMetricWarning = false;
+    });
+
+    // Reset controllers to original values
+    for (final channel in _deviceChannels!) {
+      if (_channelControllers.containsKey(channel.id)) {
+        _channelControllers[channel.id]!.text = channel.cumulative
+            .toStringAsFixed(2);
+      }
+    }
+  }
+
+  void _toggleChannelSelection(String channelId, bool isSelected) {
+    setState(() {
+      if (isSelected) {
+        _selectedChannelIds.add(channelId);
+      } else {
+        _selectedChannelIds.remove(channelId);
+      }
+    });
+  }
+
+  Future<void> _saveChannelChanges() async {
+    if (_selectedChannelIds.isEmpty) {
+      AppToast.showWarning(
+        context,
+        title: 'No Channels Selected',
+        message: 'Please select channels to update.',
+      );
+      return;
+    }
+
+    setState(() {
+      _savingChannels = true;
+    });
+
+    try {
+      // Prepare channel updates for selected channels
+      final List<Map<String, dynamic>> channelUpdates = [];
+
+      for (final channelId in _selectedChannelIds) {
+        final channel = _deviceChannels!.firstWhere((c) => c.id == channelId);
+        final controller = _channelControllers[channelId];
+
+        if (controller != null) {
+          final newValue = double.tryParse(controller.text);
+          if (newValue != null && newValue != channel.cumulative) {
+            // Create channel update with only the required fields as per API spec
+            channelUpdates.add({
+              "Id": channel.id,
+              "ApplyMetric": false, // Set to false as per the payload example
+              "Cumulative": newValue,
+            });
+          }
+        }
+      }
+
+      if (channelUpdates.isEmpty) {
+        AppToast.showWarning(
+          context,
+          title: 'No Changes',
+          message: 'No cumulative values were changed.',
+        );
+        setState(() {
+          _savingChannels = false;
+        });
+        return;
+      }
+
+      // Update device with channels via API using existing service method
+      final response = await _deviceService.updateDeviceWithChannels(
+        widget.device,
+        channelUpdates,
+      );
+
+      if (response.success && mounted) {
+        AppToast.showSuccess(
+          context,
+          title: 'Channels Updated',
+          message: '${channelUpdates.length} channel(s) updated successfully',
+        );
+
+        // Exit edit mode and refresh channels data
+        setState(() {
+          _isEditingChannels = false;
+          _savingChannels = false;
+          _editedCumulativeValues.clear();
+          _originalCumulativeValues.clear();
+          _selectedChannelIds.clear();
+          _showApplyMetricWarning = false;
+          _channelsLoaded = false;
+          // Clear device details cache to force fresh API call
+          _deviceDetails = null;
+          // Also clear overview cache to refresh main device data
+          _overviewLoaded = false;
+          // Clear metrics cache as cumulative changes might affect metrics
+          _metricsLoaded = false;
+          // Clear billing cache as cumulative changes might affect billing data
+          _billingLoaded = false;
+        });
+
+        // Refresh channels data with fresh API call
+        await _loadChannelsData(forceRefresh: true);
+
+        // Optional: Add small delay to ensure backend processing is complete
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Trigger any parent widget callbacks if needed for real-time updates
+        // (Could add onDeviceUpdated callback in future if parent needs notification)
+      } else if (mounted) {
+        AppToast.showError(
+          context,
+          title: 'Update Failed',
+          error: response.message ?? 'Failed to update channels',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(
+          context,
+          title: 'Update Failed',
+          error: 'Error updating channels: $e',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingChannels = false;
+        });
+      }
+    }
+  }
+
+  // Sort channels data based on current sort configuration
+  void _sortChannelsData() {
+    if (_deviceChannels == null || _channelSortBy == null) return;
+
+    _deviceChannels!.sort((a, b) {
+      dynamic aValue;
+      dynamic bValue;
+
+      switch (_channelSortBy) {
+        case 'channel':
+          aValue = a.channel?.name ?? '';
+          bValue = b.channel?.name ?? '';
+          break;
+        case 'code':
+          aValue = a.channel?.code ?? '';
+          bValue = b.channel?.code ?? '';
+          break;
+        case 'units':
+          aValue = a.channel?.units ?? '';
+          bValue = b.channel?.units ?? '';
+          break;
+        case 'cumulative':
+          aValue = a.cumulative;
+          bValue = b.cumulative;
+          break;
+        case 'apply_metric':
+          aValue = a.applyMetric;
+          bValue = b.applyMetric;
+          break;
+        default:
+          return 0;
+      }
+
+      int comparison;
+      if (aValue is num && bValue is num) {
+        comparison = aValue.compareTo(bValue);
+      } else if (aValue is bool && bValue is bool) {
+        comparison = aValue.toString().compareTo(bValue.toString());
+      } else {
+        comparison = aValue.toString().toLowerCase().compareTo(
+          bValue.toString().toLowerCase(),
+        );
+      }
+
+      return _channelSortAscending ? comparison : -comparison;
+    });
   }
 
   Widget _buildMetricsTab() {
@@ -2556,74 +2929,82 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with filters and view toggle
-          Row(
+    return Column(
+      children: [
+        // Fixed header section with padding
+        Container(
+          padding: const EdgeInsets.all(AppSizes.spacing16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    //const SizedBox(width: 16),
-                    // Date filters
-                    _buildDateFilter(),
-                  ],
-                ),
-              ),
-              // View toggle
-              Container(
-                height: AppSizes.buttonHeightSmall,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  color: const Color(0xFFF1F5F9),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildViewToggleButton(
-                      icon: Icons.table_chart,
-                      label: 'Table',
-                      isActive: _isTableView,
-                      onTap: () {
-                        print('Switching to TABLE view');
-                        setState(() => _isTableView = true);
-                      },
+              // Header with filters and view toggle
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        //const SizedBox(width: 16),
+                        // Date filters
+                        _buildDateFilter(),
+                      ],
                     ),
-                    _buildViewToggleButton(
-                      icon: Icons.bar_chart,
-                      label: 'Graph',
-                      isActive: !_isTableView,
-                      onTap: () {
-                        print('Switching to GRAPH view');
-                        setState(() => _isTableView = false);
-                      },
+                  ),
+                  // View toggle
+                  Container(
+                    height: AppSizes.buttonHeightSmall,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        AppSizes.radiusMedium,
+                      ),
+                      color: const Color(0xFFF1F5F9),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildViewToggleButton(
+                          icon: Icons.table_chart,
+                          label: 'Table',
+                          isActive: _isTableView,
+                          onTap: () {
+                            print('Switching to TABLE view');
+                            setState(() => _isTableView = true);
+                          },
+                        ),
+                        _buildViewToggleButton(
+                          icon: Icons.bar_chart,
+                          label: 'Graph',
+                          isActive: !_isTableView,
+                          onTap: () {
+                            print('Switching to GRAPH view');
+                            setState(() => _isTableView = false);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
+        ),
 
-          if (_deviceMetrics != null &&
-              _deviceMetrics!['DeviceMetrics'] != null) ...[
-            if (_isTableView)
-              _buildMetricsTableWithPagination()
-            else
-              _buildMetricsGraph(),
-          ] else
-            AppLottieStateWidget.noData(
-              title: 'No Metrics Data',
-              message: 'No metrics data available',
-            ),
-          //     ),
-          //   ),
-          // ),
-        ],
-      ),
+        // Expandable content area with scrolling
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+            child:
+                _deviceMetrics != null &&
+                    _deviceMetrics!['DeviceMetrics'] != null
+                ? (_isTableView
+                      ? _buildMetricsTableWithPagination()
+                      : SingleChildScrollView(child: _buildMetricsGraph()))
+                : const AppLottieStateWidget.noData(
+                    title: 'No Metrics Data',
+                    message: 'No metrics data available',
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -4131,14 +4512,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         titleColor: AppColors.primary,
         messageColor: AppColors.secondary,
       );
-      //  AppCard(
-      //   child: Center(
-      //     child: Text(
-      //       'No metrics data available',
-      //       style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
-      //     ),
-      //   ),
-      // );
     }
 
     // Calculate pagination
@@ -4153,7 +4526,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
     return Column(
       children: [
-        // Summary row
+        // Fixed summary row at top
         Container(
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 16),
@@ -4197,9 +4570,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
         ),
 
-        // Unified table using BluNestDataTable
-        SizedBox(
-          height: 500,
+        // Expandable table with internal scrolling
+        Expanded(
           child: BluNestDataTable<Map<String, dynamic>>(
             data: paginatedMetrics,
             columns: MetricsTableColumns.getColumns(
@@ -4213,10 +4585,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
         ),
 
-        const SizedBox(height: 16),
-
-        // Pagination controls
-        _buildMetricsPagination(totalPages, totalItems),
+        // Fixed pagination at bottom
+        Container(
+          padding: const EdgeInsets.only(top: 16),
+          child: _buildMetricsPagination(totalPages, totalItems),
+        ),
       ],
     );
   }
@@ -4806,5 +5179,55 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       default:
         return '';
     }
+  }
+
+  // Get unique device groups to prevent dropdown duplicates
+  List<DeviceGroup> _getUniqueDeviceGroups() {
+    final seen = <int>{};
+    return _deviceGroups.where((group) {
+      if (seen.contains(group.id)) {
+        if (kDebugMode) {
+          print(
+            'Duplicate device group found with ID: ${group.id}, Name: ${group.name}',
+          );
+        }
+        return false;
+      }
+      seen.add(group.id ?? 0);
+      return true;
+    }).toList();
+  }
+
+  // Validate and get a safe device group value for the dropdown
+  int? _getSafeDeviceGroupValue() {
+    if (_selectedDeviceGroupIdEdit == null) return null;
+
+    final uniqueGroups = _getUniqueDeviceGroups();
+
+    // If groups are still loading, keep the selected value
+    if (uniqueGroups.isEmpty && _isLoadingDeviceGroups) {
+      return _selectedDeviceGroupIdEdit;
+    }
+
+    final groupExists = uniqueGroups.any(
+      (group) => group.id == _selectedDeviceGroupIdEdit,
+    );
+
+    if (!groupExists) {
+      if (kDebugMode) {
+        print(
+          'Selected device group ID $_selectedDeviceGroupIdEdit not found in dropdown (groups loaded: ${uniqueGroups.length})',
+        );
+      }
+      // Only reset if we're sure the groups have been loaded
+      if (!_isLoadingDeviceGroups && uniqueGroups.isNotEmpty) {
+        _selectedDeviceGroupIdEdit = null;
+        return null;
+      }
+      // Otherwise, keep the value while loading
+      return _selectedDeviceGroupIdEdit;
+    }
+
+    return _selectedDeviceGroupIdEdit;
   }
 }

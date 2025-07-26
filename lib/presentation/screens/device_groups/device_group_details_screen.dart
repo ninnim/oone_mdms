@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
@@ -16,8 +17,11 @@ import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/results_pagination.dart';
-import '../../widgets/common/app_input_field.dart';
-import '../../widgets/common/app_dropdown_field.dart';
+import '../../widgets/devices/device_filters_and_actions_v2.dart';
+import '../../widgets/devices/device_summary_card.dart';
+import '../../widgets/devices/device_table_columns.dart';
+import '../../widgets/devices/device_kanban_view.dart';
+import '../../widgets/devices/group_device_map_view.dart';
 import '../devices/create_edit_device_screen.dart';
 
 class DeviceGroupDetailsScreen extends StatefulWidget {
@@ -52,6 +56,9 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
   Set<String> _hiddenDeviceColumns = {};
   int _deviceCurrentPage = 1;
   int _deviceItemsPerPage = 10;
+  DeviceViewMode _deviceViewMode = DeviceViewMode.table;
+  Set<Device> _selectedDevicesForActions = {};
+  Timer? _debounceTimer;
 
   // Schedule tab sorting and columns
   String _scheduleSortBy = 'name';
@@ -63,6 +70,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
   @override
   void dispose() {
     _deviceSearchController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -358,7 +366,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.deviceGroup.name?? 'Device Groups!',
+                          widget.deviceGroup.name ?? 'Device Groups!',
                           style: const TextStyle(
                             fontSize: AppSizes.fontSizeLarge,
                             fontWeight: FontWeight.bold,
@@ -513,293 +521,385 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
 
   Widget _buildDevicesTab() {
     final filteredDevices = filteredGroupDevices;
-    final paginatedDevices = paginatedGroupDevices;
-
-    // Get unique values for filters
-    final allGroupDevices = _allDevices
-        .where((device) => device.deviceGroupId == widget.deviceGroup.id)
-        .toList();
-    final uniqueStatuses = allGroupDevices
-        .map((d) => d.status)
-        .toSet()
-        .toList();
-    final uniqueTypes = allGroupDevices
-        .map((d) => d.deviceType)
-        .toSet()
-        .toList();
-    final uniqueManufacturers = allGroupDevices
-        .map((d) => d.manufacturer)
-        .toSet()
-        .toList();
 
     return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: const EdgeInsets.all(AppSizes.spacing12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Create Device button
-          Row(
-            children: [
-              Text(
-                'Devices in Group (${filteredDevices.length})',
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeLarge,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              AppButton(
-                text: 'Add Device',
-                onPressed: () => _showCreateDeviceDialog(),
-                icon: const Icon(Icons.add),
-              ),
-            ],
+          // Filters and actions (same style as devices screen)
+          DeviceFiltersAndActionsV2(
+            onSearchChanged: _onDeviceSearchChanged,
+            onStatusFilterChanged: _onDeviceStatusFilterChanged,
+            onLinkStatusFilterChanged: _onDeviceLinkStatusFilterChanged,
+            onViewModeChanged: _onDeviceViewModeChanged,
+            onAddDevice: _showCreateDeviceDialog,
+            onRefresh: _loadData,
+            onExport: _exportGroupDevices,
+            onImport: null, // No import for group devices
+            currentViewMode: _deviceViewMode,
+            selectedStatus: _deviceStatusFilter,
+            selectedLinkStatus:
+                null, // Group devices don't have link status filter
           ),
-          const SizedBox(height: AppSizes.spacing16),
 
-          // Filters Row
-          Row(
-            children: [
-              // Search Field
-              Expanded(
-                flex: 2,
-                child: AppInputField(
-                  controller: _deviceSearchController,
-                  hintText: 'Search devices...',
-                  prefixIcon: const Icon(Icons.search),
-                  onChanged: (value) {
-                    setState(() {
-                      _deviceSearchQuery = value;
-                      _deviceCurrentPage = 1; // Reset to first page
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacing8),
+          const SizedBox(height: AppSizes.spacing8),
 
-              // Status Filter
-              Expanded(
-                child: AppSearchableDropdown<String?>(
-                  value: _deviceStatusFilter,
-                  label: 'Status',
-                  hintText: 'All Status',
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('All Status'),
-                    ),
-                    ...uniqueStatuses.map(
-                      (status) =>
-                          DropdownMenuItem(value: status, child: Text(status)),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _deviceStatusFilter = value;
-                      _deviceCurrentPage = 1;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacing8),
+          // Summary card (same style as devices screen)
+          DeviceSummaryCard(devices: filteredDevices),
 
-              // Type Filter
-              Expanded(
-                child: AppSearchableDropdown<String?>(
-                  value: _deviceTypeFilter,
-                  label: 'Type',
-                  hintText: 'All Types',
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('All Types'),
-                    ),
-                    ...uniqueTypes.map(
-                      (type) =>
-                          DropdownMenuItem(value: type, child: Text(type)),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _deviceTypeFilter = value;
-                      _deviceCurrentPage = 1;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacing8),
+          const SizedBox(height: AppSizes.spacing8),
 
-              // Manufacturer Filter
-              Expanded(
-                child: AppSearchableDropdown<String?>(
-                  value: _deviceManufacturerFilter,
-                  label: 'Manufacturer',
-                  hintText: 'All Manufacturers',
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('All Manufacturers'),
-                    ),
-                    ...uniqueManufacturers.map(
-                      (manufacturer) => DropdownMenuItem(
-                        value: manufacturer,
-                        child: Text(manufacturer),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _deviceManufacturerFilter = value;
-                      _deviceCurrentPage = 1;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spacing16),
-
-          // Devices list
-          if (filteredDevices.isEmpty)
-            const Expanded(
-              child: AppLottieStateWidget.noData(
-                title: 'No Devices Found',
-                message: 'No devices match the current filters.',
-              ),
-            )
-          else
-            Flexible(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: BluNestDataTable<Device>(
-                      columns: _buildDeviceTableColumns(),
-                      data: paginatedDevices,
-                      enableMultiSelect: false,
-                      selectedItems: const {},
-                      onSelectionChanged: (selectedItems) {},
-                      hiddenColumns: _hiddenDeviceColumns.toList(),
-                      onColumnVisibilityChanged: (hiddenColumns) {
-                        setState(() {
-                          _hiddenDeviceColumns = hiddenColumns.toSet();
-                        });
-                      },
-                      sortBy: _deviceSortBy,
-                      sortAscending: _deviceSortAscending,
-                      onSort: (column, ascending) {
-                        setState(() {
-                          _deviceSortBy = column;
-                          _deviceSortAscending = ascending;
-                        });
-                      },
-                      isLoading: false,
-                    ),
-                  ),
-
-                  // Pagination
-                  if (totalDevicePages > 1)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSizes.spacing16),
-                      child: ResultsPagination(
-                        currentPage: _deviceCurrentPage,
-                        totalPages: totalDevicePages,
-                        totalItems: filteredDevices.length,
-                        itemsPerPage: _deviceItemsPerPage,
-                        startItem:
-                            (_deviceCurrentPage - 1) * _deviceItemsPerPage + 1,
-                        endItem: (_deviceCurrentPage * _deviceItemsPerPage)
-                            .clamp(1, filteredDevices.length),
-                        onPageChanged: (page) {
-                          setState(() {
-                            _deviceCurrentPage = page;
-                          });
-                        },
-                        onItemsPerPageChanged: (itemsPerPage) {
-                          setState(() {
-                            _deviceItemsPerPage = itemsPerPage;
-                            _deviceCurrentPage = 1; // Reset to first page
-                          });
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
+          // Content based on view mode
+          Expanded(child: _buildDeviceContent()),
         ],
       ),
     );
   }
 
-  List<BluNestTableColumn<Device>> _buildDeviceTableColumns() {
-    return [
-      BluNestTableColumn<Device>(
-        key: 'serialNumber',
-        title: 'Serial Number',
-        flex: 2,
-        sortable: true,
-        builder: (device) => Text(
-          device.serialNumber,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+  Widget _buildDeviceContent() {
+    final filteredDevices = filteredGroupDevices;
+
+    // Show loading state
+    if (_isLoading && filteredDevices.isEmpty) {
+      return AppLottieStateWidget.loading(
+        title: 'Loading Devices',
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
+        message: 'Please wait while we fetch devices in this group...',
+        lottieSize: 100,
+      );
+    }
+
+    // Show no data state if no devices after loading
+    if (!_isLoading && filteredDevices.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Devices Found',
+        message: _deviceSearchQuery.isNotEmpty || _deviceStatusFilter != null
+            ? 'No devices match the current filters.'
+            : 'This device group has no devices assigned.',
+        buttonText: 'Add Device',
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
+        onButtonPressed: _showCreateDeviceDialog,
+      );
+    }
+
+    switch (_deviceViewMode) {
+      case DeviceViewMode.table:
+        return _buildDeviceTableView();
+      case DeviceViewMode.kanban:
+        return _buildDeviceKanbanView();
+      case DeviceViewMode.map:
+        return _buildDeviceMapView();
+    }
+  }
+
+  Widget _buildDeviceTableView() {
+    final paginatedDevices = paginatedGroupDevices;
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          if (_selectedDevicesForActions.isNotEmpty) _buildMultiSelectToolbar(),
+          Expanded(
+            child: BluNestDataTable<Device>(
+              columns: DeviceTableColumns.getColumns(
+                onView: (device) => _viewDevice(device),
+                onEdit: (device) => _editDevice(device),
+                onDelete: (device) => _removeDeviceFromGroup(device),
+                currentPage: _deviceCurrentPage,
+                itemsPerPage: _deviceItemsPerPage,
+                devices: paginatedDevices,
+              ),
+              data: paginatedDevices,
+              onRowTap: (device) => _viewDevice(device),
+              enableMultiSelect: true,
+              selectedItems: _selectedDevicesForActions,
+              onSelectionChanged: (selectedItems) {
+                setState(() {
+                  _selectedDevicesForActions = selectedItems;
+                });
+              },
+              hiddenColumns: _hiddenDeviceColumns.toList(),
+              onColumnVisibilityChanged: (hiddenColumns) {
+                setState(() {
+                  _hiddenDeviceColumns = hiddenColumns.toSet();
+                });
+              },
+              sortBy: _deviceSortBy,
+              sortAscending: _deviceSortAscending,
+              onSort: (column, ascending) {
+                setState(() {
+                  _deviceSortBy = column;
+                  _deviceSortAscending = ascending;
+                });
+              },
+              isLoading: false,
+            ),
+          ),
+          _buildDevicePagination(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceKanbanView() {
+    final paginatedDevices = paginatedGroupDevices;
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          if (_selectedDevicesForActions.isNotEmpty) _buildMultiSelectToolbar(),
+          Expanded(
+            child: DeviceKanbanView(
+              devices: paginatedDevices,
+              onDeviceSelected: _viewDevice,
+              isLoading: false,
+              enablePagination: false, // Use external pagination
+              itemsPerPage: _deviceItemsPerPage,
+            ),
+          ),
+          _buildDevicePagination(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceMapView() {
+    return Column(
+      children: [
+        // Map implementation toggle - UPDATED TO MATCH DEVICES SCREEN
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: AppColors.border)),
+          ),
+          child: Row(
+            children: [
+              Text(
+                'Device Map View - OpenStreetMap with clustering',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
-      ),
-      BluNestTableColumn<Device>(
-        key: 'name',
-        title: 'Name',
-        flex: 2,
-        sortable: true,
-        builder: (device) => Text(
-          device.name.isNotEmpty ? device.name : '-',
-          style: const TextStyle(color: AppColors.textPrimary),
+
+        // Map view
+        Expanded(
+          child: GroupDeviceMapView(
+            deviceGroupId: widget.deviceGroup.id ?? 0,
+            onDeviceSelected: _viewDevice,
+            isLoading: _isLoading,
+            groupName: widget.deviceGroup.name ?? 'Unknown Group',
+            deviceService: _deviceService,
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildDevicePagination() {
+    final filteredDevices = filteredGroupDevices;
+    final totalPages = totalDevicePages;
+
+    if (totalPages <= 1) return const SizedBox.shrink();
+
+    final startItem = (_deviceCurrentPage - 1) * _deviceItemsPerPage + 1;
+    final endItem =
+        (_deviceCurrentPage * _deviceItemsPerPage) > filteredDevices.length
+        ? filteredDevices.length
+        : _deviceCurrentPage * _deviceItemsPerPage;
+
+    return ResultsPagination(
+      currentPage: _deviceCurrentPage,
+      totalPages: totalPages,
+      totalItems: filteredDevices.length,
+      itemsPerPage: _deviceItemsPerPage,
+      startItem: startItem,
+      endItem: endItem,
+      onPageChanged: (page) {
+        setState(() {
+          _deviceCurrentPage = page;
+        });
+      },
+      onItemsPerPageChanged: (newItemsPerPage) {
+        setState(() {
+          _deviceItemsPerPage = newItemsPerPage;
+          _deviceCurrentPage = 1;
+        });
+      },
+      itemLabel: 'devices',
+      showItemsPerPageSelector: true,
+    );
+  }
+
+  Widget _buildMultiSelectToolbar() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: const BoxDecoration(
+        color: AppColors.info,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      BluNestTableColumn<Device>(
-        key: 'deviceType',
-        title: 'Type',
-        flex: 1,
-        sortable: true,
-        builder: (device) => Text(
-          device.deviceType,
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-      ),
-      BluNestTableColumn<Device>(
-        key: 'status',
-        title: 'Status',
-        flex: 1,
-        sortable: true,
-        builder: (device) =>
-            StatusChip(text: device.status, type: StatusChipType.success),
-      ),
-      BluNestTableColumn<Device>(
-        key: 'actions',
-        title: 'Actions',
-        flex: 1,
-        sortable: false,
-        builder: (device) => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.visibility, size: AppSizes.iconSmall),
-              onPressed: () => _viewDevice(device),
-              tooltip: 'View Device',
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: AppColors.surface,
+            size: AppSizes.iconSmall,
+          ),
+          const SizedBox(width: AppSizes.spacing8),
+          Text(
+            '${_selectedDevicesForActions.length} device${_selectedDevicesForActions.length == 1 ? '' : 's'} selected',
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.surface,
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.remove_circle_outline,
-                size: AppSizes.iconSmall,
-                color: AppColors.error,
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () {
+              _bulkRemoveDevicesFromGroup();
+            },
+            icon: const Icon(
+              Icons.remove_circle_outline,
+              color: AppColors.surface,
+              size: AppSizes.iconSmall,
+            ),
+            label: const Text(
+              'Remove from Group',
+              style: TextStyle(color: AppColors.surface),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Filter and action handlers
+  void _onDeviceSearchChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _deviceSearchQuery = value;
+        _deviceCurrentPage = 1;
+      });
+    });
+  }
+
+  void _onDeviceStatusFilterChanged(String? status) {
+    setState(() {
+      _deviceStatusFilter = status;
+      _deviceCurrentPage = 1;
+    });
+  }
+
+  void _onDeviceLinkStatusFilterChanged(String? linkStatus) {
+    // Device groups don't use link status filter
+    // This method is required by the interface but can be empty
+  }
+
+  void _onDeviceViewModeChanged(DeviceViewMode mode) {
+    setState(() {
+      _deviceViewMode = mode;
+    });
+  }
+
+  void _exportGroupDevices() {
+    // TODO: Implement export functionality for group devices
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Export functionality coming soon'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+  }
+
+  void _editDevice(Device device) {
+    showDialog(
+      context: context,
+      builder: (context) => CreateEditDeviceDialog(
+        device: device,
+        presetDeviceGroupId: widget.deviceGroup.id,
+        onSaved: () {
+          _loadData(); // Refresh the data after editing
+        },
+      ),
+    );
+  }
+
+  Future<void> _bulkRemoveDevicesFromGroup() async {
+    final deviceCount = _selectedDevicesForActions.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Devices from Group'),
+        content: Text(
+          'Are you sure you want to remove $deviceCount selected device${deviceCount == 1 ? '' : 's'} from this group?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Remove All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        setState(() => _isLoading = true);
+
+        // Update devices to remove from group (set deviceGroupId to 0)
+        final updateFutures = _selectedDevicesForActions.map((device) {
+          return _deviceService.updateDevice(device.copyWith(deviceGroupId: 0));
+        }).toList();
+
+        await Future.wait(updateFutures);
+
+        // Clear selection and reload data
+        setState(() {
+          _selectedDevicesForActions.clear();
+        });
+
+        await _loadData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '$deviceCount device${deviceCount == 1 ? '' : 's'} removed from group successfully',
               ),
-              onPressed: () => _removeDeviceFromGroup(device),
-              tooltip: 'Remove from Group',
+              backgroundColor: AppColors.success,
             ),
-          ],
-        ),
-      ),
-    ];
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to remove devices: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
   }
 
   Widget _buildInfoRow(String label, String value) {
