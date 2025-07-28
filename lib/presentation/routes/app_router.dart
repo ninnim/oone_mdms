@@ -1140,7 +1140,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/insights')) return 'insights';
 
     // Settings sub-routes
-    if (location.startsWith('/my-profile')) return 'my-profile';
+    // if (location.startsWith('/my-profile')) return 'my-profile';
     if (location.startsWith('/security')) return 'security';
     if (location.startsWith('/integrations')) return 'integrations';
     if (location.startsWith('/billing')) return 'billing';
@@ -1759,16 +1759,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
         const SizedBox(height: 8),
 
-        // Tickets
-        _buildMenuItem(
-          'tickets',
-          'Tickets',
-          Icons.support_agent,
-          selectedScreen == 'tickets',
-          badge: '3',
-        ),
+        // // Tickets
+        // _buildMenuItem(
+        //   'tickets',
+        //   'Tickets',
+        //   Icons.support_agent,
+        //   selectedScreen == 'tickets',
+        //   badge: '3',
+        // ),
 
-        const SizedBox(height: 8),
+        // const SizedBox(height: 8),
 
         // Analytics Group
         _buildGroupHeader('analytics', 'Analytics', Icons.analytics, [
@@ -1821,42 +1821,42 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               Icons.business,
               selectedScreen == 'sites',
             ),
-            _buildSubMenuItem(
-              'my-profile',
-              'My profile',
-              Icons.account_circle,
-              selectedScreen == 'my-profile',
-            ),
-            _buildSubMenuItem(
-              'security',
-              'Security',
-              Icons.security,
-              selectedScreen == 'security',
-            ),
+            // _buildSubMenuItem(
+            //   'my-profile',
+            //   'My profile',
+            //   Icons.account_circle,
+            //   selectedScreen == 'my-profile',
+            // ),
+            // _buildSubMenuItem(
+            //   'security',
+            //   'Security',
+            //   Icons.security,
+            //   selectedScreen == 'security',
+            // ),
             _buildSubMenuItem(
               'integrations',
               'Integrations',
               Icons.integration_instructions,
               selectedScreen == 'integrations',
             ),
-            _buildSubMenuItem(
-              'billing',
-              'Billing',
-              Icons.receipt_long,
-              selectedScreen == 'billing',
-            ),
-            _buildSubMenuItem(
-              'token-management-test',
-              'Token Management Test',
-              Icons.vpn_key,
-              selectedScreen == 'token-management-test',
-            ),
-            _buildSubMenuItem(
-              'token-test',
-              'Token Test',
-              Icons.vpn_key,
-              selectedScreen == 'token-test',
-            ),
+            // _buildSubMenuItem(
+            //   'billing',
+            //   'Billing',
+            //   Icons.receipt_long,
+            //   selectedScreen == 'billing',
+            // ),
+            // _buildSubMenuItem(
+            //   'token-management-test',
+            //   'Token Management Test',
+            //   Icons.vpn_key,
+            //   selectedScreen == 'token-management-test',
+            // ),
+            // _buildSubMenuItem(
+            //   'token-test',
+            //   'Token Test',
+            //   Icons.vpn_key,
+            //   selectedScreen == 'token-test',
+            // ),
           ]),
         ],
       ],
