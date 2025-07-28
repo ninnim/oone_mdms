@@ -529,6 +529,7 @@ class SidebarItems {
       title: 'Device Groups',
       icon: Icons.group_work,
     ),
+    SidebarItem(id: 'sites', title: 'Sites', icon: Icons.business),
     SidebarItem(
       id: 'tou-management',
       title: 'TOU Management',

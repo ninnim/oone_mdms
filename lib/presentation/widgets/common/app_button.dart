@@ -7,7 +7,7 @@ enum AppButtonType { primary, secondary, outline, text, danger }
 enum AppButtonSize { small, medium, large }
 
 class AppButton extends StatelessWidget {
-  final String text;
+  final String? text;
   final VoidCallback? onPressed;
   final AppButtonType type;
   final AppButtonSize size;
@@ -17,7 +17,7 @@ class AppButton extends StatelessWidget {
 
   const AppButton({
     super.key,
-    required this.text,
+    this.text,
     this.onPressed,
     this.type = AppButtonType.primary,
     this.size = AppButtonSize.medium,
@@ -168,7 +168,7 @@ class AppButton extends StatelessWidget {
     }
 
     final textWidget = Text(
-      text,
+      text ?? '',
       style: TextStyle(fontSize: _getFontSize(), fontWeight: FontWeight.w600),
     );
 

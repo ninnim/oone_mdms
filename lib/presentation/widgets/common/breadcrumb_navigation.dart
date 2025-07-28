@@ -4,63 +4,69 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
+import '../../../core/models/site.dart';
 
 class BreadcrumbNavigation extends StatelessWidget {
   const BreadcrumbNavigation({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final currentLocation = GoRouterState.of(context).uri.toString();
-    final pathSegments = currentLocation
-        .split('/')
-        .where((s) => s.isNotEmpty)
-        .toList();
+    try {
+      final currentLocation = GoRouterState.of(context).uri.toString();
+      final pathSegments = currentLocation
+          .split('/')
+          .where((s) => s.isNotEmpty)
+          .toList();
 
-    List<BreadcrumbItem> breadcrumbs = [];
+      List<BreadcrumbItem> breadcrumbs = [];
 
-    for (int i = 0; i < pathSegments.length; i++) {
-      final segment = pathSegments[i];
+      for (int i = 0; i < pathSegments.length; i++) {
+        final segment = pathSegments[i];
 
-      // Convert path segments to readable names
-      String title = _getReadableTitle(context, segment, pathSegments, i);
+        // Convert path segments to readable names
+        String title = _getReadableTitle(context, segment, pathSegments, i);
 
-      // Skip empty titles (IDs we don't want to show)
-      if (title.isEmpty) continue;
+        // Skip empty titles (IDs we don't want to show)
+        if (title.isEmpty) continue;
 
-      // Build correct navigation path based on route structure
-      // Use the original path segments and index, not the filtered breadcrumbs
-      String navigationPath = _buildNavigationPath(pathSegments, i);
+        // Build correct navigation path based on route structure
+        // Use the original path segments and index, not the filtered breadcrumbs
+        String navigationPath = _buildNavigationPath(pathSegments, i);
 
-      breadcrumbs.add(
-        BreadcrumbItem(title: title, path: navigationPath, isLast: false),
-      );
-    }
+        breadcrumbs.add(
+          BreadcrumbItem(title: title, path: navigationPath, isLast: false),
+        );
+      }
 
-    // Mark the last breadcrumb as last
-    if (breadcrumbs.isNotEmpty) {
-      breadcrumbs.last = BreadcrumbItem(
-        title: breadcrumbs.last.title,
-        path: breadcrumbs.last.path,
-        isLast: true,
-      );
-    }
+      // Mark the last breadcrumb as last
+      if (breadcrumbs.isNotEmpty) {
+        breadcrumbs.last = BreadcrumbItem(
+          title: breadcrumbs.last.title,
+          path: breadcrumbs.last.path,
+          isLast: true,
+        );
+      }
 
-    return Row(
-      children: [
-        for (int i = 0; i < breadcrumbs.length; i++) ...[
-          if (i > 0) ...[
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right,
-              size: AppSizes.iconSmall,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 8),
+      return Row(
+        children: [
+          for (int i = 0; i < breadcrumbs.length; i++) ...[
+            if (i > 0) ...[
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right,
+                size: AppSizes.iconSmall,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+            ],
+            _buildBreadcrumbItem(context, breadcrumbs[i]),
           ],
-          _buildBreadcrumbItem(context, breadcrumbs[i]),
         ],
-      ],
-    );
+      );
+    } catch (e) {
+      // Fallback if GoRouter state is not available
+      return const SizedBox.shrink();
+    }
   }
 
   String _getReadableTitle(
@@ -74,6 +80,8 @@ class BreadcrumbNavigation extends StatelessWidget {
         return 'Devices';
       case 'device-groups':
         return 'Device Groups';
+      case 'sites':
+        return 'Sites';
       case 'dashboard':
         return 'Dashboard';
       case 'tou-management':
@@ -101,16 +109,26 @@ class BreadcrumbNavigation extends StatelessWidget {
               nextSegment == 'details' ||
               nextSegment == 'billing') {
             // Try to get device serial number from state if available
-            final routeState = GoRouterState.of(context);
-            final extra = routeState.extra;
+            try {
+              final routeState = GoRouterState.of(context);
+              final extra = routeState.extra;
 
-            // Check if it's a Device
-            if (extra is Device && extra.serialNumber.isNotEmpty) {
-              return extra.serialNumber;
-            }
+              // Check if it's a Device
+              if (extra is Device && extra.serialNumber.isNotEmpty) {
+                return extra.serialNumber;
+              }
 
-            // Check if it's a DeviceGroup - don't show device group name in breadcrumb
-            if (extra is DeviceGroup) {
+              // Check if it's a DeviceGroup - don't show device group name in breadcrumb
+              if (extra is DeviceGroup) {
+                return '';
+              }
+
+              // Check if it's a Site
+              if (extra is Site && extra.name.isNotEmpty) {
+                return extra.name;
+              }
+            } catch (e) {
+              // If can't access router state, just skip this breadcrumb
               return '';
             }
 

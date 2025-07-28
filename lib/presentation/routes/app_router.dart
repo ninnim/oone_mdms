@@ -18,10 +18,14 @@ import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
 import '../../core/models/device_group.dart';
 import '../../core/services/device_service.dart';
+import '../../core/services/site_service.dart';
 import '../../core/services/device_group_service.dart';
 import '../../core/services/keycloak_service.dart';
 import '../screens/device_groups/device_groups_screen.dart';
 import '../screens/device_groups/device_group_details_screen.dart';
+import '../screens/sites/sites_screen.dart';
+import '../screens/sites/site_details_screen.dart';
+import '../../core/models/site.dart';
 
 class AppRouter {
   static GoRouter getRouter(KeycloakService keycloakService) {
@@ -192,9 +196,29 @@ class AppRouter {
               builder: (context, state) => const SettingsRouteWrapper(),
             ),
             GoRoute(
-              path: '/my-details',
-              name: 'my-details',
-              builder: (context, state) => const SettingsRouteWrapper(),
+              path: '/sites',
+              name: 'sites',
+              builder: (context, state) => const SitesRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/sites/details/:siteId',
+              name: 'site-details',
+              builder: (context, state) {
+                final siteIdStr = state.pathParameters['siteId']!;
+                final siteId = int.tryParse(siteIdStr);
+
+                if (siteId == null) {
+                  // Invalid site ID, redirect to sites list
+                  return const Scaffold(
+                    body: Center(child: Text('Invalid site ID')),
+                  );
+                }
+
+                return SiteDetailsRouteWrapper(
+                  siteId: siteId,
+                  site: state.extra as Site?,
+                );
+              },
             ),
             GoRoute(
               path: '/my-profile',
@@ -809,6 +833,113 @@ class _DeviceGroupDetailsRouteWrapperState
   }
 }
 
+class SiteDetailsRouteWrapper extends StatefulWidget {
+  final int siteId;
+  final Site? site;
+
+  const SiteDetailsRouteWrapper({super.key, required this.siteId, this.site});
+
+  @override
+  State<SiteDetailsRouteWrapper> createState() =>
+      _SiteDetailsRouteWrapperState();
+}
+
+class _SiteDetailsRouteWrapperState extends State<SiteDetailsRouteWrapper> {
+  Site? _site;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Use provided site if available, otherwise load it
+    if (widget.site != null) {
+      _site = widget.site;
+      _isLoading = false;
+    } else {
+      _loadSite();
+    }
+  }
+
+  Future<void> _loadSite() async {
+    try {
+      final siteService = Provider.of<SiteService>(context, listen: false);
+      final response = await siteService.getSiteById(widget.siteId);
+
+      if (mounted) {
+        if (response.success && response.data != null) {
+          setState(() {
+            _site = response.data!;
+            _isLoading = false;
+            _errorMessage = null;
+          });
+        } else {
+          setState(() {
+            _errorMessage = response.message ?? 'Failed to load site';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error loading site: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error: $_errorMessage'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go('/sites'),
+                child: const Text('Back to Sites'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_site == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.search_off, size: 64),
+              const SizedBox(height: 16),
+              const Text('Site not found'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go('/sites'),
+                child: const Text('Back to Sites'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SiteDetailsScreen(siteId: widget.siteId, site: _site);
+  }
+}
+
 class TouManagementRouteWrapper extends StatelessWidget {
   const TouManagementRouteWrapper({super.key});
 
@@ -894,6 +1025,34 @@ class AnalyticsRouteWrapper extends StatelessWidget {
   }
 }
 
+class SitesRouteWrapper extends StatelessWidget {
+  const SitesRouteWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SitesScreenWithRouter();
+  }
+}
+
+// Wrapper to integrate existing SitesScreen with routing
+class SitesScreenWithRouter extends StatefulWidget {
+  const SitesScreenWithRouter({super.key});
+
+  @override
+  State<SitesScreenWithRouter> createState() => _SitesScreenWithRouterState();
+}
+
+class _SitesScreenWithRouterState extends State<SitesScreenWithRouter> {
+  @override
+  Widget build(BuildContext context) {
+    return SitesScreen(
+      onBreadcrumbUpdate: (breadcrumbs) {
+        // Breadcrumbs are now handled by the router system
+      },
+    );
+  }
+}
+
 class SettingsRouteWrapper extends StatelessWidget {
   const SettingsRouteWrapper({super.key});
 
@@ -963,6 +1122,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/dashboard')) return 'dashboard';
     if (location.startsWith('/devices')) return 'devices';
     if (location.startsWith('/device-groups')) return 'device-groups';
+    if (location.startsWith('/sites')) return 'sites';
     if (location.startsWith('/tou-management')) return 'tou-management';
     if (location.startsWith('/tickets')) return 'tickets';
     if (location.startsWith('/analytics')) return 'analytics';
@@ -980,7 +1140,6 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/insights')) return 'insights';
 
     // Settings sub-routes
-    if (location.startsWith('/my-details')) return 'my-details';
     if (location.startsWith('/my-profile')) return 'my-profile';
     if (location.startsWith('/security')) return 'security';
     if (location.startsWith('/integrations')) return 'integrations';
@@ -1032,7 +1191,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       _expandedGroups['analytics'] = true;
     }
     if ([
-      'my-details',
+      'sites',
       'my-profile',
       'security',
       'integrations',
@@ -1154,7 +1313,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
         // Settings Group
         _buildCollapsedGroupHeader('settings', Icons.settings, [
-          'my-details',
+          'sites',
           'my-profile',
           'security',
           'integrations',
@@ -1166,9 +1325,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         if (_expandedGroups['settings'] == true) ...[
           const SizedBox(height: 4),
           _buildCollapsedSubMenuItem(
-            'my-details',
-            Icons.person,
-            selectedScreen == 'my-details',
+            'sites',
+            Icons.business,
+            selectedScreen == 'sites',
           ),
           _buildCollapsedSubMenuItem(
             'my-profile',
@@ -1506,7 +1665,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       _expandedGroups['analytics'] = true;
     }
     if ([
-      'my-details',
+      'sites',
       'my-profile',
       'security',
       'integrations',
@@ -1645,7 +1804,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
         // Settings Group
         _buildGroupHeader('settings', 'Settings', Icons.settings, [
-          'my-details',
+          'sites',
           'my-profile',
           'security',
           'integrations',
@@ -1657,10 +1816,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         if (_expandedGroups['settings'] == true) ...[
           _buildSubMenuWithConnector([
             _buildSubMenuItem(
-              'my-details',
-              'My details',
-              Icons.person,
-              selectedScreen == 'my-details',
+              'sites',
+              'Sites',
+              Icons.business,
+              selectedScreen == 'sites',
             ),
             _buildSubMenuItem(
               'my-profile',

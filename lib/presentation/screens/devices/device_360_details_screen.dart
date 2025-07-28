@@ -1576,9 +1576,47 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       );
     }
 
-    return _isEditingOverview
-        ? _buildOverviewEditMode()
-        : _buildOverviewViewMode();
+    return Column(
+      children: [
+        // Sticky header
+        Container(
+          padding: const EdgeInsets.all(AppSizes.spacing16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Device Overview',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeLarge,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1e293b),
+                ),
+              ),
+              if (!_isEditingOverview)
+                AppButton(
+                  text: 'Edit Device',
+                  type: AppButtonType.outline,
+                  size: AppButtonSize.small,
+                  onPressed: _startEditingOverview,
+                  icon: const Icon(Icons.edit, size: AppSizes.iconSmall),
+                ),
+            ],
+          ),
+        ),
+        // Scrollable content
+        Expanded(
+          child: _isEditingOverview
+              ? _buildOverviewEditMode()
+              : _buildOverviewViewMode(),
+        ),
+      ],
+    );
   }
 
   Widget _buildOverviewViewMode() {
@@ -1592,29 +1630,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Edit button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Device Overview',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeLarge,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1e293b),
-                ),
-              ),
-              AppButton(
-                text: 'Edit Device',
-                type: AppButtonType.outline,
-                size: AppButtonSize.small,
-                onPressed: _startEditingOverview,
-                icon: const Icon(Icons.edit, size: AppSizes.iconSmall),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spacing16),
-
           // General Information Card
           AppCard(
             child: Column(
@@ -2535,107 +2550,109 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Device Channels',
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeLarge,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1e293b),
-                  ),
-                ),
-              ),
-              if (_deviceChannels != null && _deviceChannels!.isNotEmpty) ...[
-                if (!_isEditingChannels) ...[
-                  AppButton(
-                    text: 'Edit Channels',
-                    type: AppButtonType.secondary,
-                    icon: Icon(Icons.edit, size: 18),
-                    onPressed: _startEditingChannels,
-                  ),
-                ] else ...[
-                  AppButton(
-                    text: 'Cancel',
-                    type: AppButtonType.secondary,
-                    onPressed: _cancelEditingChannels,
-                  ),
-                  const SizedBox(width: 12),
-                  AppButton(
-                    text: _savingChannels ? 'Saving...' : 'Save Changes',
-                    type: AppButtonType.primary,
-                    icon: _savingChannels ? null : Icon(Icons.save, size: 18),
-                    onPressed: _savingChannels ? null : _saveChannelChanges,
-                    isLoading: _savingChannels,
-                  ),
-                ],
-              ],
-            ],
+    return Column(
+      children: [
+        // Sticky header
+        Container(
+          padding: const EdgeInsets.all(AppSizes.spacing16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+            ),
           ),
-          const SizedBox(height: AppSizes.spacing16),
-
-          // Warning message when ApplyMetric will be updated
-          if (_showApplyMetricWarning) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
-                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with actions
+              Row(
                 children: [
-                  Icon(Icons.warning_amber, color: AppColors.warning),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Note: After updating channel values, ApplyMetric will be set to true automatically, and cumulative values may change based on system calculations.',
+                      'Device Channels',
                       style: TextStyle(
-                        color: AppColors.warning.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
+                        fontSize: AppSizes.fontSizeLarge,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1e293b),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close, size: 20),
-                    onPressed: () {
-                      setState(() {
-                        _showApplyMetricWarning = false;
-                      });
-                    },
-                  ),
+                  if (_deviceChannels != null &&
+                      _deviceChannels!.isNotEmpty) ...[
+                    if (!_isEditingChannels) ...[
+                      AppButton(
+                        text: 'Edit Channels',
+                        type: AppButtonType.secondary,
+                        icon: Icon(Icons.edit, size: 18),
+                        onPressed: _startEditingChannels,
+                      ),
+                    ] else ...[
+                      AppButton(
+                        text: 'Cancel',
+                        type: AppButtonType.secondary,
+                        onPressed: _cancelEditingChannels,
+                      ),
+                      const SizedBox(width: 12),
+                      AppButton(
+                        text: _savingChannels ? 'Saving...' : 'Save Changes',
+                        type: AppButtonType.primary,
+                        icon: _savingChannels
+                            ? null
+                            : Icon(Icons.save, size: 18),
+                        onPressed: _savingChannels ? null : _saveChannelChanges,
+                        isLoading: _savingChannels,
+                      ),
+                    ],
+                  ],
                 ],
               ),
-            ),
-          ],
 
-          // Channels table
-          if (_deviceChannels == null || _deviceChannels!.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 100.0),
-              child: AppLottieStateWidget.noData(
-                titleColor: AppColors.primary,
-                messageColor: AppColors.secondary,
-              ),
-            )
-          else
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.6,
-                minHeight: 400,
-              ),
-              child: _buildChannelsTable(),
-            ),
-        ],
-      ),
+              // Warning message when ApplyMetric will be updated
+              if (_showApplyMetricWarning) ...[
+                const SizedBox(height: AppSizes.spacing16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.1),
+                    border: Border.all(
+                      color: AppColors.warning.withOpacity(0.3),
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber, color: AppColors.warning),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Note: After updating channel values, ApplyMetric will be set to true automatically, and cumulative values may change based on system calculations.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        // Scrollable content
+        Expanded(
+          child: _deviceChannels != null && _deviceChannels!.isNotEmpty
+              ? _buildChannelsTable()
+              : Center(
+                  child: AppLottieStateWidget.noData(
+                    title: 'No Channels Available',
+                    message:
+                        'This device does not have any channels configured.',
+                  ),
+                ),
+        ),
+      ],
     );
   }
 
@@ -2644,66 +2661,69 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       return const SizedBox.shrink();
     }
 
-    return BluNestDataTable<DeviceChannel>(
-      columns: DeviceChannelTableColumns.getColumns(
-        isEditMode: _isEditingChannels,
-        selectedChannelIds: _selectedChannelIds,
-        onChannelSelect: (channel, value) {
-          _toggleChannelSelection(channel.id, value ?? false);
-        },
-        onCumulativeChanged: (channel, value) {
-          final numValue = double.tryParse(value);
-          if (numValue != null) {
-            setState(() {
-              _editedCumulativeValues[channel.id] = numValue;
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      child: BluNestDataTable<DeviceChannel>(
+        columns: DeviceChannelTableColumns.getColumns(
+          isEditMode: _isEditingChannels,
+          selectedChannelIds: _selectedChannelIds,
+          onChannelSelect: (channel, value) {
+            _toggleChannelSelection(channel.id, value ?? false);
+          },
+          onCumulativeChanged: (channel, value) {
+            final numValue = double.tryParse(value);
+            if (numValue != null) {
+              setState(() {
+                _editedCumulativeValues[channel.id] = numValue;
 
-              // Auto-select/deselect row based on whether value changed from original
-              final originalValue = _originalCumulativeValues[channel.id];
-              if (originalValue != null) {
-                if (numValue != originalValue) {
-                  // Value changed from original - select the row
-                  _selectedChannelIds.add(channel.id);
-                } else {
-                  // Value matches original - deselect the row
-                  _selectedChannelIds.remove(channel.id);
+                // Auto-select/deselect row based on whether value changed from original
+                final originalValue = _originalCumulativeValues[channel.id];
+                if (originalValue != null) {
+                  if (numValue != originalValue) {
+                    // Value changed from original - select the row
+                    _selectedChannelIds.add(channel.id);
+                  } else {
+                    // Value matches original - deselect the row
+                    _selectedChannelIds.remove(channel.id);
+                  }
                 }
-              }
-            });
-          }
+              });
+            }
+          },
+          channelControllers: _channelControllers,
+          onView: null, // No view action for channels
+          onEdit: null, // No individual edit action
+          onDelete: null, // No individual delete action
+        ),
+        data: _deviceChannels!,
+        enableMultiSelect: _isEditingChannels,
+        selectedItems: _isEditingChannels
+            ? _deviceChannels!
+                  .where((c) => _selectedChannelIds.contains(c.id))
+                  .toSet()
+            : <DeviceChannel>{},
+        onSelectionChanged: (selectedItems) {
+          setState(() {
+            _selectedChannelIds = selectedItems.map((c) => c.id).toSet();
+          });
         },
-        channelControllers: _channelControllers,
-        onView: null, // No view action for channels
-        onEdit: null, // No individual edit action
-        onDelete: null, // No individual delete action
+        hiddenColumns: _hiddenChannelColumns,
+        onColumnVisibilityChanged: (hiddenColumns) {
+          setState(() {
+            _hiddenChannelColumns = hiddenColumns;
+          });
+        },
+        sortBy: _channelSortBy,
+        sortAscending: _channelSortAscending,
+        onSort: (sortBy, ascending) {
+          setState(() {
+            _channelSortBy = sortBy;
+            _channelSortAscending = ascending;
+            _sortChannelsData();
+          });
+        },
+        isLoading: _loadingChannels,
       ),
-      data: _deviceChannels!,
-      enableMultiSelect: _isEditingChannels,
-      selectedItems: _isEditingChannels
-          ? _deviceChannels!
-                .where((c) => _selectedChannelIds.contains(c.id))
-                .toSet()
-          : <DeviceChannel>{},
-      onSelectionChanged: (selectedItems) {
-        setState(() {
-          _selectedChannelIds = selectedItems.map((c) => c.id).toSet();
-        });
-      },
-      hiddenColumns: _hiddenChannelColumns,
-      onColumnVisibilityChanged: (hiddenColumns) {
-        setState(() {
-          _hiddenChannelColumns = hiddenColumns;
-        });
-      },
-      sortBy: _channelSortBy,
-      sortAscending: _channelSortAscending,
-      onSort: (sortBy, ascending) {
-        setState(() {
-          _channelSortBy = sortBy;
-          _channelSortAscending = ascending;
-          _sortChannelsData();
-        });
-      },
-      isLoading: _loadingChannels,
     );
   }
 
@@ -4668,13 +4688,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with title and actions
-          Row(
+    return Column(
+      children: [
+        // Sticky header
+        Container(
+          padding: const EdgeInsets.all(AppSizes.spacing16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+            ),
+          ),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
@@ -4688,25 +4713,17 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               _buildBillingActions(),
             ],
           ),
-          const SizedBox(height: AppSizes.spacing16),
-
-          if (_deviceBilling != null) ...[
-            _buildBillingDataTable(),
-          ] else
-            AppLottieStateWidget.noData(title: 'No Billing Data'),
-          //  AppCard(
-          //   child: Center(
-          //     child: Text(
-          //       'No billing data available',
-          //       style: TextStyle(
-          //         fontSize: AppSizes.fontSizeMedium,
-          //         color: Color(0xFF64748b),
-          //       ),
-          //     ),
-          //   ),
-          // ),
-        ],
-      ),
+        ),
+        // Scrollable content
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.spacing16),
+            child: _deviceBilling != null
+                ? _buildBillingDataTable()
+                : AppLottieStateWidget.noData(title: 'No Billing Data'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -4800,9 +4817,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Table using BluNestDataTable
-        SizedBox(
-          height: 500,
+        // Table using BluNestDataTable with sticky headers
+        Expanded(
           child: BluNestDataTable<Map<String, dynamic>>(
             data: paginatedRecords,
             columns: BillingTableColumns.getColumns(
@@ -4818,10 +4834,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
         ),
 
-        const SizedBox(height: AppSizes.spacing16),
-
         // Pagination controls
-        _buildBillingPagination(totalPages, totalItems),
+        Container(
+          padding: const EdgeInsets.only(top: AppSizes.spacing16),
+          child: _buildBillingPagination(totalPages, totalItems),
+        ),
       ],
     );
   }
@@ -4896,12 +4913,37 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-      child: DeviceLocationViewer(
-        address: widget.device.address,
-        addressText: widget.device.addressText,
-      ),
+    return Column(
+      children: [
+        // Sticky header
+        Container(
+          padding: const EdgeInsets.all(AppSizes.spacing16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+            ),
+          ),
+          child: const Text(
+            'Device Location',
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeLarge,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1e293b),
+            ),
+          ),
+        ),
+        // Scrollable content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+            child: DeviceLocationViewer(
+              address: widget.device.address,
+              addressText: widget.device.addressText,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

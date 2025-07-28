@@ -15,6 +15,7 @@ class AppSizes {
   static const double spacing48 = 48.0;
   static const double spacing56 = 56.0;
   static const double spacing64 = 64.0;
+  static const double rowHeight = 30.0;
 
   // Border Radius
   static const double radiusSmall = 4.0;

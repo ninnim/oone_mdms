@@ -314,7 +314,10 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          _buildHeader(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12),
+            child: _buildHeader(),
+          ),
           Expanded(child: _buildContent()),
           if (_filteredDeviceGroups.isNotEmpty) _buildPagination(),
         ],
@@ -343,6 +346,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           //   });
           // },
         ),
+        const SizedBox(height: AppSizes.spacing8),
         DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
       ],
     );

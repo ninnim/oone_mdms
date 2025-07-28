@@ -490,7 +490,8 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
 
               // Get display text based on current field value
               String getFieldDisplayText() {
-                final currentValue = field.value ?? widget.value;
+                // Use widget.value first, then field.value as fallback
+                final currentValue = widget.value ?? field.value;
                 if (currentValue == null) return '';
 
                 final selectedItem = widget.items.firstWhere(
@@ -542,12 +543,10 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  
                                   displayText.isEmpty
                                       ? widget.hintText
                                       : displayText,
                                   style: TextStyle(
-
                                     fontSize: AppSizes.fontSizeSmall,
                                     color: displayText.isEmpty
                                         ? AppColors.textTertiary

@@ -12,7 +12,6 @@ import '../../../core/services/service_locator.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_tabs.dart';
-import '../../widgets/common/breadcrumb_navigation.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
@@ -349,8 +348,6 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const BreadcrumbNavigation(),
-              const SizedBox(height: AppSizes.spacing16),
               Row(
                 children: [
                   // Back button

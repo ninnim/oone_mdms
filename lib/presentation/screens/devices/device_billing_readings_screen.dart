@@ -240,13 +240,21 @@ class _DeviceBillingReadingsScreenState
                       ],
                     ),
                   )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Billing Period Info
-                        AppCard(
+                : Column(
+                    children: [
+                      // Billing Period Info - Sticky Header
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Color(0xFFE1E5E9),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: AppCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -280,15 +288,17 @@ class _DeviceBillingReadingsScreenState
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
-
-                        // Content based on view toggle
-                        if (_isTableView)
-                          _buildTableView()
-                        else
-                          _buildGraphView(),
-                      ],
-                    ),
+                      ),
+                      // Scrollable content area
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: _isTableView
+                              ? _buildTableView()
+                              : SingleChildScrollView(child: _buildGraphView()),
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ],
@@ -441,9 +451,8 @@ class _DeviceBillingReadingsScreenState
         ),
         const SizedBox(height: 16),
 
-        // Table using BluNestDataTable
-        SizedBox(
-          height: 500,
+        // Table using BluNestDataTable with sticky headers
+        Expanded(
           child: BluNestDataTable<Map<String, dynamic>>(
             data: paginatedReadings,
             columns: _getBillingReadingsColumns(),

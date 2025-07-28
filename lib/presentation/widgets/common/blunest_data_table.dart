@@ -60,7 +60,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
     }
 
     if (widget.data.isEmpty) {
-      return widget.emptyState ?? _buildEmptyState();
+      return _buildEmptyStateWithHeaders();
     }
 
     return Column(
@@ -152,14 +152,18 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                           vertical: AppSizes.spacing4,
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              column.title,
-                              style: const TextStyle(
-                                fontSize: AppSizes.fontSizeSmall,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                                letterSpacing: 0.25,
+                            Flexible(
+                              child: Text(
+                                column.title,
+                                style: const TextStyle(
+                                  fontSize: AppSizes.fontSizeSmall,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                  letterSpacing: 0.25,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (column.sortable) ...[
@@ -393,6 +397,140 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
     widget.onColumnVisibilityChanged?.call(newHiddenColumns);
   }
 
+  Widget _buildEmptyStateWithHeaders() {
+    return Column(
+      children: [
+        // Show table controls if needed
+        if (widget.onColumnVisibilityChanged != null ||
+            widget.enableMultiSelect)
+          _buildTableControls(),
+
+        // Container with table header and empty state
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppSizes.radiusXLarge),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Table Header - Same as in _buildTable()
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing16,
+                    vertical: AppSizes.spacing8,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(AppSizes.radiusXLarge),
+                      topRight: Radius.circular(AppSizes.radiusXLarge),
+                    ),
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      if (widget.enableMultiSelect)
+                        Container(
+                          width: 40,
+                          alignment: Alignment.centerLeft,
+                          child: Transform.scale(
+                            scale: 0.9,
+                            child: Checkbox(
+                              value: false, // No data, so nothing selected
+                              onChanged: null, // Disabled when no data
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                              activeColor: AppColors.primary,
+                              checkColor: AppColors.textInverse,
+                              side: BorderSide(
+                                color: AppColors.border,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ...visibleColumns.asMap().entries.map((entry) {
+                        final column = entry.value;
+                        return Expanded(
+                          flex: column.flex ?? 1,
+                          child: InkWell(
+                            onTap: column.sortable
+                                ? () {
+                                    final ascending =
+                                        widget.sortBy == column.key
+                                        ? !widget.sortAscending
+                                        : true;
+                                    widget.onSort?.call(column.key, ascending);
+                                  }
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSizes.spacing4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      column.title,
+                                      style: const TextStyle(
+                                        fontSize: AppSizes.fontSizeSmall,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                        letterSpacing: 0.25,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (column.sortable) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      widget.sortBy == column.key
+                                          ? (widget.sortAscending
+                                                ? Icons.keyboard_arrow_up
+                                                : Icons.keyboard_arrow_down)
+                                          : Icons.unfold_more,
+                                      size: AppSizes.iconSmall,
+                                      color: widget.sortBy == column.key
+                                          ? AppColors.primary
+                                          : AppColors.textTertiary,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+
+                // Empty state content
+                Expanded(
+                  child:
+                      widget.emptyState ??
+                      AppLottieStateWidget.noData(lottieSize: 120),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildLoadingState() {
     return Container(
       height: 400,
@@ -416,52 +554,6 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               message: '',
               lottieSize: 80,
               titleColor: AppColors.primary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Container(
-      height: 400,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: AppSizes.spacing64,
-              color: AppColors.textTertiary,
-            ),
-            SizedBox(height: AppSizes.spacing16),
-            Text(
-              'No data available',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: AppSizes.fontSizeXLarge,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            SizedBox(height: AppSizes.spacing8),
-            Text(
-              'There are no items to display at the moment.',
-              style: TextStyle(
-                color: AppColors.textTertiary,
-                fontSize: AppSizes.fontSizeMedium,
-              ),
             ),
           ],
         ),

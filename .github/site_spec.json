@@ -11,645 +11,133 @@
             options.headers['x-hasura-user'] = 'admin';
             options.headers['x-hasura-role'] = 'super-admin';
 
-// Read Alll Devices Request Payload
+// Read Alll Sites Request Payload
 
-Method: GET https://mdms.oone.bz/api/rest/Device?search=%%&offset=0&limit=25
+// Method: GET https://mdms.oone.bz/api/rest/v2/Site?search=&limit=25&offset=0
 
-// Response Rean All devices
-{
-  "Paging": {
-    "Item": {
-      "Total": 6
-    }
-  },
-  "Device": [
-    {
-      "Id": "91a8f449-e5c1-43d7-bcf3-cf317ee7a65d",
-      "SerialNumber": "000219151707",
-      "Name": "",
-      "DeviceType": "",
-      "Model": "EDMI",
-      "Manufacturer": "EDMI",
-      "Status": "Commissioned",
-      "LinkStatus": "MULTIDRIVE",
-      "Active": true,
-      "DeviceGroupId": 109,
-      "AddressId": "31fd2a52-6517-438d-b805-7d9d3166ea9c",
-      "AddressText": "",
-      "Address": {
-        "Id": "31fd2a52-6517-438d-b805-7d9d3166ea9c",
-        "Latitute": 0,
-        "Longtitute": 0,
-        "ShortText": "",
-        "LongText": ""
-      },
-      "DeviceChannels": [
-        {
-          "Id": "e8dc005b-8d64-4696-aae0-a1aa4e3d3629",
-          "DeviceId": "91a8f449-e5c1-43d7-bcf3-cf317ee7a65d",
-          "ChannelId": 7,
-          "ApplyMetric": false,
-          "Cumulative": 0,
-          "Active": true,
-          "Channel": {
-            "Id": 7,
-            "Code": "32.7.0",
-            "Name": "Voltage Phase A",
-            "Units": "V",
-            "FlowDirection": "NONE",
-            "Phase": "A",
-            "ApportionPolicy": "AVG",
-            "Active": true
-          }
-        },
-        {
-          "Id": "8c33878b-8460-43f5-827d-c74bbec9e363",
-          "DeviceId": "91a8f449-e5c1-43d7-bcf3-cf317ee7a65d",
-          "ChannelId": 9,
-          "ApplyMetric": false,
-          "Cumulative": 0,
-          "Active": true,
-          "Channel": {
-            "Id": 9,
-            "Code": "72.7.0",
-            "Name": "Voltage Phase C",
-            "Units": "V",
-            "FlowDirection": "NONE",
-            "Phase": "C",
-            "ApportionPolicy": "AVG",
-            "Active": true
-          }
-        }
-      ],
-      "DeviceAttributes": [
-        {
-          "Id": "a401e854-b8c5-4adb-be82-e33824408100",
-          "DeviceId": "91a8f449-e5c1-43d7-bcf3-cf317ee7a65d",
-          "Name": "EDMI_DEVICE_ID",
-          "Value": "50"
-        },
-        {
-          "Id": "da497515-4d5f-4208-9eb4-6a99605d1edb",
-          "DeviceId": "91a8f449-e5c1-43d7-bcf3-cf317ee7a65d",
-          "Name": "LAST_DATA_DATE",
-          "Value": "2025-05-16T16:00:00.000Z"
-        },
-        {
-          "Id": "44f4b425-9d95-47ee-9838-a3600e3be6c9",
-          "DeviceId": "91a8f449-e5c1-43d7-bcf3-cf317ee7a65d",
-          "Name": "LINK_HES_DATE",
-          "Value": "06/24/2025 03:59:22"
-        },
-        {
-          "Id": "ac4e18c7-d53e-4964-a090-baa881daf519",
-          "DeviceId": "91a8f449-e5c1-43d7-bcf3-cf317ee7a65d",
-          "Name": "PLANT_NUMBER",
-          "Value": "000219151707"
-        }
-      ]
-    }
-  ]
-}
-
-//Read All Device Map cluster 
-
-Method Post	https://mdms.oone.bz/api/rest/v1/Device/Filter?search=%%&limit=25&offset=0
-
-//Request Payload Read All Device Map cluster 
-{
-  "filter": {
-    "AddressText": {
-      "_neq": ""
-    }
-  }
-}{
-  "filter": {
-    "AddressText": {
-      "_neq": ""
-    }
-  }
-}
-
-//Resposne Payload Read All Device Map cluster 
-
-{
-  "Paging": {
-    "Item": {
-      "Total": 4
-    }
-  },
-  "Device": [
-    {
-      "Id": "369b43d6-6564-418e-98d1-aede8d65434d",
-      "SerialNumber": "000252240670",
-      "Name": "",
-      "DeviceType": "Smart Meter",
-      "Model": "EDMI",
-      "Manufacturer": "k",
-      "Status": "Commissioned",
-      "LinkStatus": "MULTIDRIVE",
-      "Active": true,
-      "DeviceGroupId": 103,
-      "AddressId": "8408d290-bc95-47b4-aa7a-c616a07f0df6",
-      "AddressText": "None",
-      "Address": {
-        "Id": "8408d290-bc95-47b4-aa7a-c616a07f0df6",
-        "Latitute": 0,
-        "Longtitute": 0,
-        "ShortText": "null",
-        "LongText": "null"
-      },
-      "DeviceChannels": [
-        {
-          "Id": "dfc1c5ed-ad12-41ab-ad91-a182d9c27c48",
-          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-          "ChannelId": 5,
-          "Active": true,
-          "Channel": {
-            "Id": 5,
-            "Code": "9.8.0",
-            "Name": "Apparent Energy Received Total",
-            "Units": "VAH",
-            "FlowDirection": "RECEIVED",
-            "Phase": "TOTAL",
-            "ApportionPolicy": "SUM",
-            "Active": true
-          }
-        },
-        {
-          "Id": "a8564fb2-ed6d-48dc-880c-ccdaf0d8c329",
-          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-          "ChannelId": 14,
-          "Active": true,
-          "Channel": {
-            "Id": 14,
-            "Code": "1.7.0",
-            "Name": "Active Power Total",
-            "Units": "W",
-            "FlowDirection": "NONE",
-            "Phase": "TOTAL",
-            "ApportionPolicy": "AVG",
-            "Active": true
-          }
-        }
-      ],
-      "DeviceAttributes": [
-        {
-          "Id": "8cf88da4-3dd8-4a92-9dc4-b9412a60764a",
-          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-          "Name": "EDMI_DEVICE_ID",
-          "Value": "70"
-        },
-        {
-          "Id": "82d5542d-a02c-4716-98eb-8dca3be1b365",
-          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-          "Name": "LINK_HES_DATE",
-          "Value": "06/23/2025 10:27:12"
-        },
-        {
-          "Id": "407a951c-9060-4771-90af-204b78bba782",
-          "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-          "Name": "PLANT_NUMBER",
-          "Value": "000252240670"
-        }
-      ]
-    },
-    {
-      "Id": "a98827ff-af98-4fd5-8f11-92c7ae7d4e0d",
-      "SerialNumber": "SN123456ssd",
-      "Name": "",
-      "DeviceType": "None",
-      "Model": "X200",
-      "Manufacturer": "TechCorp",
-      "Status": "None",
-      "LinkStatus": "None",
-      "Active": true,
-      "DeviceGroupId": 109,
-      "AddressId": "d168cd0e-33e0-493f-9970-a1c4e58f1c22",
-      "AddressText": "Khan Sen Sok, Phnom Penh",
-      "Address": {
-        "Id": "d168cd0e-33e0-493f-9970-a1c4e58f1c22",
-        "Latitute": 11.58523,
-        "Longtitute": 104.866203,
-        "ShortText": "Khan Sen Sok, Phnom Penh",
-        "LongText": "Sangkat Kouk Khleang, Khan Sen Sok, Phnom Penh, 120806, Cambodia"
-      },
-      "DeviceChannels": [],
-      "DeviceAttributes": []
-    }
-  ]
-}
-
-
-//Read Device by Id 
-Method GET https://mdms.oone.bz/api/rest/Device/Id=369b43d6-6564-418e-98d1-aede8d65434d
-
-// Response payload Device by Id 
-
-{
-  "Device": {
-    "Id": "369b43d6-6564-418e-98d1-aede8d65434d",
-    "DeviceGroupId": 103,
-    "SerialNumber": "000252240670",
-    "Name": "",
-    "DeviceType": "Smart Meter",
-    "Model": "EDMI",
-    "Manufacturer": "k",
-    "Status": "Commissioned",
-    "LinkStatus": "MULTIDRIVE",
-    "Active": true,
-    "AddressId": "8408d290-bc95-47b4-aa7a-c616a07f0df6",
-    "AddressText": "None",
-    "DeviceChannels": [
-      {
-        "Id": "dfc1c5ed-ad12-41ab-ad91-a182d9c27c48",
-        "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-        "ChannelId": 5,
-        "ApplyMetric": false,
-        "Cumulative": 0,
-        "Active": true,
-        "Channel": {
-          "Id": 5,
-          "Code": "9.8.0",
-          "Name": "Apparent Energy Received Total",
-          "Units": "VAH",
-          "FlowDirection": "RECEIVED",
-          "Phase": "TOTAL",
-          "ApportionPolicy": "SUM",
-          "Active": true
-        }
-      },
-      {
-        "Id": "a8564fb2-ed6d-48dc-880c-ccdaf0d8c329",
-        "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-        "ChannelId": 14,
-        "ApplyMetric": false,
-        "Cumulative": 1000,
-        "Active": true,
-        "Channel": {
-          "Id": 14,
-          "Code": "1.7.0",
-          "Name": "Active Power Total",
-          "Units": "W",
-          "FlowDirection": "NONE",
-          "Phase": "TOTAL",
-          "ApportionPolicy": "AVG",
-          "Active": true
-        }
-      }
-    ],
-    "DeviceAttributes": [
-      {
-        "Id": "8cf88da4-3dd8-4a92-9dc4-b9412a60764a",
-        "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-        "Name": "EDMI_DEVICE_ID",
-        "Value": "70"
-      },
-      {
-        "Id": "82d5542d-a02c-4716-98eb-8dca3be1b365",
-        "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-        "Name": "LINK_HES_DATE",
-        "Value": "06/23/2025 10:27:12"
-      },
-      {
-        "Id": "407a951c-9060-4771-90af-204b78bba782",
-        "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-        "Name": "PLANT_NUMBER",
-        "Value": "000252240670"
-      }
-    ],
-    "Address": {
-      "Id": "8408d290-bc95-47b4-aa7a-c616a07f0df6",
-      "Latitute": 0,
-      "Longtitute": 0,
-      "ShortText": "null",
-      "LongText": "null"
-    }
-  }
-}
-    
-
-// Read Device by Id Metrics
-
-Method Post https://mdms.oone.bz/api/rest/v1/Device/369b43d6-6564-418e-98d1-aede8d65434d/MatricsV2
-
-//Request Paylaod Read Device by Id Metrics
-{
-  "limit": 25,
-  "offset": 0,
-  "where": {
-    "_and": [
-      {
-        "Timestamp": {
-          "_gte": "2025-03-01T00:00:00.000+07"
-        }
-      },
-      {
-        "Timestamp": {
-          "_lte": "2025-07-31T23:59:59.999+07"
-        }
-      }
-    ]
-  }
-}
-
-// Response Payload Read Device by Id Metrics
-{
-  "DeviceMetrics": {
-    "Id": "369b43d6-6564-418e-98d1-aede8d65434d",
-    "Name": "",
-    "Model": "EDMI",
-    "SerialNumber": "000252240670",
-    "Status": "Commissioned",
-    "Paging": {
-      "Item": {
-        "Total": 1
-      }
-    },
-    "Metrics": [
-      {
-        "Timestamp": "2025-05-03T08:15:00+07:00",
-        "PreValue": -2858.91,
-        "Value": -2450.49,
-        "Labels": {
-          "Phase": "TOTAL",
-          "Units": "W",
-          "ChannelId": 14,
-          "FlowDirection": "NONE",
-          "ApportionPolicy": "AVG",
-          "DeviceChannelId": "06428767-b94f-4a82-bfcb-96083d1ed4f0"
-        }
-      }
-    ]
-  }
-}
-
-// Read Device by Id Billing
-
-Method GET https://mdms.oone.bz/api/rest/v1/Device/369b43d6-6564-418e-98d1-aede8d65434d/Billing?offset=0&limit=25
-
-// Response Payload Read Device by Id Billing
+// Response Read All Sites
 {
   "Paging": {
     "Item": {
       "Total": 1
     }
   },
-  "Billing": [
+  "Site": [
     {
-      "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-      "TimeOfUseId": 9,
-      "StartTime": "2025-03-10T07:00:00+07:00",
-      "EndTime": "2025-04-10T07:00:00+07:00",
-      "TimeOfUse": {
-        "Id": 9,
-        "Name": "Full"
-      }
+      "Id": 131,
+      "Name": "st60",
+      "Description": "",
+      "ParentId": 0,
+      "Active": true,
+      "SubSites": [
+        {
+          "Id": 137,
+          "Name": "kkkk",
+          "Description": "k",
+          "Active": true
+        }
+      ]
     }
   ]
 }
 
-// Read Device by Id  Billing Reading
-Method GET https://mdms.oone.bz/api/rest/v1/Device/369b43d6-6564-418e-98d1-aede8d65434d/BillingReadings?startTime=2025-03-10T07:00:00+07:00&endTime=2025-04-10T07:00:00+07:00
-
-// Response Payload Device by Id  Billing Reading
-
+// Read Site By Id Request Payload
+// Method: GET https://mdms.oone.bz/api/rest/Site/131?includeSubSite=true&search=%%
+// Response Read Site By Id
 {
-  "DeviceReadings": [
+  "Site": [
     {
-      "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-      "Id": "46567dd3-7eac-49a1-b14c-e2ee331b8035",
-      "BillingDate": "2025-04-10T07:00:00+07:00",
-      "EndTime": "2025-04-10T07:00:00+07:00",
-      "StartTime": "2025-03-10T07:00:00+07:00",
-      "MetricLabels": {
-        "Phase": "TOTAL",
-        "Units": "WH",
-        "FlowDirection": "RECEIVED",
-        "ApportionPolicy": "SUM"
-      },
-      "RegisterDisplayCode": "",
-      "AccumulativeValue": 6451420,
-      "TimeOfUse": {
-        "Id": 9,
-        "Name": "Full"
-      }
-    },
-    {
-      "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-      "Id": "57f947ad-3e10-4f65-89cd-dd857f9ac1c8",
-      "BillingDate": "2025-04-10T07:00:00+07:00",
-      "EndTime": "2025-04-10T07:00:00+07:00",
-      "StartTime": "2025-03-10T07:00:00+07:00",
-      "MetricLabels": {
-        "Phase": "TOTAL",
-        "Units": "WH",
-        "FlowDirection": "RECEIVED",
-        "ApportionPolicy": "SUM"
-      },
-      "RegisterDisplayCode": "",
-      "AccumulativeValue": 390470,
-      "TimeOfUse": {
-        "Id": 9,
-        "Name": "Full"
-      }
+      "Id": 131,
+      "Name": "st60",
+      "Description": "",
+      "ParentId": 0,
+      "Active": true,
+      "SubSites": [
+        {
+          "Id": 137,
+          "Name": "kkkk",
+          "Description": "k",
+          "Active": true
+        }
+      ]
     }
   ]
 }
 
-// Link to Hes by device Id
+// Update Site
+// Method: POST https://mdms.oone.bz/api/rest/Site/131
 
-POST https://mdms.oone.bz/core/api/rest/v1/Device/LinkHes
-
-// Request Payload Link to Hes by device Id
+// Request Payload
 {
-  "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d"
-}
-// Response Payload Link to Hes by device Id
-{
-  "Message": "Device linked successfully",
-  "Status": "Success"
-}
-
-
-//Crud Device (Select, create,Update, Delete )
-// Create Device 
-
-Method POST https://mdms.oone.bz/api/rest/Device
-
-//Request payload Create device 
-
-{
-  "Device": {
-    "SerialNumber": "SDN001",
-    "Model": "EDMI",
-    "DeviceType": "Smart Meter",
-    "Manufacturer": "EDMI",
-    "AddressText": "Unnamed Road, Phnom Penh, Cambodia",
-    "Address": {
-      "data": {
-        "Latitute": 11.6098102,
-        "Longtitute": 104.7930688,
-        "LongText": "Unnamed Road",
-        "ShortText": "Unnamed Road"
-      }
-    },
-    "DeviceChannels": {
-      "on_conflict": {
-        "constraint": "PK_DeviceChannel",
-        "update_columns": [
-          "ApplyMetric",
-          "Cumulative"
-        ]
-      },
-      "data": []
-    }
-  }
-}
-
-// Response payload Create device 
-{
-  "Device": {
-    "Active": true,
-    "Id": "5448bbe9-19b0-40c4-a01e-f013c9fc69fa",
-    "SerialNumber": "SDN001",
-    "Name": "",
-    "DeviceType": "Smart Meter",
-    "Model": "EDMI",
-    "Manufacturer": "EDMI",
-    "LinkStatus": "None",
-    "Status": "None",
-    "DeviceGroupId": 0,
-    "AddressId": "18f6d9f9-164b-4da1-b719-c22b833919e1",
-    "AddressText": "Unnamed Road, Phnom Penh, Cambodia",
-    "DeviceChannels": [],
-    "DeviceAttributes": [],
-    "Address": {
-      "Id": "18f6d9f9-164b-4da1-b719-c22b833919e1",
-      "Latitute": 11.6098102,
-      "Longtitute": 104.7930688,
-      "ShortText": "Unnamed Road",
-      "LongText": "Unnamed Road"
-    }
+  "Site": {
+    "ParentId": 0, //if ParentId is 0, it means Main Site, if ParentId is not 0, it means that site is subsite.
+    "Name": "st60",
+    "Description": "Update"
   }
 }
 
 
-// Update Device
-
-Method POST https://mdms.oone.bz/api/rest/Device
-
-// Request Payload Update Device
+// Create
+// Method: POST https://mdms.oone.bz/api/rest/Site
+// Request payload
 {
-  "Device": {
-    "SerialNumber": "SDN001",
-    "Model": "EDMI",
-    "DeviceType": "Smart Meter",
-    "Manufacturer": "EDMI -Update",
-    "Status": "None",
-    "LinkStatus": "None",
-    "DeviceGroupId": 0,
-    "AddressText": "Unnamed Road, Phnom Penh, Cambodia",
-    "Id": "5448bbe9-19b0-40c4-a01e-f013c9fc69fa",
-    "Address": {
-      "on_conflict": {
-        "constraint": "PK_Address",
-        "update_columns": [
-          "Latitute",
-          "Longtitute",
-          "LongText",
-          "ShortText"
-        ]
-      },
-      "data": {
-        "Latitute": 11.6098102,
-        "Longtitute": 104.7930688,
-        "LongText": "Unnamed Road",
-        "ShortText": "Unnamed Road",
-        "Id": "18f6d9f9-164b-4da1-b719-c22b833919e1"
-      }
-    },
-    "DeviceChannels": {
-      "on_conflict": {
-        "constraint": "PK_DeviceChannel",
-        "update_columns": [
-          "ApplyMetric",
-          "Cumulative"
-        ]
-      },
-      "data": []
-    }
+  "Site": {
+    "Name": "SiteMain", //if ParentId is 0, it means Main Site, if ParentId is not 0, it means that site is subsite.
+    "Description": "Create",
+    "ParentId": 0
   }
 }
 
-// Response payload update device
+// Resposne payload
 {
-  "Device": {
-    "Active": true,
-    "Id": "5448bbe9-19b0-40c4-a01e-f013c9fc69fa",
-    "SerialNumber": "SDN001",
-    "Name": "",
-    "DeviceType": "Smart Meter",
-    "Model": "EDMI",
-    "Manufacturer": "EDMI -Update",
-    "LinkStatus": "None",
-    "Status": "None",
-    "DeviceGroupId": 0,
-    "AddressId": "18f6d9f9-164b-4da1-b719-c22b833919e1",
-    "AddressText": "Unnamed Road, Phnom Penh, Cambodia",
-    "DeviceChannels": [],
-    "DeviceAttributes": [],
-    "Address": {
-      "Id": "18f6d9f9-164b-4da1-b719-c22b833919e1",
-      "Latitute": 11.6098102,
-      "Longtitute": 104.7930688,
-      "ShortText": "Unnamed Road",
-      "LongText": "Unnamed Road"
-    }
+  "Site": {
+    "Id": 331,
+    "Name": "SiteMain",
+    "Description": "Create",
+    "ParentId": 0,
+    "Active": true
   }
 }
 
-// Delete Device
+// Delete
+// Method: DELETE https://mdms.oone.bz/api/rest/Site/329
 
-Method DELETE https://mdms.oone.bz/api/rest/Device/Id=5448bbe9-19b0-40c4-a01e-f013c9fc69fa
 
-// Response payload Delete Device
+
+// Create Subsites
+// Method: POST https://mdms.oone.bz/api/rest/Site
+// Request payload
 {
-  "Device": {
-    "Id": "5448bbe9-19b0-40c4-a01e-f013c9fc69fa",
-    "SerialNumber": "SDN001",
-    "Name": "",
-    "DeviceType": "Smart Meter",
-    "Model": "EDMI",
-    "Manufacturer": "EDMI -Update",
-    "Status": "None",
-    "LinkStatus": "None",
-    "Active": false,
-    "AddressId": "18f6d9f9-164b-4da1-b719-c22b833919e1",
-    "AddressText": "Unnamed Road, Phnom Penh, Cambodia"
+  "Site": {
+    "Name": "SubSite01",
+    "Description": "Description-sub",
+    "ParentId": 131 // ParentId is the Id of the main site
+  }
+}
+
+// Update Subsites
+// POST https://mdms.oone.bz/api/rest/Site/328
+// Request payload
+{
+  "Site": {
+"ParentId":131,
+    "Name": "dk",
+    "Description": "kk-update"
+  }
+}
+
+// Delete Subsites
+// Method: DELETE https://mdms.oone.bz/api/rest/Site/328
+// Response payload
+{
+  "Site": {
+    "Id": 328,
+    "Name": "dk",
+    "Description": "kk-update",
+    "ParentId": 131,
+    "Active": false
   },
-  "update_DeviceAttribute_many": [
-    {
-      "DeviceAttributes": []
-    }
-  ],
-  "update_DeviceChannel_many": [
-    {
-      "DeviceChannels": []
-    }
-  ]
+  "SubSites": {
+    "affected_rows": 0
+  }
 }
-
-// Insert Map location by Devie Id
-
-// Search Map String Text
-GET https://mdms.oone.bz/esb/googleapi?input=sen sok
-// Search Map Lat Long
-GET https://maps.googleapis.com/maps/api/geocode/json?latlng=11.334 , 11.30&key=AIzaSyDdSCVC4a0YlAULbIVpN7XGGMEufochffw
-
-// Get that location
-GET https://mdms.oone.bz/esb/googleapi/detail?place_id=ChIJ61Mo_XhNCTER6sSuFVQSNVg
-
-// Get lcoation by Lat Long
-GET https://mdms.oone.bz/esb/googleapi/geocode?address=11.602016700000009, 104.8571368
-
