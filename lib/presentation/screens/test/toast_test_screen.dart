@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../widgets/common/app_toast.dart';
-import '../../widgets/common/app_lottie_state_widget.dart';
 
 /// Test screen to demonstrate the fixed toast behavior
 class ToastTestScreen extends StatefulWidget {

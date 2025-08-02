@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -134,7 +135,7 @@ class _DeviceBillingReadingsScreenState
                           const Text(
                             'Device Billing Readings',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: AppSizes.fontSizeLarge,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF1e293b),
                             ),
@@ -143,7 +144,7 @@ class _DeviceBillingReadingsScreenState
                           Text(
                             'Device: ${widget.device.serialNumber}',
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: AppSizes.fontSizeSmall,
                               color: Color(0xFF64748b),
                             ),
                           ),
@@ -243,52 +244,52 @@ class _DeviceBillingReadingsScreenState
                 : Column(
                     children: [
                       // Billing Period Info - Sticky Header
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: Color(0xFFE1E5E9),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        child: AppCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Billing Period Information',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1e293b),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _buildInfoRow(
-                                'Device ID',
-                                widget.billingRecord['DeviceId'] ?? 'N/A',
-                              ),
-                              _buildInfoRow(
-                                'Start Time',
-                                widget.billingRecord['StartTime'] ?? 'N/A',
-                              ),
-                              _buildInfoRow(
-                                'End Time',
-                                widget.billingRecord['EndTime'] ?? 'N/A',
-                              ),
-                              if (widget.billingRecord['TimeOfUse'] != null)
-                                _buildInfoRow(
-                                  'Time of Use',
-                                  widget.billingRecord['TimeOfUse']['Name'] ??
-                                      'N/A',
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      // Container(
+                      //   padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                      //   decoration: const BoxDecoration(
+                      //     color: Colors.white,
+                      //     border: Border(
+                      //       bottom: BorderSide(
+                      //         color: Color(0xFFE1E5E9),
+                      //         width: 1,
+                      //       ),
+                      //     ),
+                      //   ),
+                      //   child: AppCard(
+                      //     child: Column(
+                      //       crossAxisAlignment: CrossAxisAlignment.start,
+                      //       children: [
+                      //         const Text(
+                      //           'Billing Period Information',
+                      //           style: TextStyle(
+                      //             fontSize: 18,
+                      //             fontWeight: FontWeight.w600,
+                      //             color: Color(0xFF1e293b),
+                      //           ),
+                      //         ),
+                      //         const SizedBox(height: 16),
+                      //         _buildInfoRow(
+                      //           'Device ID',
+                      //           widget.billingRecord['DeviceId'] ?? 'N/A',
+                      //         ),
+                      //         _buildInfoRow(
+                      //           'Start Time',
+                      //           widget.billingRecord['StartTime'] ?? 'N/A',
+                      //         ),
+                      //         _buildInfoRow(
+                      //           'End Time',
+                      //           widget.billingRecord['EndTime'] ?? 'N/A',
+                      //         ),
+                      //         if (widget.billingRecord['TimeOfUse'] != null)
+                      //           _buildInfoRow(
+                      //             'Time of Use',
+                      //             widget.billingRecord['TimeOfUse']['Name'] ??
+                      //                 'N/A',
+                      //           ),
+                      //       ],
+                      //     ),
+                      //   ),
+                      // ),
                       // Scrollable content area
                       Expanded(
                         child: Padding(
@@ -444,7 +445,7 @@ class _DeviceBillingReadingsScreenState
         const Text(
           'Billing Readings',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: AppSizes.fontSizeLarge,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1e293b),
           ),
@@ -504,7 +505,7 @@ class _DeviceBillingReadingsScreenState
         const Text(
           'Billing Analytics Dashboard',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: AppSizes.fontSizeLarge,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1e293b),
           ),

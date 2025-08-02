@@ -466,6 +466,13 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       totalPages: _totalPages,
       totalItems: _totalItems,
       itemsPerPage: _itemsPerPage,
+      itemsPerPageOptions: const [
+        5,
+        10,
+        20,
+        25,
+        50,
+      ], // Include 25 to match _itemsPerPage default
       startItem: startItem,
       endItem: endItem,
       onPageChanged: (page) {

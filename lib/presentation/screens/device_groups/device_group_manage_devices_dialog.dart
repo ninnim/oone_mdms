@@ -531,7 +531,7 @@ class _DeviceGroupManageDevicesDialogState
                 },
                 tabs: [
                   AppTab(
-                    label: 'Available Devices (${_totalAvailableDevices})',
+                    label: 'Available Devices ($_totalAvailableDevices)',
                     icon: Icon(
                       Icons.add_circle_outline,
                       size: AppSizes.iconSmall,
@@ -539,7 +539,7 @@ class _DeviceGroupManageDevicesDialogState
                     content: _buildAvailableDevicesTab(),
                   ),
                   AppTab(
-                    label: 'Current Devices (${_totalCurrentDevices})',
+                    label: 'Current Devices ($_totalCurrentDevices)',
                     icon: Icon(Icons.devices, size: AppSizes.iconSmall),
                     content: _buildCurrentDevicesTab(),
                   ),
@@ -697,6 +697,7 @@ class _DeviceGroupManageDevicesDialogState
               totalPages: totalPages,
               totalItems: _totalAvailableDevices,
               itemsPerPage: _availableItemsPerPage,
+              itemsPerPageOptions: const [5, 10, 20, 25, 50],
               startItem: startIndex,
               endItem: endIndex,
               itemLabel: 'devices',
@@ -816,6 +817,7 @@ class _DeviceGroupManageDevicesDialogState
               totalPages: totalPages,
               totalItems: _totalCurrentDevices,
               itemsPerPage: _currentDevicesItemsPerPage,
+              itemsPerPageOptions: const [5, 10, 20, 25, 50],
               startItem: startIndex,
               endItem: endIndex,
               itemLabel: 'devices',

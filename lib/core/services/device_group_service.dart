@@ -305,9 +305,9 @@ class DeviceGroupService {
     try {
       // Use the Device Filter API to get devices with no group
       final response = await _apiService.post(
-        '${ApiConstants.deviceFilter}',
+        ApiConstants.deviceFilter,
         queryParameters: {
-          'search': '%${search}%',
+          'search': '%$search%',
           'offset': offset,
           'limit': limit,
         },
@@ -344,9 +344,9 @@ class DeviceGroupService {
     try {
       // Use the Device Filter API to get devices in a specific group
       final response = await _apiService.post(
-        '${ApiConstants.deviceFilter}',
+        ApiConstants.deviceFilter,
         queryParameters: {
-          'search': '%${search}%',
+          'search': '%$search%',
           'offset': offset,
           'limit': limit,
         },

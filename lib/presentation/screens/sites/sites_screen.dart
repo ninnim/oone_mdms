@@ -309,8 +309,12 @@ class _SitesScreenState extends State<SitesScreen> {
     final confirmed = await AppConfirmDialog.show(
       context,
       title: 'Delete Site',
-      message: 'Are you sure you want to delete "${site.name}"?',
+      message:
+          'Are you sure you want to delete "${site.name}"? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
       confirmType: AppButtonType.danger,
+      icon: Icons.delete_outline,
     );
 
     if (confirmed == true) {
@@ -318,27 +322,26 @@ class _SitesScreenState extends State<SitesScreen> {
         final response = await _siteService.deleteSite(site.id!);
 
         if (response.success) {
-          AppToast.show(
+          AppToast.showSuccess(
             context,
-            title: 'Success',
-            message: 'Site deleted successfully',
-            type: ToastType.success,
+            title: 'Site Deleted',
+            message: 'Site "${site.name}" has been successfully deleted.',
           );
           _loadSites();
         } else {
-          AppToast.show(
+          AppToast.showError(
             context,
-            title: 'Error',
-            message: response.message ?? 'Unknown error occurred',
-            type: ToastType.error,
+            error: response.message ?? 'Failed to delete site',
+            title: 'Delete Failed',
+            errorContext: 'site_delete',
           );
         }
       } catch (e) {
-        AppToast.show(
+        AppToast.showError(
           context,
-          title: 'Error',
-          message: 'Failed to delete site',
-          type: ToastType.error,
+          error: 'Network error: Please check your connection',
+          title: 'Connection Error',
+          errorContext: 'site_delete_network',
         );
       }
     }

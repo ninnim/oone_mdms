@@ -776,6 +776,13 @@ class _TicketsScreenState extends State<TicketsScreen> {
       totalPages: _totalPages,
       totalItems: _filteredTickets.length,
       itemsPerPage: _itemsPerPage,
+      itemsPerPageOptions: const [
+        5,
+        10,
+        20,
+        25,
+        50,
+      ], // Include 25 to match _itemsPerPage default
       startItem: startItem,
       endItem: endItem,
       onPageChanged: (page) {

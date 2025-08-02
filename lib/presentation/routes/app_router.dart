@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart';
-import 'package:mdms_clone/presentation/screens/tou_management/time_bands_screen.dart';
+import 'package:mdms_clone/presentation/screens/tou_management/tou_management_screen.dart';
+import 'package:mdms_clone/presentation/screens/tou_management/seasons_screen.dart';
+import 'package:mdms_clone/presentation/screens/time_bands/time_bands_screen.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
@@ -14,6 +16,7 @@ import '../screens/devices/devices_screen.dart';
 import '../screens/auth/simple_auth_redirect_screen.dart';
 import '../screens/settings/token_management_test_screen.dart';
 import '../screens/test/token_test_screen.dart';
+import '../screens/special_days/special_days_screen.dart';
 import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
 import '../../core/models/device_group.dart';
@@ -265,12 +268,12 @@ class AppRouter {
             GoRoute(
               path: '/special-days',
               name: 'special-days',
-              builder: (context, state) => const TouManagementRouteWrapper(),
+              builder: (context, state) => const SpecialDaysRouteWrapper(),
             ),
             GoRoute(
               path: '/seasons',
               name: 'seasons',
-              builder: (context, state) => const TouManagementRouteWrapper(),
+              builder: (context, state) => const SeasonsRouteWrapper(),
             ),
 
             // Analytics Sub-routes
@@ -945,19 +948,7 @@ class TouManagementRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: AppLottieStateWidget.comingSoon(
-          title: 'Coming Soon...',
-          message: 'Please wait new features will comming soon...',
-          lottieSize: 400,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.textSecondary,
-        ),
-      ),
-
-      //Text('TOU Management Route - To be implemented')
-    );
+    return const MainLayoutWithRouter(child: TouManagementScreen());
   }
 }
 
@@ -966,20 +957,25 @@ class TimeBandRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Placeholder for Time Band Management screen
-    return Scaffold(
-      body: Center(
-        child: AppLottieStateWidget.comingSoon(
-          title: 'Coming Soon...',
-          message: 'Please wait new features will comming soon...',
-          lottieSize: 400,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.textSecondary,
-        ),
-      ),
+    return const TimeBandsScreen();
+  }
+}
 
-      //Text('TOU Management Route - To be implemented')
-    );
+class SpecialDaysRouteWrapper extends StatelessWidget {
+  const SpecialDaysRouteWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SpecialDaysScreen();
+  }
+}
+
+class SeasonsRouteWrapper extends StatelessWidget {
+  const SeasonsRouteWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SeasonsScreen();
   }
 }
 
@@ -1140,7 +1136,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/insights')) return 'insights';
 
     // Settings sub-routes
-    // if (location.startsWith('/my-profile')) return 'my-profile';
+    if (location.startsWith('/my-profile')) return 'my-profile';
     if (location.startsWith('/security')) return 'security';
     if (location.startsWith('/integrations')) return 'integrations';
     if (location.startsWith('/billing')) return 'billing';
@@ -2373,11 +2369,44 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       }
       return 'Devices';
     }
-    if (location.startsWith('/device-groups')) return 'Device Groups';
+    if (location.startsWith('/device-groups')) {
+      if (location.contains('/details')) {
+        return 'Device Group Details';
+      }
+      return 'Device Groups';
+    }
+    if (location.startsWith('/sites')) {
+      if (location.contains('/details')) {
+        return 'Site Details';
+      }
+      return 'Sites';
+    }
     if (location.startsWith('/tou-management')) return 'TOU Management';
     if (location.startsWith('/tickets')) return 'Tickets';
     if (location.startsWith('/analytics')) return 'Analytics';
     if (location.startsWith('/settings')) return 'Settings';
+
+    // TOU Management sub-routes
+    if (location.startsWith('/time-of-use')) return 'Time of Use';
+    if (location.startsWith('/time-bands')) return 'Time Bands';
+    if (location.startsWith('/special-days')) return 'Special Days';
+    if (location.startsWith('/seasons')) return 'Seasons';
+
+    // Analytics sub-routes
+    if (location.startsWith('/reports')) return 'Reports';
+    if (location.startsWith('/dashboards')) return 'Dashboards';
+    if (location.startsWith('/insights')) return 'Insights';
+
+    // Settings sub-routes
+    if (location.startsWith('/my-profile')) return 'My Profile';
+    if (location.startsWith('/security')) return 'Security';
+    if (location.startsWith('/integrations')) return 'Integrations';
+    if (location.startsWith('/billing')) return 'Billing';
+    if (location.startsWith('/token-management-test')) {
+      return 'Token Management Test';
+    }
+    if (location.startsWith('/token-test')) return 'Token Test';
+
     return 'MDMS Clone';
   }
 

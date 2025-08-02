@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
-class ResultsPagination extends StatelessWidget {
+class ResultsPagination extends StatefulWidget {
   final int currentPage;
   final int totalPages;
   final int totalItems;
-  final int itemsPerPage;
   final int startItem;
   final int endItem;
   final Function(int) onPageChanged;
-  final Function(int)? onItemsPerPageChanged;
+  final int itemsPerPage;
   final List<int> itemsPerPageOptions;
+  final Function(int)? onItemsPerPageChanged;
   final bool showItemsPerPageSelector;
   final String itemLabel;
 
@@ -20,15 +20,44 @@ class ResultsPagination extends StatelessWidget {
     required this.currentPage,
     required this.totalPages,
     required this.totalItems,
-    required this.itemsPerPage,
     required this.startItem,
     required this.endItem,
     required this.onPageChanged,
+    this.itemsPerPage = 10,
+    this.itemsPerPageOptions = const [5, 10, 20, 50],
     this.onItemsPerPageChanged,
-    this.itemsPerPageOptions = const [10, 20, 25, 50, 100],
     this.showItemsPerPageSelector = true,
-    this.itemLabel = 'items',
+    this.itemLabel = 'Pages',
   });
+
+  @override
+  State<ResultsPagination> createState() => _ResultsPaginationState();
+}
+
+class _ResultsPaginationState extends State<ResultsPagination> {
+  late TextEditingController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = TextEditingController(
+      text: widget.currentPage.toString(),
+    );
+  }
+
+  @override
+  void didUpdateWidget(ResultsPagination oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentPage != widget.currentPage) {
+      _pageController.text = widget.currentPage.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,20 +78,22 @@ class ResultsPagination extends StatelessWidget {
         ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           // Results text
-          _buildResultsText(theme),
+          //   _buildResultsText(theme),
 
           // Items per page selector
-          if (showItemsPerPageSelector && onItemsPerPageChanged != null) ...[
+          if (widget.showItemsPerPageSelector &&
+              widget.onItemsPerPageChanged != null) ...[
             const SizedBox(width: AppSizes.spacing24),
             _buildItemsPerPageSelector(theme),
           ],
 
-          const Spacer(),
-
-          // Page navigation
-          _buildPageNavigation(theme),
+          //  const Spacer(),
+          const SizedBox(width: AppSizes.spacing8),
+          // Page navigation with numbered buttons
+          if (widget.totalPages > 1) _buildPageNavigation(theme),
         ],
       ),
     );
@@ -70,9 +101,9 @@ class ResultsPagination extends StatelessWidget {
 
   Widget _buildResultsText(ThemeData theme) {
     return Text(
-      'Results: $startItem - $endItem of $totalItems',
+      '${widget.startItem} to ${widget.endItem} of ${widget.totalItems} ${widget.itemLabel}',
       style: TextStyle(
-        fontSize: AppSizes.fontSizeMedium,
+        fontSize: AppSizes.fontSizeSmall,
         color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
         fontWeight: FontWeight.w400,
       ),
@@ -80,9 +111,26 @@ class ResultsPagination extends StatelessWidget {
   }
 
   Widget _buildItemsPerPageSelector(ThemeData theme) {
+    // Ensure the current itemsPerPage value is in the options list
+    // If not, add it or use the closest value
+    List<int> safeOptions = List.from(widget.itemsPerPageOptions);
+    if (!safeOptions.contains(widget.itemsPerPage)) {
+      safeOptions.add(widget.itemsPerPage);
+      safeOptions.sort();
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Text(
+        //   'Items per page:',
+        //   style: TextStyle(
+        //     fontSize: AppSizes.fontSizeSmall,
+        //     color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+        //     fontWeight: FontWeight.w400,
+        //   ),
+        // ),
+        // const SizedBox(width: AppSizes.spacing8),
         Container(
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
@@ -95,10 +143,10 @@ class ResultsPagination extends StatelessWidget {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
-              value: itemsPerPage,
+              value: widget.itemsPerPage,
               isDense: true,
               style: TextStyle(
-                fontSize: AppSizes.fontSizeMedium,
+                fontSize: AppSizes.fontSizeSmall,
                 color: theme.textTheme.bodyMedium?.color,
                 fontWeight: FontWeight.w400,
               ),
@@ -109,15 +157,15 @@ class ResultsPagination extends StatelessWidget {
                   alpha: 0.6,
                 ),
               ),
-              items: itemsPerPageOptions.map((int value) {
+              items: safeOptions.map((int value) {
                 return DropdownMenuItem<int>(
                   value: value,
                   child: Text(value.toString()),
                 );
               }).toList(),
               onChanged: (int? newValue) {
-                if (newValue != null && onItemsPerPageChanged != null) {
-                  onItemsPerPageChanged!(newValue);
+                if (newValue != null && widget.onItemsPerPageChanged != null) {
+                  widget.onItemsPerPageChanged!(newValue);
                 }
               },
             ),
@@ -128,95 +176,160 @@ class ResultsPagination extends StatelessWidget {
   }
 
   Widget _buildPageNavigation(ThemeData theme) {
-    List<Widget> pageButtons = [];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Previous button
+        _buildNavigationButton(
+          icon: Icons.chevron_left,
+          onPressed: widget.currentPage > 1
+              ? () => widget.onPageChanged(widget.currentPage - 1)
+              : null,
+          isEnabled: widget.currentPage > 1,
+          theme: theme,
+        ),
 
-    // Previous button
-    pageButtons.add(
-      _buildNavigationButton(
-        icon: Icons.chevron_left,
-        onPressed: currentPage > 1
-            ? () => onPageChanged(currentPage - 1)
-            : null,
-        theme: theme,
+        const SizedBox(width: AppSizes.spacing8),
+
+        // Page input field
+        _buildPageInput(theme),
+
+        const SizedBox(width: AppSizes.spacing8),
+
+        // Page numbers with ellipsis
+        ..._buildPageButtons(theme),
+
+        const SizedBox(width: AppSizes.spacing8),
+
+        // Next button
+        _buildNavigationButton(
+          icon: Icons.chevron_right,
+          onPressed: widget.currentPage < widget.totalPages
+              ? () => widget.onPageChanged(widget.currentPage + 1)
+              : null,
+          isEnabled: widget.currentPage < widget.totalPages,
+          theme: theme,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPageInput(ThemeData theme) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        color: Colors.transparent,
+      ),
+      child: Center(
+        child: TextField(
+          controller: _pageController,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          style: TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: theme.textTheme.bodyMedium?.color,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            //  borderColor: Colors.transparent,
+            contentPadding: EdgeInsets.zero,
+
+            // isDense: true,
+          ),
+          onSubmitted: (value) {
+            final pageNum = int.tryParse(value);
+            if (pageNum != null &&
+                pageNum >= 1 &&
+                pageNum <= widget.totalPages) {
+              widget.onPageChanged(pageNum);
+            } else {
+              _pageController.text = widget.currentPage.toString();
+            }
+          },
+        ),
       ),
     );
+  }
 
-    // Page number buttons
-    List<int> pageNumbers = _generatePageNumbers();
+  List<Widget> _buildPageButtons(ThemeData theme) {
+    final pages = _generatePageNumbers();
+    final buttons = <Widget>[];
 
-    for (int pageNum in pageNumbers) {
-      if (pageNum == -1) {
+    for (int i = 0; i < pages.length; i++) {
+      final page = pages[i];
+
+      if (page == -1) {
         // Ellipsis
-        pageButtons.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing4),
+        buttons.add(
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
             child: Text(
               '...',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppSizes.fontSizeSmall,
                 color: theme.textTheme.bodyMedium?.color?.withValues(
-                  alpha: 0.6,
+                  alpha: 0.5,
                 ),
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
         );
       } else {
-        pageButtons.add(
+        // Page button
+        buttons.add(
           _buildPageButton(
-            pageNumber: pageNum,
-            isActive: pageNum == currentPage,
+            pageNumber: page,
+            isActive: page == widget.currentPage,
+            onTap: () => widget.onPageChanged(page),
             theme: theme,
           ),
         );
       }
+
+      if (i < pages.length - 1) {
+        buttons.add(const SizedBox(width: 4));
+      }
     }
 
-    // Next button
-    pageButtons.add(
-      _buildNavigationButton(
-        icon: Icons.chevron_right,
-        onPressed: currentPage < totalPages
-            ? () => onPageChanged(currentPage + 1)
-            : null,
-        theme: theme,
-      ),
-    );
-
-    return Row(mainAxisSize: MainAxisSize.min, children: pageButtons);
+    return buttons;
   }
 
   Widget _buildNavigationButton({
     required IconData icon,
     required VoidCallback? onPressed,
+    required bool isEnabled,
     required ThemeData theme,
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(4),
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: onPressed != null
-                    ? theme.dividerColor.withValues(alpha: 0.3)
-                    : theme.dividerColor.withValues(alpha: 0.1),
-              ),
-              borderRadius: BorderRadius.circular(4),
-              color: theme.cardColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isEnabled
+                  ? theme.dividerColor.withValues(alpha: 0.3)
+                  : theme.dividerColor.withValues(alpha: 0.1),
             ),
-            child: Icon(
-              icon,
-              size: 16,
-              color: onPressed != null
-                  ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8)
-                  : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
-            ),
+            borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+            color: theme.cardColor,
+          ),
+          child: Icon(
+            icon,
+            size: AppSizes.iconSmall,
+            color: isEnabled
+                ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8)
+                : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
           ),
         ),
       ),
@@ -226,43 +339,30 @@ class ResultsPagination extends StatelessWidget {
   Widget _buildPageButton({
     required int pageNumber,
     required bool isActive,
+    required VoidCallback onTap,
     required ThemeData theme,
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onPageChanged(pageNumber),
-          borderRadius: BorderRadius.circular(4),
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isActive
-                    ? AppColors.primary.withValues(alpha: 0.6)
-                    : theme.dividerColor.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(4),
-              color: isActive
-                  ? AppColors.primary.withValues(alpha: 0.1)
-                  : theme.cardColor,
-            ),
-            child: Center(
-              child: Text(
-                pageNumber.toString(),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive
-                      ? AppColors.primary
-                      : theme.textTheme.bodyMedium?.color?.withValues(
-                          alpha: 0.8,
-                        ),
-                ),
-              ),
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : theme.cardColor,
+          border: Border.all(
+            color: isActive
+                ? AppColors.primary
+                : theme.dividerColor.withValues(alpha: 0.3),
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          pageNumber.toString(),
+          style: TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: isActive ? Colors.white : theme.textTheme.bodyMedium?.color,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -270,38 +370,38 @@ class ResultsPagination extends StatelessWidget {
   }
 
   List<int> _generatePageNumbers() {
-    List<int> pages = [];
+    final pages = <int>[];
 
-    if (totalPages <= 7) {
+    if (widget.totalPages <= 7) {
       // Show all pages if 7 or fewer
-      for (int i = 1; i <= totalPages; i++) {
+      for (int i = 1; i <= widget.totalPages; i++) {
         pages.add(i);
       }
     } else {
-      // Always show first page
-      pages.add(1);
-
-      if (currentPage <= 4) {
-        // Show pages 2, 3, 4, 5, ..., last
-        for (int i = 2; i <= 5; i++) {
+      // Smart pagination with ellipsis
+      if (widget.currentPage <= 4) {
+        // Near the beginning
+        for (int i = 1; i <= 5; i++) {
           pages.add(i);
         }
-        pages.add(-1); // Ellipsis
-        pages.add(totalPages);
-      } else if (currentPage >= totalPages - 3) {
-        // Show 1, ..., last-4, last-3, last-2, last-1, last
-        pages.add(-1); // Ellipsis
-        for (int i = totalPages - 4; i <= totalPages; i++) {
+        pages.add(-1); // ellipsis
+        pages.add(widget.totalPages);
+      } else if (widget.currentPage >= widget.totalPages - 3) {
+        // Near the end
+        pages.add(1);
+        pages.add(-1); // ellipsis
+        for (int i = widget.totalPages - 4; i <= widget.totalPages; i++) {
           pages.add(i);
         }
       } else {
-        // Show 1, ..., current-1, current, current+1, ..., last
-        pages.add(-1); // Ellipsis
-        for (int i = currentPage - 1; i <= currentPage + 1; i++) {
+        // In the middle
+        pages.add(1);
+        pages.add(-1); // ellipsis
+        for (int i = widget.currentPage - 1; i <= widget.currentPage + 1; i++) {
           pages.add(i);
         }
-        pages.add(-1); // Ellipsis
-        pages.add(totalPages);
+        pages.add(-1); // ellipsis
+        pages.add(widget.totalPages);
       }
     }
 

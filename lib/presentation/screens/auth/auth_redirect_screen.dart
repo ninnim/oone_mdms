@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/keycloak_service.dart';
-import '../../widgets/common/app_lottie_state_widget.dart';
 
 class AuthRedirectScreen extends StatefulWidget {
   const AuthRedirectScreen({super.key});

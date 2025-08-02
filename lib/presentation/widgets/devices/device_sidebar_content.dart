@@ -659,7 +659,7 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
           ),
           const SizedBox(height: AppSizes.spacing16),
           _isLoadingMetrics
-              ? Container(
+              ? SizedBox(
                   height: 200,
                   child: Center(
                     child: CircularProgressIndicator(color: AppColors.primary),
@@ -693,7 +693,7 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                     ),
                   ),
                 )
-              : Container(
+              : SizedBox(
                   height: 200,
                   child: LineChart(
                     LineChartData(
@@ -849,7 +849,7 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
           ),
           const SizedBox(height: AppSizes.spacing16),
           _isLoadingBilling
-              ? Container(
+              ? SizedBox(
                   height: 200,
                   child: Center(
                     child: CircularProgressIndicator(color: AppColors.primary),
@@ -883,7 +883,7 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                     ),
                   ),
                 )
-              : Container(
+              : SizedBox(
                   height: 250,
                   child: LineChart(
                     LineChartData(

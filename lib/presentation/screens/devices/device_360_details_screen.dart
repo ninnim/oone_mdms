@@ -65,11 +65,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   // Channels tab state
   bool _isEditingChannels = false;
   bool _savingChannels = false;
-  Map<String, double> _editedCumulativeValues = {};
-  Map<String, double> _originalCumulativeValues =
+  final Map<String, double> _editedCumulativeValues = {};
+  final Map<String, double> _originalCumulativeValues =
       {}; // Store original values for comparison
   Set<String> _selectedChannelIds = {};
-  Map<String, TextEditingController> _channelControllers = {};
+  final Map<String, TextEditingController> _channelControllers = {};
   bool _showApplyMetricWarning = false;
 
   // Channels table state
@@ -116,11 +116,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   String? _analyticsError;
   DateTimeRange? _selectedDateRange;
   TimeInterval _selectedTimeInterval = TimeInterval.oneHour;
-  List<String> _selectedPhases = ['L1', 'L2', 'L3'];
-  List<String> _selectedMetricTypes = ['Voltage', 'Current', 'Power'];
+  final List<String> _selectedPhases = ['L1', 'L2', 'L3'];
+  final List<String> _selectedMetricTypes = ['Voltage', 'Current', 'Power'];
   ChartType _selectedChartType = ChartType.line;
   bool _showHover = true;
-  Map<String, bool> _phaseVisibility = {'L1': true, 'L2': true, 'L3': true};
+  final Map<String, bool> _phaseVisibility = {'L1': true, 'L2': true, 'L3': true};
 
   // Overview edit mode state
   bool _isEditingOverview = false;
@@ -184,28 +184,26 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   void _initializeEditFields() {
-    if (widget.device != null) {
-      // Initialize form fields with device data
-      _serialNumberEditController.text = widget.device!.serialNumber ?? '';
-      _modelEditController.text = widget.device!.model ?? '';
+    // Initialize form fields with device data
+    _serialNumberEditController.text = widget.device!.serialNumber ?? '';
+    _modelEditController.text = widget.device!.model ?? '';
 
-      // Initialize dropdown selections
-      _selectedDeviceTypeEdit = widget.device!.deviceType ?? 'None';
-      _selectedStatusEdit = widget.device!.status ?? 'None';
-      _selectedLinkStatusEdit = widget.device!.linkStatus ?? 'None';
+    // Initialize dropdown selections
+    _selectedDeviceTypeEdit = widget.device!.deviceType ?? 'None';
+    _selectedStatusEdit = widget.device!.status ?? 'None';
+    _selectedLinkStatusEdit = widget.device!.linkStatus ?? 'None';
 
-      // Initialize device group selection if available
-      if (widget.device!.deviceGroupId != null) {
-        _selectedDeviceGroupIdEdit = widget.device!.deviceGroupId;
-      }
-
-      // Initialize schedule selection if available
-      // Note: Device model doesn't have scheduleId field yet, add this when model is updated
-      // if (widget.device!.scheduleId != null) {
-      //   _selectedScheduleIdEdit = widget.device!.scheduleId;
-      // }
+    // Initialize device group selection if available
+    if (widget.device!.deviceGroupId != null) {
+      _selectedDeviceGroupIdEdit = widget.device!.deviceGroupId;
     }
-  }
+
+    // Initialize schedule selection if available
+    // Note: Device model doesn't have scheduleId field yet, add this when model is updated
+    // if (widget.device!.scheduleId != null) {
+    //   _selectedScheduleIdEdit = widget.device!.scheduleId;
+    // }
+    }
 
   void _onTabChanged(int index) {
     setState(() {
@@ -674,7 +672,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               ),
             ),
           )
-          .toList(),
+          ,
     ];
 
     return AppSearchableDropdown<int?>(
@@ -2581,15 +2579,16 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       _deviceChannels!.isNotEmpty) ...[
                     if (!_isEditingChannels) ...[
                       AppButton(
+                        size: AppButtonSize.small,
                         text: 'Edit Channels',
-                        type: AppButtonType.secondary,
-                        icon: Icon(Icons.edit, size: 18),
+                        type: AppButtonType.outline,
+                        icon: Icon(Icons.edit, size: AppSizes.iconSmall),
                         onPressed: _startEditingChannels,
                       ),
                     ] else ...[
                       AppButton(
                         text: 'Cancel',
-                        type: AppButtonType.secondary,
+                        type: AppButtonType.outline,
                         onPressed: _cancelEditingChannels,
                       ),
                       const SizedBox(width: 12),
@@ -2598,7 +2597,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                         type: AppButtonType.primary,
                         icon: _savingChannels
                             ? null
-                            : Icon(Icons.save, size: 18),
+                            : Icon(Icons.save, size: AppSizes.iconSmall),
                         onPressed: _savingChannels ? null : _saveChannelChanges,
                         isLoading: _savingChannels,
                       ),
@@ -4917,6 +4916,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       children: [
         // Sticky header
         Container(
+          alignment: Alignment.centerLeft,
           padding: const EdgeInsets.all(AppSizes.spacing16),
           decoration: const BoxDecoration(
             color: Colors.white,

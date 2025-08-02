@@ -1,0 +1,500 @@
+// Read All TimeBands
+// Method GET https://mdms.oone.bz/api/rest/TimeBand?search=%%&limit=25&offset=0&includeTimeBandAttributes=true
+// Response Read All TimeBands
+{
+    "Paging": {
+        "Item": {
+            "Total": 1
+        }
+    },
+    "TimeBand": [
+        {
+            "Id": 139,
+            "Name": "kk",
+            "StartTime": "00:00:00",
+            "EndTime": "23:59:59",
+            "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes.",
+            "Active": true,
+            "TimeBandAttributes": []
+        }
+    ]
+}
+// if have includeTimeBandAttributes=true
+// Response Read All TimeBands with Attributes
+{
+    "Paging": {
+        "Item": {
+            "Total": 1
+        }
+    },
+    "TimeBand": [
+        {
+            "Id": 97,
+            "Name": "T-01",
+            "StartTime": "00:00:00",
+            "EndTime": "23:59:59",
+            "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes on Sun, Mon, Tue, Wed, Thu, Fri, Sat and applies to the season \"Summer\" with special consideration for \"Khmer Holiday\" . It includes 7 days of the week.",
+            "Active": true,
+            "TimeBandAttributes": [
+                {
+                    "Id": 117,
+                    "TimeBandId": 97,
+                    "Key": "DayOfWeek",
+                    "Value": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6
+                    ],
+                    "Active": true,
+                    "Seasons": [],
+                    "SpecialDays": []
+                },
+                {
+                    "Id": 118,
+                    "TimeBandId": 97,
+                    "Key": "Season",
+                    "Value": [
+                        82
+                    ],
+                    "Active": true,
+                    "Seasons": [
+                        {
+                            "Id": 82,
+                            "Name": "Summer",
+                            "Description": "",
+                            "Active": true
+                        }
+                    ],
+                    "SpecialDays": []
+                },
+                {
+                    "Id": 119,
+                    "TimeBandId": 97,
+                    "Key": "SpecialDay",
+                    "Value": [
+                        87
+                    ],
+                    "Active": true,
+                    "Seasons": [],
+                    "SpecialDays": [
+                        {
+                            "Id": 87,
+                            "Name": "Khmer Holiday",
+                            "Description": "Khmer Holiday",
+                            "Active": true,
+                            "SpecialDayDetails": [
+                                {
+                                    "Id": 11,
+                                    "SpecialDayId": 87,
+                                    "Name": "Independence",
+                                    "StartDate": "2025-11-09T00:00:00+07:00",
+                                    "EndDate": "2025-11-09T00:00:00+07:00",
+                                    "Description": "",
+                                    "Active": true
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+// Read TimeBand by ID
+// Method GET https://mdms.oone.bz/api/rest/TimeBand/139
+// Response Read TimeBand by ID
+{
+    "TimeBand": {
+        "Id": 139,
+        "Name": "kk",
+        "StartTime": "00:00:00",
+        "EndTime": "23:59:59",
+        "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes.",
+        "Active": true,
+        "TimeBandAttributes": []
+    }
+}
+// Create TimeBand
+// Method POST https://mdms.oone.bz/api/rest/TimeBand
+// Request Create TimeBand
+{
+    "TimeBand": {
+        "Name": "TCB-01",
+        "StartTime": "00:00:00",
+        "EndTime": "23:59:59",
+        "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes on Sun, Mon, Tue during Jan, Feb, Mar and applies to the season \"Summer\" with special consideration for \"Khmer Holiday\" . It includes 3 days of the week and 3 months.",
+        "TimeBandAttributes": {
+            "on_conflict": {
+                "constraint": "PK_TimeBandAttribute",
+                "update_columns": [
+                    "Key",
+                    "Value",
+                    "Active"
+                ]
+            },
+            "data": [
+                {
+                    "Key": "DayOfWeek",
+                    "Value": [
+                        0,
+                        1,
+                        2
+                    ]
+                },
+                {
+                    "Key": "Season",
+                    "Value": [
+                        82
+                    ]
+                },
+                {
+                    "Key": "SpecialDay",
+                    "Value": [
+                        87
+                    ]
+                },
+                {
+                    "Key": "MonthOfYear",
+                    "Value": [
+                        1,
+                        2,
+                        3
+                    ]
+                }
+            ]
+        }
+    }
+}
+// Response Create TimeBand
+{
+    "TimeBand": {
+        "Id": 179,
+        "Name": "TCB-01",
+        "StartTime": "00:00:00",
+        "EndTime": "23:59:59",
+        "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes on Sun, Mon, Tue during Jan, Feb, Mar and applies to the season \"Summer\" with special consideration for \"Khmer Holiday\" . It includes 3 days of the week and 3 months.",
+        "Active": true,
+        "TimeBandAttributes": [
+            {
+                "Id": 218,
+                "TimeBandId": 179,
+                "Key": "DayOfWeek",
+                "Value": [
+                    0,
+                    1,
+                    2
+                ],
+                "Active": true,
+                "Seasons": [],
+                "SpecialDays": []
+            },
+            {
+                "Id": 219,
+                "TimeBandId": 179,
+                "Key": "Season",
+                "Value": [
+                    82
+                ],
+                "Active": true,
+                "Seasons": [
+                    {
+                        "Id": 82,
+                        "Name": "Summer",
+                        "Description": "",
+                        "Active": true
+                    }
+                ],
+                "SpecialDays": []
+            },
+            {
+                "Id": 220,
+                "TimeBandId": 179,
+                "Key": "SpecialDay",
+                "Value": [
+                    87
+                ],
+                "Active": true,
+                "Seasons": [],
+                "SpecialDays": [
+                    {
+                        "Id": 87,
+                        "Name": "Khmer Holiday",
+                        "Description": "Khmer Holiday",
+                        "Active": true,
+                        "SpecialDayDetails": [
+                            {
+                                "Id": 11,
+                                "SpecialDayId": 87,
+                                "Name": "Independence",
+                                "StartDate": "2025-11-09T00:00:00+07:00",
+                                "EndDate": "2025-11-09T00:00:00+07:00",
+                                "Description": "",
+                                "Active": true
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "Id": 221,
+                "TimeBandId": 179,
+                "Key": "MonthOfYear",
+                "Value": [
+                    1,
+                    2,
+                    3
+                ],
+                "Active": true,
+                "Seasons": [],
+                "SpecialDays": []
+            }
+        ]
+    }
+}
+// Update TimeBand
+// Method POST https://mdms.oone.bz/api/rest/TimeBand
+// Request Update TimeBand
+{
+    "TimeBand": {
+        "Id": 179,
+        "Name": "TCB-01",
+        "StartTime": "00:00:00",
+        "EndTime": "23:59:59",
+        "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes on Sun, Mon, Tue, Wed during Jan, Feb, Mar and applies to the season \"Summer\" with special consideration for \"Khmer Holiday\" . It includes 4 days of the week and 3 months.",
+        "TimeBandAttributes": {
+            "on_conflict": {
+                "constraint": "PK_TimeBandAttribute",
+                "update_columns": [
+                    "Key",
+                    "Value",
+                    "Active"
+                ]
+            },
+            "data": [
+                {
+                    "Id": 218,
+                    "Key": "DayOfWeek",
+                    "Value": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                {
+                    "Id": 219,
+                    "Key": "Season",
+                    "Value": [
+                        82
+                    ],
+                    "Active": true
+                },
+                {
+                    "Id": 220,
+                    "Key": "SpecialDay",
+                    "Value": [
+                        87
+                    ],
+                    "Active": true
+                },
+                {
+                    "Id": 221,
+                    "Key": "MonthOfYear",
+                    "Value": [
+                        1,
+                        2,
+                        3
+                    ],
+                    "Active": true
+                }
+            ]
+        }
+    }
+}
+// Response Update TimeBand
+{
+    "TimeBand": {
+        "Id": 179,
+        "Name": "TCB-01",
+        "StartTime": "00:00:00",
+        "EndTime": "23:59:59",
+        "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes on Sun, Mon, Tue, Wed during Jan, Feb, Mar and applies to the season \"Summer\" with special consideration for \"Khmer Holiday\" . It includes 4 days of the week and 3 months.",
+        "Active": true,
+        "TimeBandAttributes": [
+            {
+                "Id": 218,
+                "TimeBandId": 179,
+                "Key": "DayOfWeek",
+                "Value": [
+                    0,
+                    1,
+                    2,
+                    3
+                ],
+                "Active": true,
+                "Seasons": [],
+                "SpecialDays": []
+            },
+            {
+                "Id": 219,
+                "TimeBandId": 179,
+                "Key": "Season",
+                "Value": [
+                    82
+                ],
+                "Active": true,
+                "Seasons": [
+                    {
+                        "Id": 82,
+                        "Name": "Summer",
+                        "Description": "",
+                        "Active": true
+                    }
+                ],
+                "SpecialDays": []
+            },
+            {
+                "Id": 220,
+                "TimeBandId": 179,
+                "Key": "SpecialDay",
+                "Value": [
+                    87
+                ],
+                "Active": true,
+                "Seasons": [],
+                "SpecialDays": [
+                    {
+                        "Id": 87,
+                        "Name": "Khmer Holiday",
+                        "Description": "Khmer Holiday",
+                        "Active": true,
+                        "SpecialDayDetails": [
+                            {
+                                "Id": 11,
+                                "SpecialDayId": 87,
+                                "Name": "Independence",
+                                "StartDate": "2025-11-09T00:00:00+07:00",
+                                "EndDate": "2025-11-09T00:00:00+07:00",
+                                "Description": "",
+                                "Active": true
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "Id": 221,
+                "TimeBandId": 179,
+                "Key": "MonthOfYear",
+                "Value": [
+                    1,
+                    2,
+                    3
+                ],
+                "Active": true,
+                "Seasons": [],
+                "SpecialDays": []
+            }
+        ]
+    }
+}
+// Delete TimeBand
+// Method DELETE https://mdms.oone.bz/api/rest/TimeBand/179
+// Response Delete TimeBand
+{
+    "TimeBand": {
+        "Id": 179,
+        "Name": "TCB-01",
+        "StartTime": "00:00:00",
+        "EndTime": "23:59:59",
+        "Description": "The time band is active from 00:00 to 00:00, lasting 24 hours and 0 minutes on Sun, Mon, Tue, Wed during Jan, Feb, Mar and applies to the season \"Summer\" with special consideration for \"Khmer Holiday\" . It includes 4 days of the week and 3 months.",
+        "Active": false
+    },
+    "TimeBandAttributes": {
+        "returning": [
+            {
+                "Id": 218,
+                "TimeBandId": 179,
+                "Key": "DayOfWeek",
+                "Value": [
+                    0,
+                    1,
+                    2,
+                    3
+                ],
+                "Active": false,
+                "Seasons": [],
+                "SpecialDays": []
+            },
+            {
+                "Id": 219,
+                "TimeBandId": 179,
+                "Key": "Season",
+                "Value": [
+                    82
+                ],
+                "Active": false,
+                "Seasons": [
+                    {
+                        "Id": 82,
+                        "Name": "Summer",
+                        "MonthRange": [
+                            4,
+                            5,
+                            6
+                        ],
+                        "Description": "",
+                        "Active": true
+                    }
+                ],
+                "SpecialDays": []
+            },
+            {
+                "Id": 220,
+                "TimeBandId": 179,
+                "Key": "SpecialDay",
+                "Value": [
+                    87
+                ],
+                "Active": false,
+                "Seasons": [],
+                "SpecialDays": [
+                    {
+                        "Id": 87,
+                        "Name": "Khmer Holiday",
+                        "Description": "Khmer Holiday",
+                        "Active": true,
+                        "SpecialDayDetails": [
+                            {
+                                "Id": 11,
+                                "SpecialDayId": 87,
+                                "Name": "Independence",
+                                "StartDate": "2025-11-09T00:00:00+07:00",
+                                "EndDate": "2025-11-09T00:00:00+07:00",
+                                "Description": "",
+                                "Active": true
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "Id": 221,
+                "TimeBandId": 179,
+                "Key": "MonthOfYear",
+                "Value": [
+                    1,
+                    2,
+                    3
+                ],
+                "Active": false,
+                "Seasons": [],
+                "SpecialDays": []
+            }
+        ]
+    }
+}

@@ -349,38 +349,71 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
               ),
-              itemBuilder: (context) => widget.columns
-                  .map(
-                    (col) => PopupMenuItem<String>(
-                      value: col.key,
-                      child: Row(
-                        children: [
-                          Transform.scale(
-                            scale: 0.9,
-                            child: Checkbox(
-                              value: !widget.hiddenColumns.contains(col.key),
-                              onChanged: (value) {
-                                _toggleColumnVisibility(col.key);
-                                Navigator.pop(context);
-                              },
-                              activeColor: AppColors.primary,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                            ),
+              itemBuilder: (context) => [
+                // Show All Columns option
+                if (widget.hiddenColumns.isNotEmpty)
+                  PopupMenuItem<String>(
+                    value: '__show_all__',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.visibility,
+                          size: AppSizes.iconSmall,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: AppSizes.spacing8),
+                        Text(
+                          'Show All Columns',
+                          style: TextStyle(
+                            fontSize: AppSizes.fontSizeMedium,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
                           ),
-                          const SizedBox(width: AppSizes.spacing8),
-                          Text(
-                            col.title,
-                            style: const TextStyle(
-                              fontSize: AppSizes.fontSizeMedium,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  )
-                  .toList(),
-              onSelected: _toggleColumnVisibility,
+                  ),
+                // Divider if there are hidden columns
+                if (widget.hiddenColumns.isNotEmpty) const PopupMenuDivider(),
+                // Individual column toggles
+                ...widget.columns.map(
+                  (col) => PopupMenuItem<String>(
+                    value: col.key,
+                    child: Row(
+                      children: [
+                        Transform.scale(
+                          scale: 0.9,
+                          child: Checkbox(
+                            value: !widget.hiddenColumns.contains(col.key),
+                            onChanged: (value) {
+                              _toggleColumnVisibility(col.key);
+                              Navigator.pop(context);
+                            },
+                            activeColor: AppColors.primary,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.spacing8),
+                        Text(
+                          col.title,
+                          style: const TextStyle(
+                            fontSize: AppSizes.fontSizeMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == '__show_all__') {
+                  // Show all columns
+                  widget.onColumnVisibilityChanged?.call([]);
+                } else {
+                  _toggleColumnVisibility(value);
+                }
+              },
             ),
         ],
       ),

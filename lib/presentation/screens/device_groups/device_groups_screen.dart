@@ -16,7 +16,6 @@ import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_confirm_dialog.dart';
-import '../../widgets/device_groups/device_group_filters_and_actions.dart';
 import '../../widgets/device_groups/device_group_summary_card.dart';
 import '../../widgets/device_groups/device_group_kanban_view.dart'; // Import the new kanban view
 import 'create_edit_device_group_dialog.dart';
@@ -89,7 +88,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       final offset = (_currentPage - 1) * _itemsPerPage;
       final search = _searchQuery.isEmpty
           ? ApiConstants.defaultSearch
-          : '%${_searchQuery}%';
+          : '%$_searchQuery%';
 
       final response = await _deviceGroupService.getDeviceGroups(
         search: search,
@@ -256,8 +255,12 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
     final confirmed = await AppConfirmDialog.show(
       context,
       title: 'Delete Device Group',
-      message: 'Are you sure you want to delete "${deviceGroup.name}"?',
+      message:
+          'Are you sure you want to delete "${deviceGroup.name}"? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
       confirmType: AppButtonType.danger,
+      icon: Icons.delete_outline,
     );
 
     if (confirmed == true) {
@@ -267,27 +270,27 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
         );
 
         if (response.success) {
-          AppToast.show(
+          AppToast.showSuccess(
             context,
-            title: 'Success',
-            message: 'Device group deleted successfully',
-            type: ToastType.success,
+            title: 'Device Group Deleted',
+            message:
+                'Device group "${deviceGroup.name}" has been successfully deleted.',
           );
           _loadDeviceGroups();
         } else {
-          AppToast.show(
+          AppToast.showError(
             context,
-            title: 'Error',
-            message: response.message ?? 'Unknown error occurred',
-            type: ToastType.error,
+            error: response.message ?? 'Failed to delete device group',
+            title: 'Delete Failed',
+            errorContext: 'device_group_delete',
           );
         }
       } catch (e) {
-        AppToast.show(
+        AppToast.showError(
           context,
-          title: 'Error',
-          message: 'Failed to delete device group',
-          type: ToastType.error,
+          error: 'Network error: Please check your connection',
+          title: 'Connection Error',
+          errorContext: 'device_group_delete_network',
         );
       }
     }
@@ -631,6 +634,13 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
         totalPages: _totalPages,
         totalItems: _totalItems,
         itemsPerPage: _itemsPerPage,
+        itemsPerPageOptions: const [
+          5,
+          10,
+          20,
+          25,
+          50,
+        ], // Include 25 to match _itemsPerPage default
         startItem: (_currentPage - 1) * _itemsPerPage + 1,
         endItem: (_currentPage * _itemsPerPage > _totalItems)
             ? _totalItems
@@ -648,7 +658,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           });
           _loadDeviceGroups();
         },
-        itemLabel: 'device groups',
+        // itemLabel: 'device groups',
       ),
     );
   }

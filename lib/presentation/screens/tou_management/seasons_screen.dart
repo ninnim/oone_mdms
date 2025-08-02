@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import '../../widgets/common/app_card.dart';
-import '../../widgets/common/app_button.dart';
-import '../../widgets/common/app_input_field.dart';
+import 'package:provider/provider.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
+import '../../widgets/common/app_toast.dart';
+import '../../widgets/common/app_confirm_dialog.dart';
+import '../../widgets/common/app_button.dart';
+import '../../widgets/common/kanban_view.dart';
+import '../../widgets/seasons/season_filters_and_actions_v2.dart';
+import '../../widgets/seasons/season_form_dialog.dart';
+import '../../widgets/seasons/season_smart_month_chips.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/constants/app_enums.dart';
 import '../../../core/models/season.dart';
-import '../../../core/services/service_locator.dart';
-import '../../../core/services/tou_service.dart';
+import '../../../core/services/season_service.dart';
 
 class SeasonsScreen extends StatefulWidget {
   const SeasonsScreen({super.key});
@@ -20,33 +25,40 @@ class SeasonsScreen extends StatefulWidget {
 }
 
 class _SeasonsScreenState extends State<SeasonsScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  late final TouService _touService;
+  late final SeasonService _seasonService;
+
+  // Data state
   bool _isLoading = false;
   List<Season> _seasons = [];
   Set<Season> _selectedSeasons = {};
-  List<String> _hiddenColumns = [];
+  String _errorMessage = '';
+
+  // Pagination
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalItems = 0;
   int _itemsPerPage = 25;
-  String _errorMessage = '';
+
+  // View and filter state
+  SeasonViewMode _currentView = SeasonViewMode.table;
+  String _searchQuery = '';
+  bool _showActiveOnly = false;
+  List<String> _hiddenColumns = ['id'];
+
+  // Sorting state
+  String? _sortBy;
+  bool _sortAscending = true;
 
   @override
   void initState() {
     super.initState();
-
-    // Use ServiceLocator to get properly configured API service
-    final serviceLocator = ServiceLocator();
-    final apiService = serviceLocator.apiService;
-    _touService = TouService(apiService);
-    _loadSeasons();
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _seasonService = Provider.of<SeasonService>(context, listen: false);
+    _loadSeasons();
   }
 
   Future<void> _loadSeasons() async {
@@ -56,37 +68,285 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
     });
 
     try {
-      final response = await _touService.getSeasons(
-        search: _searchController.text,
-        limit: _itemsPerPage,
+      print(
+        '🔄 SeasonsScreen: Loading seasons (page: $_currentPage, search: "$_searchQuery")',
+      );
+
+      final response = await _seasonService.getSeasons(
+        search: _searchQuery.isNotEmpty ? _searchQuery : '%%',
         offset: (_currentPage - 1) * _itemsPerPage,
+        limit: _itemsPerPage,
       );
 
       if (response.success && response.data != null) {
         setState(() {
           _seasons = response.data!;
           _totalItems =
-              response.data!.length; // This should come from API paging
+              response.data!.length; // TODO: Get total from pagination info
           _totalPages = (_totalItems / _itemsPerPage).ceil();
           _isLoading = false;
         });
+
+        // Apply any existing sorting
+        _applySorting();
+
+        print(
+          '✅ SeasonsScreen: Loaded ${_seasons.length} seasons (total: $_totalItems)',
+        );
       } else {
         setState(() {
           _errorMessage = response.message ?? 'Failed to load seasons';
           _isLoading = false;
         });
+        print('❌ SeasonsScreen: Load failed: $_errorMessage');
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'Error loading seasons: $e';
         _isLoading = false;
       });
+      print('❌ SeasonsScreen: Exception loading seasons: $e');
+    }
+  }
+
+  void _onSearch(String query) {
+    if (_searchQuery != query) {
+      setState(() {
+        _searchQuery = query;
+        _currentPage = 1;
+      });
+      _loadSeasons();
+    }
+  }
+
+  void _onFilterChange({bool? showActiveOnly}) {
+    bool shouldReload = false;
+
+    if (showActiveOnly != null && _showActiveOnly != showActiveOnly) {
+      setState(() {
+        _showActiveOnly = showActiveOnly;
+        _currentPage = 1;
+      });
+      shouldReload = true;
+    }
+
+    if (shouldReload) {
+      _loadSeasons();
+    }
+  }
+
+  void _onViewModeChanged(SeasonViewMode mode) {
+    setState(() {
+      _currentView = mode;
+    });
+  }
+
+  void _onItemsPerPageChanged(int itemsPerPage) {
+    setState(() {
+      _itemsPerPage = itemsPerPage;
+      _currentPage = 1;
+    });
+    _loadSeasons();
+  }
+
+  void _onPageChanged(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+    _loadSeasons();
+  }
+
+  void _onSort(String columnKey, bool ascending) {
+    setState(() {
+      _sortBy = columnKey;
+      _sortAscending = ascending;
+    });
+    _applySorting();
+  }
+
+  void _applySorting() {
+    if (_sortBy == null || _seasons.isEmpty) return;
+
+    setState(() {
+      _seasons.sort((a, b) {
+        int comparison = 0;
+
+        switch (_sortBy) {
+          case 'name':
+            comparison = a.name.compareTo(b.name);
+            break;
+          case 'description':
+            comparison = a.description.compareTo(b.description);
+            break;
+          case 'active':
+            comparison = a.active.toString().compareTo(b.active.toString());
+            break;
+          default:
+            comparison = 0;
+        }
+
+        return _sortAscending ? comparison : -comparison;
+      });
+    });
+  }
+
+  void _createSeason() {
+    showDialog(
+      context: context,
+      builder: (context) => SeasonFormDialog(
+        onSave: _handleCreateSeason,
+        onSuccess: _loadSeasons,
+      ),
+    );
+  }
+
+  void _editSeason(Season season) {
+    showDialog(
+      context: context,
+      builder: (context) => SeasonFormDialog(
+        season: season,
+        onSave: _handleUpdateSeason,
+        onSuccess: _loadSeasons,
+      ),
+    );
+  }
+
+  void _viewSeasonDetails(Season season) {
+    // TODO: Implement season details view
+    AppToast.show(
+      context,
+      title: 'Coming Soon',
+      message: 'Season details view will be available soon.',
+      type: ToastType.info,
+    );
+  }
+
+  Future<void> _handleCreateSeason(Season season) async {
+    try {
+      print('🔄 SeasonsScreen: Creating season: ${season.name}');
+      final response = await _seasonService.createSeason(season);
+
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to create season');
+      }
+
+      print('✅ SeasonsScreen: Season created successfully');
+    } catch (e) {
+      print('❌ SeasonsScreen: Error creating season: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _handleUpdateSeason(Season season) async {
+    try {
+      print('🔄 SeasonsScreen: Updating season: ${season.name}');
+      final response = await _seasonService.updateSeason(season);
+
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to update season');
+      }
+
+      print('✅ SeasonsScreen: Season updated successfully');
+    } catch (e) {
+      print('❌ SeasonsScreen: Error updating season: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _handleDeleteSeason(Season season) async {
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Delete Season',
+      message:
+          'Are you sure you want to delete "${season.name}"? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      confirmType: AppButtonType.danger,
+      icon: Icons.delete_outline,
+    );
+
+    if (confirmed == true) {
+      try {
+        print('🔄 SeasonsScreen: Deleting season: ${season.name}');
+        final response = await _seasonService.deleteSeason(season.id);
+
+        if (!response.success) {
+          throw Exception(response.message ?? 'Failed to delete season');
+        }
+
+        // Remove from local state
+        setState(() {
+          _seasons.removeWhere((s) => s.id == season.id);
+          _selectedSeasons.removeWhere((s) => s.id == season.id);
+          _totalItems--;
+        });
+
+        // Show success message
+        if (mounted) {
+          AppToast.showSuccess(
+            context,
+            title: 'Season Deleted',
+            message: 'Season "${season.name}" has been successfully deleted.',
+          );
+        }
+
+        print('✅ SeasonsScreen: Season deleted successfully');
+      } catch (e) {
+        print('❌ SeasonsScreen: Error deleting season: $e');
+        if (mounted) {
+          AppToast.showError(
+            context,
+            error: 'Failed to delete season. Please try again.',
+            title: 'Delete Failed',
+            errorContext: 'season_delete',
+          );
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Show loading state
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12),
+            child: _buildHeader(),
+          ),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        // Breadcrumb
+        // const BreadcrumbNavigation(),
+        const SizedBox(height: AppSizes.spacing16),
+
+        // Filters and Actions
+        SeasonFiltersAndActionsV2(
+          currentViewMode: _currentView,
+          onViewModeChanged: _onViewModeChanged,
+          onSearchChanged: _onSearch,
+          onStatusFilterChanged: (status) =>
+              _onFilterChange(showActiveOnly: status == 'active'),
+          onAddSeason: _createSeason,
+          onRefresh: _loadSeasons,
+          selectedStatus: _showActiveOnly ? 'active' : null,
+        ),
+
+        const SizedBox(height: AppSizes.spacing24),
+      ],
+    );
+  }
+
+  Widget _buildContent() {
+    // Loading state
     if (_isLoading && _seasons.isEmpty) {
       return const AppLottieStateWidget.loading(
         title: 'Loading Seasons',
@@ -94,7 +354,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       );
     }
 
-    // Show error state if error and no data
+    // Error state
     if (_errorMessage.isNotEmpty && _seasons.isEmpty) {
       return AppLottieStateWidget.error(
         title: 'Failed to Load Seasons',
@@ -104,258 +364,59 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing24),
-      child: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: AppSizes.spacing24),
-          _buildErrorMessage(),
-          Expanded(child: _buildContent()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent() {
-    // Show no data state if no seasons after loading
-    if (!_isLoading && _seasons.isEmpty && _errorMessage.isEmpty) {
+    // No data state
+    if (_seasons.isEmpty) {
       return AppLottieStateWidget.noData(
         title: 'No Seasons Found',
-        message:
-            'No seasons have been configured yet. Click "Add Season" to create your first season configuration.',
-        buttonText: 'Add Season',
+        message: _searchQuery.isNotEmpty
+            ? 'No seasons match your search criteria. Try adjusting your filters.'
+            : 'No seasons have been configured yet. Click "Create Season" to get started.',
+        buttonText: 'Create Season',
         onButtonPressed: _createSeason,
       );
     }
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          _buildTableHeader(),
-          if (_selectedSeasons.isNotEmpty) _buildMultiSelectToolbar(),
-          Expanded(child: _buildSeasonsTable()),
-          _buildPagination(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
+    // Content based on view mode
+    return Column(
       children: [
         Expanded(
-          child: AppInputField(
-            controller: _searchController,
-            hintText: 'Search seasons',
-            prefixIcon: const Icon(Icons.search, size: AppSizes.iconMedium),
-            onChanged: (value) {
-              _loadSeasons();
-            },
-          ),
+          child: _currentView == SeasonViewMode.table
+              ? _buildTableView()
+              : _buildKanbanView(),
         ),
-        const SizedBox(width: AppSizes.spacing16),
-        AppButton(
-          text: 'Add Season',
-          type: AppButtonType.primary,
-          icon: const Icon(
-            Icons.add,
-            size: AppSizes.iconSmall,
-            color: AppColors.textInverse,
+
+        // Pagination
+        if (_seasons.isNotEmpty) ...[
+          const SizedBox(height: AppSizes.spacing16),
+          ResultsPagination(
+            currentPage: _currentPage,
+            totalPages: _totalPages,
+            totalItems: _totalItems,
+            itemsPerPage: _itemsPerPage,
+            itemsPerPageOptions: const [
+              5,
+              10,
+              20,
+              25,
+              50,
+            ], // Include 25 to match _itemsPerPage default
+            startItem: (_currentPage - 1) * _itemsPerPage + 1,
+            endItem: (_currentPage * _itemsPerPage) > _totalItems
+                ? _totalItems
+                : _currentPage * _itemsPerPage,
+            onPageChanged: _onPageChanged,
+            onItemsPerPageChanged: _onItemsPerPageChanged,
           ),
-          onPressed: () {
-            _createSeason();
-          },
-        ),
+        ],
       ],
     );
   }
 
-  Widget _buildTableHeader() {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Text(
-              'Seasons',
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeLarge,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          AppInputField(
-            hintText: 'Filter...',
-            prefixIcon: const Icon(Icons.filter_list, size: AppSizes.iconSmall),
-            onChanged: (value) {
-              // Implement filter
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorMessage() {
-    if (_errorMessage.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: AppSizes.iconMedium,
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          Expanded(
-            child: Text(
-              _errorMessage,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontSize: AppSizes.fontSizeMedium,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: _loadSeasons,
-            icon: const Icon(Icons.refresh, color: AppColors.error),
-            tooltip: 'Retry',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSeasonsTable() {
+  Widget _buildTableView() {
     return BluNestDataTable<Season>(
-      columns: [
-        BluNestTableColumn<Season>(
-          key: 'id',
-          title: 'ID',
-          builder: (season) => SizedBox(
-            width: 60,
-            child: Text(
-              season.id.toString(),
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-        BluNestTableColumn<Season>(
-          key: 'name',
-          title: 'Name',
-          builder: (season) => Expanded(
-            flex: 2,
-            child: Text(
-              season.name,
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeMedium,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ),
-        BluNestTableColumn<Season>(
-          key: 'description',
-          title: 'Description',
-          builder: (season) => Expanded(
-            flex: 2,
-            child: Text(
-              season.description,
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-        BluNestTableColumn<Season>(
-          key: 'monthRange',
-          title: 'Month Range',
-          builder: (season) => Expanded(
-            flex: 2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spacing8,
-                vertical: AppSizes.spacing4,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                border: Border.all(color: AppColors.info.withOpacity(0.3)),
-              ),
-              child: Text(
-                season.monthRangeDisplay,
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  color: AppColors.info,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        ),
-        BluNestTableColumn<Season>(
-          key: 'status',
-          title: 'Status',
-          builder: (season) => SizedBox(
-            width: 80,
-            child: StatusChip(
-              text: season.active ? 'Active' : 'Inactive',
-              type: season.active
-                  ? StatusChipType.success
-                  : StatusChipType.secondary,
-            ),
-          ),
-        ),
-        BluNestTableColumn<Season>(
-          key: 'actions',
-          title: 'Actions',
-          builder: (season) => SizedBox(
-            width: 120,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: () => _viewSeasonDetails(season),
-                  icon: const Icon(Icons.visibility, size: AppSizes.iconSmall),
-                  tooltip: 'View Details',
-                ),
-                IconButton(
-                  onPressed: () => _editSeason(season),
-                  icon: const Icon(Icons.edit, size: AppSizes.iconSmall),
-                  tooltip: 'Edit',
-                ),
-                IconButton(
-                  onPressed: () => _deleteSeason(season),
-                  icon: const Icon(
-                    Icons.delete,
-                    size: AppSizes.iconSmall,
-                    color: AppColors.error,
-                  ),
-                  tooltip: 'Delete',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      columns: _buildTableColumns(),
       data: _seasons,
-      isLoading: _isLoading,
+      onRowTap: _viewSeasonDetails,
       enableMultiSelect: true,
       selectedItems: _selectedSeasons,
       onSelectionChanged: (selectedItems) {
@@ -369,191 +430,325 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
           _hiddenColumns = hiddenColumns;
         });
       },
-      onRowTap: _viewSeasonDetails,
-      onEdit: _editSeason,
-      onDelete: _deleteSeason,
-      onView: _viewSeasonDetails,
+      sortBy: _sortBy,
+      sortAscending: _sortAscending,
+      onSort: _onSort,
+      isLoading: _isLoading,
     );
   }
 
-  Widget _buildMultiSelectToolbar() {
+  List<BluNestTableColumn<Season>> _buildTableColumns() {
+    return [
+      // Name
+      BluNestTableColumn<Season>(
+        key: 'name',
+        title: 'Name',
+        sortable: true,
+        flex: 2,
+        builder: (season) => Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                season.name,
+                style: const TextStyle(
+                  fontSize: AppSizes.fontSizeMedium,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      // Description
+      BluNestTableColumn<Season>(
+        key: 'description',
+        title: 'Description',
+        sortable: true,
+        flex: 3,
+        builder: (season) => Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          child: Text(
+            season.description,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
+        ),
+      ),
+
+      // Month Range
+      BluNestTableColumn<Season>(
+        key: 'monthRange',
+        title: 'Month Range',
+        sortable: false,
+        flex: 3,
+        builder: (season) => Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          child: SeasonSmartMonthChips.buildSmartMonthChips(season.monthRange),
+        ),
+      ),
+
+      // Status
+      BluNestTableColumn<Season>(
+        key: 'active',
+        title: 'Status',
+        sortable: true,
+        flex: 1,
+        builder: (season) => Container(
+          alignment: Alignment.centerLeft,
+          //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+          child: StatusChip(
+            text: season.active ? 'Active' : 'Inactive',
+            compact: true,
+            type: season.active
+                ? StatusChipType.success
+                : StatusChipType.secondary,
+          ),
+        ),
+      ),
+
+      // Actions
+      BluNestTableColumn<Season>(
+        key: 'actions',
+        title: 'Actions',
+        sortable: false,
+        flex: 1,
+        builder: (season) => Container(
+          alignment: Alignment.centerLeft,
+          height: AppSizes.spacing40,
+          child: PopupMenuButton<String>(
+            icon: const Icon(
+              Icons.more_vert,
+              color: AppColors.textSecondary,
+              size: 16,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            ),
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'view',
+                child: Row(
+                  children: [
+                    Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                    SizedBox(width: AppSizes.spacing8),
+                    Text('View Details'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 16, color: AppColors.warning),
+                    SizedBox(width: AppSizes.spacing8),
+                    Text('Edit'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 16, color: AppColors.error),
+                    SizedBox(width: AppSizes.spacing8),
+                    Text('Delete', style: TextStyle(color: AppColors.error)),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              switch (value) {
+                case 'view':
+                  _viewSeasonDetails(season);
+                  break;
+                case 'edit':
+                  _editSeason(season);
+                  break;
+                case 'delete':
+                  _handleDeleteSeason(season);
+                  break;
+              }
+            },
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildKanbanView() {
+    return KanbanView<Season>(
+      columns: [
+        KanbanColumn<Season>(
+          id: 'active',
+          title: 'Active Seasons',
+          color: AppColors.success,
+          icon: Icons.check_circle,
+        ),
+        KanbanColumn<Season>(
+          id: 'inactive',
+          title: 'Inactive Seasons',
+          color: AppColors.textSecondary,
+          icon: Icons.pause_circle,
+        ),
+      ],
+      items: _seasons,
+      getItemColumn: (season) => season.active ? 'active' : 'inactive',
+      cardBuilder: (season) => _buildSeasonKanbanCard(season),
+      onItemTapped: _viewSeasonDetails,
+      isLoading: _isLoading,
+    );
+  }
+
+  Widget _buildSeasonKanbanCard(Season season) {
     return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        border: const Border(bottom: BorderSide(color: AppColors.border)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with name and status
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  season.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: AppSizes.fontSizeMedium,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              StatusChip(
+                text: season.active ? 'Active' : 'Inactive',
+                compact: true,
+                type: season.active
+                    ? StatusChipType.success
+                    : StatusChipType.secondary,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSizes.spacing8),
+
+          // Description
           Text(
-            '${_selectedSeasons.length} seasons selected',
+            season.description,
             style: const TextStyle(
-              fontSize: AppSizes.fontSizeMedium,
-              fontWeight: FontWeight.w500,
-              color: AppColors.primary,
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textSecondary,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          const SizedBox(height: AppSizes.spacing12),
+
+          // Months with enhanced display
+          SizedBox(
+            width: double.infinity,
+            child: SeasonSmartMonthChips.buildSmartMonthChips(
+              season.monthRange,
             ),
           ),
-          const Spacer(),
-          AppButton(
-            text: 'Delete Selected',
-            type: AppButtonType.outline,
-            size: AppButtonSize.small,
-            onPressed: () => _showBulkDeleteConfirmation(),
+
+          const SizedBox(height: AppSizes.spacing12),
+
+          // Actions dropdown
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                alignment: Alignment.center,
+                height: AppSizes.spacing40,
+                child: PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textSecondary,
+                    size: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                  ),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String>(
+                      value: 'view',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.visibility,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: AppSizes.spacing8),
+                          Text('View Details'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 16, color: AppColors.warning),
+                          SizedBox(width: AppSizes.spacing8),
+                          Text('Edit'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 16, color: AppColors.error),
+                          SizedBox(width: AppSizes.spacing8),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: AppColors.error),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'view':
+                        _viewSeasonDetails(season);
+                        break;
+                      case 'edit':
+                        _editSeason(season);
+                        break;
+                      case 'delete':
+                        _handleDeleteSeason(season);
+                        break;
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildPagination() {
-    final startItem = (_currentPage - 1) * _itemsPerPage + 1;
-    final endItem = (_currentPage * _itemsPerPage) > _totalItems
-        ? _totalItems
-        : _currentPage * _itemsPerPage;
-
-    return ResultsPagination(
-      currentPage: _currentPage,
-      totalPages: _totalPages,
-      totalItems: _totalItems,
-      itemsPerPage: _itemsPerPage,
-      startItem: startItem,
-      endItem: endItem,
-      onPageChanged: (page) {
-        setState(() {
-          _currentPage = page;
-        });
-        _loadSeasons();
-      },
-      onItemsPerPageChanged: (itemsPerPage) {
-        setState(() {
-          _itemsPerPage = itemsPerPage;
-          _currentPage = 1;
-          _totalPages = (_totalItems / _itemsPerPage).ceil();
-        });
-        _loadSeasons();
-      },
-      itemLabel: 'seasons',
-      showItemsPerPageSelector: true,
-    );
-  }
-
-  void _createSeason() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Create season - Coming soon')),
-    );
-  }
-
-  void _viewSeasonDetails(Season season) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('View details for ${season.name}')));
-  }
-
-  void _editSeason(Season season) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Edit ${season.name}')));
-  }
-
-  void _deleteSeason(Season season) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Season'),
-        content: Text('Are you sure you want to delete "${season.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          AppButton(
-            text: 'Delete',
-            type: AppButtonType.danger,
-            size: AppButtonSize.small,
-            onPressed: () {
-              Navigator.of(context).pop();
-              _performDeleteSeason(season);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _performDeleteSeason(Season season) async {
-    try {
-      final response = await _touService.deleteSeason(season.id);
-      if (response.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Season "${season.name}" deleted successfully'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        _loadSeasons();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response.message ?? 'Failed to delete season'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error deleting season: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  void _showBulkDeleteConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Seasons'),
-        content: Text(
-          'Are you sure you want to delete ${_selectedSeasons.length} seasons?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          AppButton(
-            text: 'Delete All',
-            type: AppButtonType.danger,
-            size: AppButtonSize.small,
-            onPressed: () {
-              Navigator.of(context).pop();
-              _performBulkDelete();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _performBulkDelete() async {
-    final selectedIds = _selectedSeasons.map((s) => s.id).toList();
-
-    for (final id in selectedIds) {
-      await _touService.deleteSeason(id);
-    }
-
-    setState(() {
-      _selectedSeasons.clear();
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${selectedIds.length} seasons deleted'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-
-    _loadSeasons();
   }
 }

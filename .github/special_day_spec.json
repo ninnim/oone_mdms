@@ -251,3 +251,65 @@
     ]
   }
 }
+
+
+
+// Create Special Day Detail
+// Method POSThttps://mdms.oone.bz/api/rest/SpecialDayDetail
+// Request Create Special Day Detail
+{
+  "SpecialDayDetail": {
+    "SpecialDayId": 126,
+    "Name": "SDD01",
+    "Description": "kk",
+    "StartDate": "2025-07-29",
+    "EndDate": "2025-07-30"
+  }
+}
+// Response Create Special Day Detail
+{
+  "SpecialDayDetail": {
+    "Id": 197,
+    "Name": "SDD01",
+    "Description": "kk",
+    "StartDate": "2025-07-29T00:00:00+07:00",
+    "EndDate": "2025-07-30T00:00:00+07:00",
+    "Active": true
+  }
+}
+
+// Update Special Day Detail
+// Method POST https://mdms.oone.bz/api/rest/SpecialDayDetail/197
+{
+  "SpecialDayDetail": {
+    "Name": "SDD01",
+    "Description": "kk-update",
+    "StartDate": "2025-07-29",
+    "EndDate": "2025-07-30"
+  }
+}
+// Response Update Special Day Detail
+{
+  "SpecialDay": {
+    "Id": 197,
+    "Name": "SDD01",
+    "Description": "kk-update",
+    "StartDate": "2025-07-29T00:00:00+07:00",
+    "EndDate": "2025-07-30T00:00:00+07:00",
+    "Active": true
+  }
+}
+
+// Delete Special Day Detail
+// Method DELETE https://mdms.oone.bz/api/rest/SpecialDayDetail/197
+// Response Delete Special Day Detail
+{
+  "SpecialDayDetail": {
+    "Id": 197,
+    "Name": "SDD01",
+    "Description": "kk-update",
+    "StartDate": "2025-07-29T00:00:00+07:00",
+    "EndDate": "2025-07-30T00:00:00+07:00",
+    "Active": false
+  }
+}

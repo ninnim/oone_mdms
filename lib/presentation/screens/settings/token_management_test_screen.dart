@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mdms_clone/core/services/service_locator.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_toast.dart';
-import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 
 /// Demo screen to test dynamic token and header management
 class TokenManagementTestScreen extends StatefulWidget {

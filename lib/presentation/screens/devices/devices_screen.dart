@@ -14,11 +14,7 @@ import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/devices/device_table_columns.dart';
 import '../../widgets/devices/device_kanban_view.dart';
 import '../../widgets/devices/flutter_map_device_view.dart';
-import '../../widgets/devices/device_filters_and_actions.dart'
-    hide DeviceViewMode;
 import '../../widgets/devices/device_summary_card.dart';
-import '../../widgets/devices/device_sidebar_content.dart';
-import '../../widgets/common/sidebar_drawer.dart';
 import 'create_edit_device_screen.dart';
 import 'device_360_details_screen.dart';
 import 'device_billing_readings_screen.dart';
@@ -140,8 +136,23 @@ class _DevicesScreenState extends State<DevicesScreen> {
       if (response.success) {
         setState(() {
           _devices = response.data!;
+          // Apply client-side filters for now (until API supports them)
           _filteredDevices = _applyFilters(_devices);
-          _updatePaginationTotals();
+
+          // Use total count from API response for server-side pagination
+          _totalItems = response.paging?.item.total ?? _devices.length;
+          _totalPages = _totalItems > 0
+              ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
+              : 1;
+
+          // Ensure current page is valid
+          if (_currentPage > _totalPages) {
+            _currentPage = _totalPages;
+          }
+          if (_currentPage < 1) {
+            _currentPage = 1;
+          }
+
           _isLoading = false;
         });
       } else {
@@ -414,6 +425,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
   // }
 
   Widget _buildDeviceTable() {
+    // Get the devices for current page based on whether filters are applied
+    final hasFilters = _selectedStatus != null || _selectedLinkStatus != null;
+    final displayDevices = hasFilters
+        ? _getPaginatedDevices()
+        : _filteredDevices;
+
     return BluNestDataTable<Device>(
       columns: DeviceTableColumns.getColumns(
         onView: (device) =>
@@ -422,9 +439,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
         onDelete: (device) => _deleteDevice(device),
         currentPage: _currentPage,
         itemsPerPage: _itemsPerPage,
-        devices: _filteredDevices,
+        devices: displayDevices,
       ),
-      data: _filteredDevices,
+      data: displayDevices,
       onRowTap: (device) => _viewDeviceDetails(device),
       // _openSidebar(device), // Row click opens sidebar
       onEdit: (device) => _editDevice(device),
@@ -452,23 +469,52 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildPagination() {
-    final startItem = (_currentPage - 1) * _itemsPerPage + 1;
-    final endItem = (_currentPage * _itemsPerPage) > _totalItems
-        ? _totalItems
-        : _currentPage * _itemsPerPage;
+    // Use filtered devices count when filters are applied, otherwise use API total
+    final hasFilters = _selectedStatus != null || _selectedLinkStatus != null;
+    final displayTotalItems = hasFilters
+        ? _filteredDevices.length
+        : _totalItems;
+    final displayTotalPages = displayTotalItems > 0
+        ? ((displayTotalItems - 1) ~/ _itemsPerPage) + 1
+        : 1;
+
+    // Calculate display range based on filtered or unfiltered data
+    final startItem = hasFilters
+        ? ((_currentPage - 1) * _itemsPerPage + 1)
+        : ((_currentPage - 1) * _itemsPerPage + 1);
+    final endItem = hasFilters
+        ? ((_currentPage * _itemsPerPage) > displayTotalItems
+              ? displayTotalItems
+              : _currentPage * _itemsPerPage)
+        : ((_currentPage * _itemsPerPage) > _totalItems
+              ? _totalItems
+              : _currentPage * _itemsPerPage);
 
     return ResultsPagination(
       currentPage: _currentPage,
-      totalPages: _totalPages,
-      totalItems: _totalItems,
+      totalPages: displayTotalPages,
+      totalItems: displayTotalItems,
       itemsPerPage: _itemsPerPage,
+      itemsPerPageOptions: const [
+        5,
+        10,
+        20,
+        25,
+        50,
+      ], // Include 25 to match _itemsPerPage default
       startItem: startItem,
       endItem: endItem,
       onPageChanged: (page) {
         setState(() {
           _currentPage = page;
         });
-        _loadDevices();
+        if (hasFilters) {
+          // For filtered data, just update the page (client-side pagination)
+          setState(() {});
+        } else {
+          // For unfiltered data, reload from server
+          _loadDevices();
+        }
       },
       onItemsPerPageChanged: (newItemsPerPage) {
         setState(() {
@@ -480,7 +526,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
         });
         _loadDevices();
       },
-      itemLabel: 'devices',
+
+      // itemLabel: 'devices',
       showItemsPerPageSelector: true,
     );
   }
@@ -755,11 +802,28 @@ class _DevicesScreenState extends State<DevicesScreen> {
     }
   }
 
+  void _updateFilteredPagination() {
+    // For client-side filtering, calculate pagination based on filtered results
+    final filteredTotal = _filteredDevices.length;
+    _totalPages = filteredTotal > 0
+        ? ((filteredTotal - 1) ~/ _itemsPerPage) + 1
+        : 1;
+
+    // Ensure current page is valid for filtered results
+    if (_currentPage > _totalPages) {
+      _currentPage = _totalPages;
+    }
+    if (_currentPage < 1) {
+      _currentPage = 1;
+    }
+  }
+
   void _onStatusFilterChanged(String? status) {
     setState(() {
       _selectedStatus = status;
       _filteredDevices = _applyFilters(_devices);
-      _updatePaginationTotals();
+      // Update pagination for filtered results (client-side)
+      _updateFilteredPagination();
     });
   }
 
@@ -775,7 +839,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
     setState(() {
       _selectedLinkStatus = linkStatus;
       _filteredDevices = _applyFilters(_devices);
-      _updatePaginationTotals();
+      // Update pagination for filtered results (client-side)
+      _updateFilteredPagination();
     });
   }
 
@@ -919,7 +984,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       child: Column(
         children: [
           //  _buildTableHeader(),
-          if (_selectedDevices.isNotEmpty) _buildMultiSelectToolbar(),
+          //if (_selectedDevices.isNotEmpty) _buildMultiSelectToolbar(),
           Expanded(child: _buildDeviceTable()),
           _buildPagination(),
         ],
@@ -959,17 +1024,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border(bottom: BorderSide(color: AppColors.border)),
-          ),
-          child: Row(
-            children: [
-              Text(
-                'Device Map View - OpenStreetMap with clustering',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
           ),
         ),
 

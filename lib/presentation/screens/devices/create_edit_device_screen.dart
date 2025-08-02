@@ -46,12 +46,12 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
   // Pagination states
   int _deviceGroupsPage = 1;
-  int _deviceGroupsLimit = 10;
+  final int _deviceGroupsLimit = 10;
   bool _hasMoreDeviceGroups = true;
   String _deviceGroupSearchQuery = '';
 
   int _schedulesPage = 1;
-  int _schedulesLimit = 10;
+  final int _schedulesLimit = 10;
   bool _hasMoreSchedules = true;
   String _scheduleSearchQuery = '';
 

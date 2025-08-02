@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
-import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
@@ -625,7 +624,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
               endItem: math.min(_currentPage * _itemsPerPage, _totalItems),
               onPageChanged: _onPageChanged,
               showItemsPerPageSelector: false,
-              itemLabel: 'devices',
+              // itemLabel: 'devices',
             ),
         ],
       ),

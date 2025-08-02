@@ -426,6 +426,13 @@ class _CreateEditDeviceGroupDialogState
                           totalPages: totalPages,
                           totalItems: _totalDevices,
                           itemsPerPage: _deviceItemsPerPage,
+                          itemsPerPageOptions: const [
+                            5,
+                            10,
+                            20,
+                            25,
+                            50,
+                          ], // Include 25 to match _deviceItemsPerPage default
                           startItem: startIndex,
                           endItem: endIndex,
                           itemLabel: 'devices',
