@@ -4,6 +4,7 @@ import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart'
 import 'package:mdms_clone/presentation/screens/tou_management/tou_management_screen.dart';
 import 'package:mdms_clone/presentation/screens/tou_management/seasons_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_bands/time_bands_screen.dart';
+import 'package:mdms_clone/presentation/screens/time_of_use/time_of_use_screen.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
@@ -172,11 +173,11 @@ class AppRouter {
               builder: (context, state) => const TouManagementRouteWrapper(),
             ),
 
-            // GoRoute(
-            //   path: '/time-of-use',
-            //   name: 'time-of-use',
-            //   builder: (context, state) => const TimeOfUseRouteWrapper(),
-            // ),
+            GoRoute(
+              path: '/time-of-use',
+              name: 'time-of-use',
+              builder: (context, state) => const TimeOfUseRouteWrapper(),
+            ),
 
             // Tickets Routes
             GoRoute(
@@ -255,11 +256,6 @@ class AppRouter {
             ),
 
             // TOU Management Sub-routes
-            GoRoute(
-              path: '/time-of-use',
-              name: 'time-of-use',
-              builder: (context, state) => const TouManagementRouteWrapper(),
-            ),
             GoRoute(
               path: '/time-bands',
               name: 'time-bands',
@@ -949,6 +945,15 @@ class TouManagementRouteWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MainLayoutWithRouter(child: TouManagementScreen());
+  }
+}
+
+class TimeOfUseRouteWrapper extends StatelessWidget {
+  const TimeOfUseRouteWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const TimeOfUseScreen();
   }
 }
 

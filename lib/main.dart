@@ -8,6 +8,7 @@ import 'core/services/device_group_service.dart';
 import 'core/services/site_service.dart';
 import 'core/services/season_service.dart';
 import 'core/services/special_day_service.dart';
+import 'core/services/time_of_use_service.dart';
 import 'core/services/service_locator.dart';
 import 'core/services/token_management_service.dart';
 import 'core/services/time_band_service.dart';
@@ -32,6 +33,7 @@ void main() async {
   final apiService = serviceLocator.apiService;
   final tokenManagementService = serviceLocator.tokenManagementService;
   final timeBandService = serviceLocator.timeBandService;
+  final timeOfUseService = serviceLocator.timeOfUseService;
   final deviceService = DeviceService(apiService);
   final deviceGroupService = DeviceGroupService(apiService);
   final siteService = SiteService(apiService);
@@ -44,6 +46,7 @@ void main() async {
       keycloakService: keycloakService,
       tokenManagementService: tokenManagementService,
       timeBandService: timeBandService,
+      timeOfUseService: timeOfUseService,
       deviceService: deviceService,
       deviceGroupService: deviceGroupService,
       siteService: siteService,
@@ -58,6 +61,7 @@ class MyApp extends StatelessWidget {
   final KeycloakService keycloakService;
   final TokenManagementService tokenManagementService;
   final TimeBandService timeBandService;
+  final TimeOfUseService timeOfUseService;
   final DeviceService deviceService;
   final DeviceGroupService deviceGroupService;
   final SiteService siteService;
@@ -70,6 +74,7 @@ class MyApp extends StatelessWidget {
     required this.keycloakService,
     required this.tokenManagementService,
     required this.timeBandService,
+    required this.timeOfUseService,
     required this.deviceService,
     required this.deviceGroupService,
     required this.siteService,
@@ -85,6 +90,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: keycloakService),
         ChangeNotifierProvider.value(value: tokenManagementService),
         Provider.value(value: timeBandService),
+        Provider.value(value: timeOfUseService),
         Provider.value(value: deviceService),
         Provider.value(value: deviceGroupService),
         Provider.value(value: siteService),

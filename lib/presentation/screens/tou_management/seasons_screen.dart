@@ -385,10 +385,10 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
               : _buildKanbanView(),
         ),
 
-        // Pagination
-        if (_seasons.isNotEmpty) ...[
-          const SizedBox(height: AppSizes.spacing16),
-          ResultsPagination(
+        // Pagination - Always visible for consistency
+        Padding(
+          padding: const EdgeInsets.all(AppSizes.spacing16),
+          child: ResultsPagination(
             currentPage: _currentPage,
             totalPages: _totalPages,
             totalItems: _totalItems,
@@ -407,7 +407,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
             onPageChanged: _onPageChanged,
             onItemsPerPageChanged: _onItemsPerPageChanged,
           ),
-        ],
+        ),
       ],
     );
   }

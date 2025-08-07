@@ -322,7 +322,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
             child: _buildHeader(),
           ),
           Expanded(child: _buildContent()),
-          if (_filteredDeviceGroups.isNotEmpty) _buildPagination(),
+          _buildPagination(), // Always show pagination for consistency
         ],
       ),
     );

@@ -92,8 +92,8 @@ class _ResultsPaginationState extends State<ResultsPagination> {
 
           //  const Spacer(),
           const SizedBox(width: AppSizes.spacing8),
-          // Page navigation with numbered buttons
-          if (widget.totalPages > 1) _buildPageNavigation(theme),
+          // Page navigation - Always visible for consistency
+          _buildPageNavigation(theme),
         ],
       ),
     );

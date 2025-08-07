@@ -5,6 +5,7 @@ import 'token_management_service.dart';
 import 'time_band_service.dart';
 import 'season_service.dart';
 import 'special_day_service.dart';
+import 'time_of_use_service.dart';
 
 /// Service locator for managing API-related dependencies
 class ServiceLocator extends ChangeNotifier {
@@ -18,6 +19,7 @@ class ServiceLocator extends ChangeNotifier {
   TimeBandService? _timeBandService;
   SeasonService? _seasonService;
   SpecialDayService? _specialDayService;
+  TimeOfUseService? _timeOfUseService;
 
   /// Initialize all services
   Future<void> initialize() async {
@@ -37,6 +39,7 @@ class ServiceLocator extends ChangeNotifier {
       _timeBandService = TimeBandService(_apiService!);
       _seasonService = SeasonService(_apiService!);
       _specialDayService = SpecialDayService(_apiService!);
+      _timeOfUseService = TimeOfUseService(_apiService!);
 
       notifyListeners();
     } catch (e) {
@@ -104,6 +107,16 @@ class ServiceLocator extends ChangeNotifier {
     return _specialDayService!;
   }
 
+  /// Get TimeOfUse service instance
+  TimeOfUseService get timeOfUseService {
+    if (_timeOfUseService == null) {
+      throw Exception(
+        'ServiceLocator: TimeOfUseService not initialized. Call initialize() first.',
+      );
+    }
+    return _timeOfUseService!;
+  }
+
   /// Check if all services are initialized
   bool get isInitialized =>
       _keycloakService != null &&
@@ -111,7 +124,8 @@ class ServiceLocator extends ChangeNotifier {
       _apiService != null &&
       _timeBandService != null &&
       _seasonService != null &&
-      _specialDayService != null;
+      _specialDayService != null &&
+      _timeOfUseService != null;
 
   /// Dispose all services
   @override
@@ -123,6 +137,7 @@ class ServiceLocator extends ChangeNotifier {
     _timeBandService = null;
     _seasonService = null;
     _specialDayService = null;
+    _timeOfUseService = null;
     super.dispose();
   }
 }

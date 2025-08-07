@@ -370,7 +370,7 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
-      child: Container(
+      child: SizedBox(
         // width: 600,
         // constraints: const BoxConstraints(maxHeight: 700),
         width: MediaQuery.of(context).size.width * 0.9,
@@ -674,7 +674,7 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
             const Spacer(),
             Row(
               children: [
-                TextButton(
+                TextButton.icon(
                   onPressed: enabled
                       ? () {
                           final allValues = options
@@ -683,12 +683,32 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
                           onChanged(allValues);
                         }
                       : null,
-                  child: const Text('Select All'),
+                  icon: const Icon(Icons.select_all, size: AppSizes.iconSmall),
+                  label: const Text('Select All'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: enabled
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    textStyle: const TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                TextButton(
+                const SizedBox(width: AppSizes.spacing8),
+                TextButton.icon(
                   onPressed: enabled ? () => onChanged([]) : null,
-                  child: const Text('Clear All'),
+                  icon: const Icon(Icons.clear_all, size: AppSizes.iconSmall),
+                  label: const Text('Clear All'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: enabled
+                        ? AppColors.error
+                        : AppColors.textSecondary,
+                    textStyle: const TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -720,7 +740,7 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 80, // Fixed width for each item
+            maxCrossAxisExtent: 120, // Fixed width for each item
             mainAxisExtent: 40, // Fixed height for each item
             crossAxisSpacing: AppSizes.spacing8,
             mainAxisSpacing: AppSizes.spacing8,

@@ -452,7 +452,7 @@ class _SitesScreenState extends State<SitesScreen> {
                   child: _buildHeader(),
                 ),
                 Expanded(child: _buildContent()),
-                if (_filteredSites.isNotEmpty) _buildPagination(),
+                _buildPagination(), // Always show pagination for consistency
               ],
             ),
           ),

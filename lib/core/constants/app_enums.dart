@@ -9,3 +9,5 @@ enum SeasonViewMode { table, kanban }
 enum TimeBandViewMode { table, kanban }
 
 enum SpecialDayViewMode { table, kanban }
+
+enum TimeOfUseViewMode { table, kanban }

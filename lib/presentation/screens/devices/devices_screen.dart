@@ -490,45 +490,48 @@ class _DevicesScreenState extends State<DevicesScreen> {
               ? _totalItems
               : _currentPage * _itemsPerPage);
 
-    return ResultsPagination(
-      currentPage: _currentPage,
-      totalPages: displayTotalPages,
-      totalItems: displayTotalItems,
-      itemsPerPage: _itemsPerPage,
-      itemsPerPageOptions: const [
-        5,
-        10,
-        20,
-        25,
-        50,
-      ], // Include 25 to match _itemsPerPage default
-      startItem: startItem,
-      endItem: endItem,
-      onPageChanged: (page) {
-        setState(() {
-          _currentPage = page;
-        });
-        if (hasFilters) {
-          // For filtered data, just update the page (client-side pagination)
-          setState(() {});
-        } else {
-          // For unfiltered data, reload from server
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      child: ResultsPagination(
+        currentPage: _currentPage,
+        totalPages: displayTotalPages,
+        totalItems: displayTotalItems,
+        itemsPerPage: _itemsPerPage,
+        itemsPerPageOptions: const [
+          5,
+          10,
+          20,
+          25,
+          50,
+        ], // Include 25 to match _itemsPerPage default
+        startItem: startItem,
+        endItem: endItem,
+        onPageChanged: (page) {
+          setState(() {
+            _currentPage = page;
+          });
+          if (hasFilters) {
+            // For filtered data, just update the page (client-side pagination)
+            setState(() {});
+          } else {
+            // For unfiltered data, reload from server
+            _loadDevices();
+          }
+        },
+        onItemsPerPageChanged: (newItemsPerPage) {
+          setState(() {
+            _itemsPerPage = newItemsPerPage;
+            _currentPage = 1;
+            _totalPages = _totalItems > 0
+                ? ((_totalItems + _itemsPerPage - 1) ~/ _itemsPerPage)
+                : 1;
+          });
           _loadDevices();
-        }
-      },
-      onItemsPerPageChanged: (newItemsPerPage) {
-        setState(() {
-          _itemsPerPage = newItemsPerPage;
-          _currentPage = 1;
-          _totalPages = _totalItems > 0
-              ? ((_totalItems + _itemsPerPage - 1) ~/ _itemsPerPage)
-              : 1;
-        });
-        _loadDevices();
-      },
+        },
 
-      // itemLabel: 'devices',
-      showItemsPerPageSelector: true,
+        // itemLabel: 'devices',
+        showItemsPerPageSelector: true,
+      ),
     );
   }
 
