@@ -16,7 +16,6 @@ import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
 import '../screens/auth/simple_auth_redirect_screen.dart';
 import '../screens/settings/token_management_test_screen.dart';
-import '../screens/test/token_test_screen.dart';
 import '../screens/special_days/special_days_screen.dart';
 import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
@@ -249,12 +248,6 @@ class AppRouter {
               name: 'token-management-test',
               builder: (context, state) => const TokenManagementTestScreen(),
             ),
-            GoRoute(
-              path: '/token-test',
-              name: 'token-test',
-              builder: (context, state) => const TokenTestScreen(),
-            ),
-
             // TOU Management Sub-routes
             GoRoute(
               path: '/time-bands',

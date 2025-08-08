@@ -93,9 +93,35 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
       _selectedSeasonIds = List.from(timeBand.seasonIds);
       _selectedSpecialDayIds = List.from(timeBand.specialDayIds);
     } else {
-      // Initialize with empty values for new time band
-      _selectedDaysOfWeek = [];
-      _selectedMonthsOfYear = [];
+      // ✨ Enhanced: Initialize with default values for new time band
+      // Default to all days of week (0=Sunday to 6=Saturday)
+      _selectedDaysOfWeek = [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      ]; // All days selected by default
+
+      // Default to all months of year (1=January to 12=December)
+      _selectedMonthsOfYear = [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+      ]; // All months selected by default
+
+      // Seasons and Special Days remain empty as they are optional
       _selectedSeasonIds = [];
       _selectedSpecialDayIds = [];
     }
