@@ -132,6 +132,8 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
     // If time is in HH:mm format, add seconds
     if (time.contains(':') && time.split(':').length == 2) {
       return '$time:00';
+
+      //  return '$time:00';
     }
     // If already in HH:mm:ss format, keep as is
     return time;
@@ -489,7 +491,7 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
                               label: 'Start Time*',
                               controller: _startTimeController,
                               enabled: !isReadOnly,
-                              hintText: 'HH:mm (24-hour)',
+                              hintText: 'HH:mm:ss (24-hour)',
                               suffixIcon: isReadOnly
                                   ? const Icon(
                                       Icons.access_time,
@@ -514,7 +516,7 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
                               label: 'End Time*',
                               controller: _endTimeController,
                               enabled: !isReadOnly,
-                              hintText: 'HH:mm (24-hour)',
+                              hintText: 'HH:mm:ss (24-hour)',
                               suffixIcon: isReadOnly
                                   ? const Icon(
                                       Icons.access_time,
@@ -700,42 +702,47 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
             const Spacer(),
             Row(
               children: [
-                TextButton.icon(
-                  onPressed: enabled
-                      ? () {
-                          final allValues = options
-                              .map((o) => o['value'] as int)
-                              .toList();
-                          onChanged(allValues);
-                        }
-                      : null,
-                  icon: const Icon(Icons.select_all, size: AppSizes.iconSmall),
-                  label: const Text('Select All'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: enabled
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                    textStyle: const TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w500,
+                // Smart Select All / Clear All button
+                if (selectedValues.length == options.length)
+                  TextButton.icon(
+                    onPressed: enabled ? () => onChanged([]) : null,
+                    icon: const Icon(Icons.clear_all, size: AppSizes.iconSmall),
+                    label: const Text('Clear All'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: enabled
+                          ? AppColors.error
+                          : AppColors.textSecondary,
+                      textStyle: const TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                else
+                  TextButton.icon(
+                    onPressed: enabled
+                        ? () {
+                            final allValues = options
+                                .map((o) => o['value'] as int)
+                                .toList();
+                            onChanged(allValues);
+                          }
+                        : null,
+                    icon: const Icon(
+                      Icons.select_all,
+                      size: AppSizes.iconSmall,
+                    ),
+                    label: const Text('Select All'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: enabled
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                      textStyle: const TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                TextButton.icon(
-                  onPressed: enabled ? () => onChanged([]) : null,
-                  icon: const Icon(Icons.clear_all, size: AppSizes.iconSmall),
-                  label: const Text('Clear All'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: enabled
-                        ? AppColors.error
-                        : AppColors.textSecondary,
-                    textStyle: const TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
               ],
             ),
           ],
@@ -782,24 +789,10 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
             Color chipColor;
             if (title.contains('Days')) {
               // Days of week - use green spectrum
-              chipColor = AppColors.success;
+              chipColor = AppColors.primary;
             } else {
-              // Months - use seasonal colors
-              const monthColors = [
-                Color(0xFF3B82F6), // Jan - Blue (Winter)
-                Color(0xFF3B82F6), // Feb - Blue (Winter)
-                Color(0xFF10B981), // Mar - Green (Spring)
-                Color(0xFF10B981), // Apr - Green (Spring)
-                Color(0xFF10B981), // May - Green (Spring)
-                Color(0xFFF59E0B), // Jun - Orange (Summer)
-                Color(0xFFF59E0B), // Jul - Orange (Summer)
-                Color(0xFFF59E0B), // Aug - Orange (Summer)
-                Color(0xFFEF4444), // Sep - Red (Autumn)
-                Color(0xFFEF4444), // Oct - Red (Autumn)
-                Color(0xFFEF4444), // Nov - Red (Autumn)
-                Color(0xFF3B82F6), // Dec - Blue (Winter)
-              ];
-              chipColor = monthColors[index % monthColors.length];
+              // Use primary color for easier theming
+              chipColor = AppColors.primary;
             }
 
             return GestureDetector(

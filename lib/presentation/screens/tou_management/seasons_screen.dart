@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/common/blunest_data_table.dart';
-import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/common/app_button.dart';
-import '../../widgets/common/kanban_view.dart';
 import '../../widgets/seasons/season_filters_and_actions_v2.dart';
 import '../../widgets/seasons/season_form_dialog.dart';
 import '../../widgets/seasons/season_smart_month_chips.dart';
+import '../../widgets/seasons/season_table_columns.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
@@ -81,9 +80,11 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       if (response.success && response.data != null) {
         setState(() {
           _seasons = response.data!;
-          _totalItems =
-              response.data!.length; // TODO: Get total from pagination info
-          _totalPages = (_totalItems / _itemsPerPage).ceil();
+          // Get total from pagination info, fallback to data length if not available
+          _totalItems = response.paging?.item.total ?? response.data!.length;
+          _totalPages = _totalItems > 0
+              ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
+              : 1;
           _isLoading = false;
         });
 
@@ -305,6 +306,25 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
     }
   }
 
+  Future<List<Season>> _fetchAllSeasons() async {
+    try {
+      // Fetch all seasons without pagination
+      final response = await _seasonService.getSeasons(
+        search: _searchQuery.isNotEmpty ? _searchQuery : '%%',
+        offset: 0,
+        limit: 10000, // Large limit to get all items
+      );
+
+      if (response.success && response.data != null) {
+        return response.data!;
+      } else {
+        throw Exception(response.message ?? 'Failed to fetch all seasons');
+      }
+    } catch (e) {
+      throw Exception('Error fetching all seasons: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -312,10 +332,25 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
             child: _buildHeader(),
           ),
           Expanded(child: _buildContent()),
+          // Always show pagination area, even if empty (no padding)
+          ResultsPagination(
+            currentPage: _currentPage,
+            totalPages: _totalPages,
+            totalItems: _totalItems,
+            itemsPerPage: _itemsPerPage,
+            itemsPerPageOptions: const [5, 10, 20, 25, 50],
+            startItem: (_currentPage - 1) * _itemsPerPage + 1,
+            endItem: (_currentPage * _itemsPerPage) > _totalItems
+                ? _totalItems
+                : _currentPage * _itemsPerPage,
+            onPageChanged: _onPageChanged,
+            onItemsPerPageChanged: _onItemsPerPageChanged,
+            showItemsPerPageSelector: true,
+          ),
         ],
       ),
     );
@@ -349,8 +384,9 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
     // Loading state
     if (_isLoading && _seasons.isEmpty) {
       return const AppLottieStateWidget.loading(
-        title: 'Loading Seasons',
-        message: 'Please wait while we fetch your season configurations...',
+        // title: 'Loading Seasons',
+        lottieSize: 80,
+        //  message: 'Please wait while we fetch your season configurations...',
       );
     }
 
@@ -377,44 +413,24 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
     }
 
     // Content based on view mode
-    return Column(
-      children: [
-        Expanded(
-          child: _currentView == SeasonViewMode.table
-              ? _buildTableView()
-              : _buildKanbanView(),
-        ),
-
-        // Pagination - Always visible for consistency
-        Padding(
-          padding: const EdgeInsets.all(AppSizes.spacing16),
-          child: ResultsPagination(
-            currentPage: _currentPage,
-            totalPages: _totalPages,
-            totalItems: _totalItems,
-            itemsPerPage: _itemsPerPage,
-            itemsPerPageOptions: const [
-              5,
-              10,
-              20,
-              25,
-              50,
-            ], // Include 25 to match _itemsPerPage default
-            startItem: (_currentPage - 1) * _itemsPerPage + 1,
-            endItem: (_currentPage * _itemsPerPage) > _totalItems
-                ? _totalItems
-                : _currentPage * _itemsPerPage,
-            onPageChanged: _onPageChanged,
-            onItemsPerPageChanged: _onItemsPerPageChanged,
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: _currentView == SeasonViewMode.table
+          ? _buildTableView()
+          : _buildKanbanView(),
     );
   }
 
   Widget _buildTableView() {
     return BluNestDataTable<Season>(
-      columns: _buildTableColumns(),
+      columns: SeasonTableColumns.buildAllColumns(
+        onEdit: _editSeason,
+        onDelete: _handleDeleteSeason,
+        onView: _viewSeasonDetails,
+        currentPage: _currentPage,
+        itemsPerPage: _itemsPerPage,
+        data: _seasons,
+      ),
       data: _seasons,
       onRowTap: _viewSeasonDetails,
       enableMultiSelect: true,
@@ -434,192 +450,75 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       sortAscending: _sortAscending,
       onSort: _onSort,
       isLoading: _isLoading,
+      totalItemsCount: _totalItems,
+      onSelectAllItems: _fetchAllSeasons,
     );
-  }
-
-  List<BluNestTableColumn<Season>> _buildTableColumns() {
-    return [
-      // Name
-      BluNestTableColumn<Season>(
-        key: 'name',
-        title: 'Name',
-        sortable: true,
-        flex: 2,
-        builder: (season) => Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                season.name,
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeMedium,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-
-      // Description
-      BluNestTableColumn<Season>(
-        key: 'description',
-        title: 'Description',
-        sortable: true,
-        flex: 3,
-        builder: (season) => Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-          child: Text(
-            season.description,
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 2,
-          ),
-        ),
-      ),
-
-      // Month Range
-      BluNestTableColumn<Season>(
-        key: 'monthRange',
-        title: 'Month Range',
-        sortable: false,
-        flex: 3,
-        builder: (season) => Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-          child: SeasonSmartMonthChips.buildSmartMonthChips(season.monthRange),
-        ),
-      ),
-
-      // Status
-      BluNestTableColumn<Season>(
-        key: 'active',
-        title: 'Status',
-        sortable: true,
-        flex: 1,
-        builder: (season) => Container(
-          alignment: Alignment.centerLeft,
-          //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-          child: StatusChip(
-            text: season.active ? 'Active' : 'Inactive',
-            compact: true,
-            type: season.active
-                ? StatusChipType.success
-                : StatusChipType.secondary,
-          ),
-        ),
-      ),
-
-      // Actions
-      BluNestTableColumn<Season>(
-        key: 'actions',
-        title: 'Actions',
-        sortable: false,
-        flex: 1,
-        builder: (season) => Container(
-          alignment: Alignment.centerLeft,
-          height: AppSizes.spacing40,
-          child: PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.more_vert,
-              color: AppColors.textSecondary,
-              size: 16,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            ),
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'view',
-                child: Row(
-                  children: [
-                    Icon(Icons.visibility, size: 16, color: AppColors.primary),
-                    SizedBox(width: AppSizes.spacing8),
-                    Text('View Details'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, size: 16, color: AppColors.warning),
-                    SizedBox(width: AppSizes.spacing8),
-                    Text('Edit'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, size: 16, color: AppColors.error),
-                    SizedBox(width: AppSizes.spacing8),
-                    Text('Delete', style: TextStyle(color: AppColors.error)),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (value) {
-              switch (value) {
-                case 'view':
-                  _viewSeasonDetails(season);
-                  break;
-                case 'edit':
-                  _editSeason(season);
-                  break;
-                case 'delete':
-                  _handleDeleteSeason(season);
-                  break;
-              }
-            },
-          ),
-        ),
-      ),
-    ];
   }
 
   Widget _buildKanbanView() {
-    return KanbanView<Season>(
-      columns: [
-        KanbanColumn<Season>(
-          id: 'active',
-          title: 'Active Seasons',
-          color: AppColors.success,
-          icon: Icons.check_circle,
+    if (_isLoading && _seasons.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final groupedSeasons = _groupSeasonsByStatus();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: groupedSeasons.entries.map((entry) {
+            return _buildStatusColumn(entry.key, entry.value);
+          }).toList(),
         ),
-        KanbanColumn<Season>(
-          id: 'inactive',
-          title: 'Inactive Seasons',
-          color: AppColors.textSecondary,
-          icon: Icons.pause_circle,
-        ),
-      ],
-      items: _seasons,
-      getItemColumn: (season) => season.active ? 'active' : 'inactive',
-      cardBuilder: (season) => _buildSeasonKanbanCard(season),
-      onItemTapped: _viewSeasonDetails,
-      isLoading: _isLoading,
+      ),
     );
   }
 
-  Widget _buildSeasonKanbanCard(Season season) {
+  Map<String, List<Season>> _groupSeasonsByStatus() {
+    final Map<String, List<Season>> grouped = {'Active': [], 'Inactive': []};
+
+    for (final season in _seasons) {
+      if (season.active) {
+        grouped['Active']!.add(season);
+      } else {
+        grouped['Inactive']!.add(season);
+      }
+    }
+
+    return grouped;
+  }
+
+  Widget _buildStatusColumn(String status, List<Season> seasons) {
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (status.toLowerCase()) {
+      case 'active':
+        statusColor = AppColors.success;
+        statusIcon = Icons.check_circle;
+        break;
+      case 'inactive':
+        statusColor = AppColors.textSecondary;
+        statusIcon = Icons.pause_circle;
+        break;
+      default:
+        statusColor = AppColors.textSecondary;
+        statusIcon = Icons.help_outline;
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      width: 300,
+      margin: const EdgeInsets.only(right: AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -627,128 +526,299 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with name and status
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  season.name,
-                  style: const TextStyle(
+          // Column header
+          Container(
+            padding: const EdgeInsets.all(AppSizes.spacing16),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppSizes.radiusMedium),
+                topRight: Radius.circular(AppSizes.radiusMedium),
+              ),
+              border: Border(
+                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(statusIcon, color: statusColor, size: 20),
+                const SizedBox(width: AppSizes.spacing8),
+                Text(
+                  status,
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
+                    color: statusColor,
                     fontSize: AppSizes.fontSizeMedium,
-                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-              StatusChip(
-                text: season.active ? 'Active' : 'Inactive',
-                compact: true,
-                type: season.active
-                    ? StatusChipType.success
-                    : StatusChipType.secondary,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSizes.spacing8),
-
-          // Description
-          Text(
-            season.description,
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-
-          const SizedBox(height: AppSizes.spacing12),
-
-          // Months with enhanced display
-          SizedBox(
-            width: double.infinity,
-            child: SeasonSmartMonthChips.buildSmartMonthChips(
-              season.monthRange,
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Text(
+                    '${seasons.length}',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
-          const SizedBox(height: AppSizes.spacing12),
-
-          // Actions dropdown
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                alignment: Alignment.center,
-                height: AppSizes.spacing40,
-                child: PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: AppColors.textSecondary,
-                    size: 16,
+          // Season cards
+          Expanded(
+            child: seasons.isEmpty
+                ? _buildEmptyState(status)
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSizes.spacing8),
+                    itemCount: seasons.length,
+                    itemBuilder: (context, index) {
+                      return _buildSeasonKanbanCard(seasons[index]);
+                    },
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  ),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem<String>(
-                      value: 'view',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.visibility,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          SizedBox(width: AppSizes.spacing8),
-                          Text('View Details'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit, size: 16, color: AppColors.warning),
-                          SizedBox(width: AppSizes.spacing8),
-                          Text('Edit'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, size: 16, color: AppColors.error),
-                          SizedBox(width: AppSizes.spacing8),
-                          Text(
-                            'Delete',
-                            style: TextStyle(color: AppColors.error),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'view':
-                        _viewSeasonDetails(season);
-                        break;
-                      case 'edit':
-                        _editSeason(season);
-                        break;
-                      case 'delete':
-                        _handleDeleteSeason(season);
-                        break;
-                    }
-                  },
-                ),
-              ),
-            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyState(String status) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.calendar_month_outlined,
+            size: 48,
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          const SizedBox(height: AppSizes.spacing12),
+          Text(
+            'No ${status.toLowerCase()} seasons',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.fontSizeSmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeasonKanbanCard(Season season) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _viewSeasonDetails(season),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with name, status, and actions
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    season.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontSize: AppSizes.fontSizeMedium,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing8),
+                _buildSeasonStatusChip(season.active),
+                const SizedBox(width: AppSizes.spacing4),
+                _buildActionsDropdown(season),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spacing12),
+
+            // Season details
+            _buildDetailRow(
+              Icons.description,
+              'Description',
+              season.description.isEmpty
+                  ? 'No description'
+                  : season.description,
+            ),
+            const SizedBox(height: AppSizes.spacing8),
+            _buildDetailRow(
+              Icons.calendar_month,
+              'Months',
+              '${season.monthRange.length}',
+            ),
+
+            const SizedBox(height: AppSizes.spacing12),
+
+            // Month chips with enhanced display
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSizes.spacing8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+              ),
+              child: SeasonSmartMonthChips.buildSmartMonthChips(
+                season.monthRange,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeasonStatusChip(bool isActive) {
+    Color backgroundColor;
+    Color borderColor;
+    Color textColor;
+    String text;
+
+    if (isActive) {
+      backgroundColor = AppColors.success.withOpacity(0.1);
+      borderColor = AppColors.success.withOpacity(0.3);
+      textColor = AppColors.success;
+      text = 'Active';
+    } else {
+      backgroundColor = AppColors.textSecondary.withOpacity(0.1);
+      borderColor = AppColors.textSecondary.withOpacity(0.3);
+      textColor = AppColors.textSecondary;
+      text = 'Inactive';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: AppSizes.fontSizeSmall,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
+        const SizedBox(width: AppSizes.spacing8),
+        Text(
+          '$label:',
+          style: const TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing4),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionsDropdown(Season season) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_vert,
+        color: AppColors.textSecondary,
+        size: 16,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'view',
+          child: Row(
+            children: [
+              Icon(Icons.visibility, size: 16, color: AppColors.primary),
+              SizedBox(width: AppSizes.spacing8),
+              Text('View Details'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16, color: AppColors.warning),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 16, color: AppColors.error),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Delete', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'view':
+            _viewSeasonDetails(season);
+            break;
+          case 'edit':
+            _editSeason(season);
+            break;
+          case 'delete':
+            _handleDeleteSeason(season);
+            break;
+        }
+      },
     );
   }
 }

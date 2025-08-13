@@ -48,8 +48,11 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
   @override
   void didUpdateWidget(TOUFormValidationGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
+    print('🔄 Validation Grid: didUpdateWidget called');
+
     // Update visible channels when widget changes
     if (widget.selectedChannelIds != oldWidget.selectedChannelIds) {
+      print('📊 Validation Grid: Selected channel IDs changed');
       _visibleChannelIds =
           (widget.selectedChannelIds?.toSet() ??
           widget.availableChannels.map((c) => c.id).toSet());
@@ -57,14 +60,36 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
     // Update filter channel ID when it changes from parent
     if (widget.selectedFilterChannelId != oldWidget.selectedFilterChannelId) {
+      print(
+        '🔍 Validation Grid: Filter channel ID changed from ${oldWidget.selectedFilterChannelId} to ${widget.selectedFilterChannelId}',
+      );
       _selectedFilterChannelId = widget.selectedFilterChannelId;
+
+      // Force legend and grid color update by triggering rebuild
+      setState(() {
+        // State update to trigger rebuild with new filter
+      });
+    }
+
+    // Check for time of use details changes
+    if (widget.timeOfUseDetails != oldWidget.timeOfUseDetails) {
+      print(
+        '📋 Validation Grid: TOU details changed - Old: ${oldWidget.timeOfUseDetails.length}, New: ${widget.timeOfUseDetails.length}',
+      );
+    }
+
+    // Check for time bands changes
+    if (widget.availableTimeBands != oldWidget.availableTimeBands) {
+      print(
+        '⏰ Validation Grid: Available time bands changed - Old: ${oldWidget.availableTimeBands.length}, New: ${widget.availableTimeBands.length}',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: widget.height,
+    // If no height is specified, don't set a fixed height - let it expand
+    final containerWidget = Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
@@ -78,6 +103,13 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
         ],
       ),
     );
+
+    // Apply height constraint only if height is specified
+    if (widget.height != null) {
+      return SizedBox(height: widget.height, child: containerWidget);
+    } else {
+      return containerWidget;
+    }
   }
 
   Widget _buildHeader() {
@@ -195,24 +227,195 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
         color: AppColors.background,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Legend:',
-            style: TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
+          // Channel and Time Band Legend
+          _buildChannelTimeBandLegend(),
+
+          const SizedBox(height: AppSizes.spacing8),
+
+          // Status Legend
+          Row(
+            children: [
+              const Text(
+                'Status:',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spacing12),
+              _buildLegendItem(
+                'Covered',
+                AppColors.success.withValues(alpha: 0.8),
+              ),
+              _buildLegendItem(
+                'Overlap',
+                AppColors.warning.withValues(alpha: 0.8),
+              ),
+              _buildLegendItem(
+                'Conflict',
+                AppColors.error.withValues(alpha: 0.8),
+              ),
+              _buildLegendItem('Empty', AppColors.surface),
+            ],
           ),
-          const SizedBox(width: AppSizes.spacing12),
-          _buildLegendItem('Covered', AppColors.success.withValues(alpha: 0.8)),
-          _buildLegendItem('Overlap', AppColors.warning.withValues(alpha: 0.8)),
-          _buildLegendItem('Conflict', AppColors.error.withValues(alpha: 0.8)),
-          _buildLegendItem('Empty', AppColors.surface),
         ],
       ),
     );
+  }
+
+  Widget _buildChannelTimeBandLegend() {
+    // Get the channels that have data
+    final channelsWithData = <int, List<TimeBand>>{};
+
+    // Group time bands by channel, considering filter
+    for (final detail in widget.timeOfUseDetails) {
+      // Apply channel filtering logic
+      bool shouldInclude = false;
+
+      if (_selectedFilterChannelId != null) {
+        // If a specific channel is selected in filter, only show that channel
+        shouldInclude = detail.channelId == _selectedFilterChannelId;
+      } else {
+        // If no specific filter selected, show all visible channels
+        shouldInclude = _visibleChannelIds.contains(detail.channelId);
+      }
+
+      if (shouldInclude) {
+        final timeBand = widget.availableTimeBands.cast<TimeBand?>().firstWhere(
+          (tb) => tb?.id == detail.timeBandId,
+          orElse: () => null,
+        );
+
+        if (timeBand != null) {
+          channelsWithData.putIfAbsent(detail.channelId, () => <TimeBand>[]);
+          if (!channelsWithData[detail.channelId]!.any(
+            (tb) => tb.id == timeBand.id,
+          )) {
+            channelsWithData[detail.channelId]!.add(timeBand);
+          }
+        }
+      }
+    }
+
+    if (channelsWithData.isEmpty) {
+      print(
+        '🎨 Legend: No channels with data to display (filter: $_selectedFilterChannelId)',
+      );
+      return const SizedBox.shrink();
+    }
+
+    print(
+      '🎨 Legend: Displaying ${channelsWithData.length} channels (filter: $_selectedFilterChannelId): ${channelsWithData.keys.toList()}',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Channel Time Band Colors:',
+          style: TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppSizes.spacing8),
+
+        // Display each channel with its time bands
+        Wrap(
+          spacing: AppSizes.spacing16,
+          runSpacing: AppSizes.spacing8,
+          children: channelsWithData.entries.map((entry) {
+            final channelId = entry.key;
+            final timeBands = entry.value;
+
+            // Get channel info
+            final channel = widget.availableChannels
+                .cast<Channel?>()
+                .firstWhere((c) => c?.id == channelId, orElse: () => null);
+
+            final channelDisplayName = channel?.code.isNotEmpty == true
+                ? channel!.code
+                : channel?.name ?? 'Channel $channelId';
+
+            return Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing8,
+                vertical: AppSizes.spacing4,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    channelDisplayName,
+                    style: const TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.spacing8),
+
+                  // Time band colors
+                  ...timeBands.asMap().entries.map((tbEntry) {
+                    final tbIndex = tbEntry.key;
+                    final timeBand = tbEntry.value;
+                    final color = _getChannelTimeBandColor(channelId, tbIndex);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSizes.spacing4),
+                      child: Tooltip(
+                        message: timeBand.name,
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(3),
+                            border: Border.all(
+                              color: AppColors.border,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  // Method to get consistent colors for channel time bands in legend
+  Color _getChannelTimeBandColor(int channelId, int timeBandIndex) {
+    // Create a list of distinct colors for time bands
+    final colors = [
+      AppColors.primary, // Blue
+      AppColors.success, // Green
+      AppColors.warning, // Orange
+      AppColors.error, // Red
+      AppColors.info, // Cyan
+      const Color(0xFF9C27B0), // Purple
+      const Color(0xFF795548), // Brown
+      const Color(0xFF607D8B), // Blue Grey
+    ];
+
+    // Use channel ID and time band index to ensure consistent coloring
+    final colorIndex = (channelId.hashCode + timeBandIndex) % colors.length;
+    return colors[colorIndex];
   }
 
   Widget _buildLegendItem(String label, Color color) {
@@ -247,17 +450,17 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
     final hours = List.generate(24, (index) => index);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.spacing8),
+      padding: const EdgeInsets.all(AppSizes.spacing4),
       child: Column(
         children: [
           // Header row
           Row(
             children: [
-              const SizedBox(width: 24), // Hour column width
+              const SizedBox(width: 32), // Hour column width
               ...days.map(
                 (day) => Expanded(
                   child: Container(
-                    height: 20,
+                    height: 24,
                     alignment: Alignment.center,
                     child: Text(
                       day,
@@ -285,14 +488,15 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
       children: [
         // Hour label
         SizedBox(
-          width: 24,
-          height: 20,
+          width: 32,
+          height: 24,
           child: Text(
             '${hour.toString().padLeft(2, '0')}',
             style: const TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               color: AppColors.textSecondary,
               fontFamily: 'monospace',
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
@@ -312,7 +516,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
     final color = _getCellColor(validation);
 
     return Container(
-      height: AppSizes.spacing20,
+      height: 24,
       margin: const EdgeInsets.all(0.5),
       decoration: BoxDecoration(
         color: color,
@@ -334,26 +538,69 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
     if (validation.timeBands.length == 1) {
       // Single time band - solid color
+      final timeBandId = validation.timeBands.first;
+      final color = _getTimeBandColorForGrid(timeBandId);
+
       return Container(
         decoration: BoxDecoration(
-          color: _getTimeBandColor(
-            validation.timeBands.first,
-          ).withValues(alpha: 0.8),
+          color: color.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(2),
         ),
       );
     } else if (validation.timeBands.length > 1) {
       // Multiple time bands - striped pattern
-      return CustomPaint(
-        painter: _MiniStripePainter(
-          colors: validation.timeBands
-              .map((id) => _getTimeBandColor(id).withValues(alpha: 0.8))
-              .toList(),
-        ),
-      );
+      final colors = validation.timeBands
+          .map((id) => _getTimeBandColorForGrid(id).withValues(alpha: 0.8))
+          .toList();
+
+      return CustomPaint(painter: _MiniStripePainter(colors: colors));
     }
 
     return null;
+  }
+
+  // Get time band color for grid cells - matches legend colors
+  Color _getTimeBandColorForGrid(int timeBandId) {
+    // Find which channel this time band belongs to and its index within that channel
+    for (final detail in widget.timeOfUseDetails) {
+      // Apply same filtering logic as in validation
+      bool shouldInclude = false;
+
+      if (_selectedFilterChannelId != null) {
+        // If a specific channel is selected in filter, only consider that channel
+        shouldInclude = detail.channelId == _selectedFilterChannelId;
+      } else {
+        // If no specific filter selected, consider all visible channels
+        shouldInclude = _visibleChannelIds.contains(detail.channelId);
+      }
+
+      if (detail.timeBandId == timeBandId && shouldInclude) {
+        // Get all time bands for this channel (considering filter)
+        final channelTimeBands =
+            widget.timeOfUseDetails
+                .where((d) {
+                  if (_selectedFilterChannelId != null) {
+                    return d.channelId == detail.channelId &&
+                        d.channelId == _selectedFilterChannelId;
+                  } else {
+                    return d.channelId == detail.channelId &&
+                        _visibleChannelIds.contains(d.channelId);
+                  }
+                })
+                .map((d) => d.timeBandId)
+                .toSet()
+                .toList()
+              ..sort(); // Sort for consistent indexing
+
+        final timeBandIndex = channelTimeBands.indexOf(timeBandId);
+        if (timeBandIndex >= 0) {
+          return _getChannelTimeBandColor(detail.channelId, timeBandIndex);
+        }
+      }
+    }
+
+    // Fallback to original method if not found
+    return _getTimeBandColor(timeBandId);
   }
 
   // Validation logic
@@ -408,6 +655,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
     return TimeSlotValidation(
       hour: hour,
+
       dayIndex: dayIndex,
       timeBands: applicableDetails.map((d) => d.timeBandId).toList(),
       channels: applicableDetails.map((d) => d.channelId).toList(),

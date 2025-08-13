@@ -17,7 +17,6 @@ import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/device_groups/device_group_summary_card.dart';
-import '../../widgets/device_groups/device_group_kanban_view.dart'; // Import the new kanban view
 import 'create_edit_device_group_dialog.dart';
 import 'device_group_manage_devices_dialog.dart';
 
@@ -46,15 +45,6 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   String _sortBy = 'name';
   bool _sortAscending = true;
   List<String> _hiddenColumns = [];
-
-  // Available columns for table view
-  final List<String> _availableColumns = [
-    'Group Name',
-    'Description',
-    'Device Count',
-    'Status',
-    'Actions',
-  ];
 
   // Pagination
   int _currentPage = 1;
@@ -311,6 +301,29 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
     );
   }
 
+  Future<List<DeviceGroup>> _fetchAllDeviceGroups() async {
+    try {
+      // Fetch all device groups without pagination
+      final response = await _deviceGroupService.getDeviceGroups(
+        search: _searchQuery.isEmpty
+            ? ApiConstants.defaultSearch
+            : '%$_searchQuery%',
+        offset: 0,
+        limit: 10000, // Large limit to get all items
+      );
+
+      if (response.success && response.data != null) {
+        return response.data!;
+      } else {
+        throw Exception(
+          response.message ?? 'Failed to fetch all device groups',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error fetching all device groups: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -331,6 +344,9 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
+        SizedBox(height: AppSizes.spacing12),
+        DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
+        const SizedBox(height: AppSizes.spacing8),
         DeviceGroupFiltersAndActionsV2(
           onSearchChanged: _onSearchChanged,
           onStatusFilterChanged: _onStatusFilterChanged,
@@ -349,8 +365,6 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           //   });
           // },
         ),
-        const SizedBox(height: AppSizes.spacing8),
-        DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
       ],
     );
   }
@@ -361,7 +375,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       return const Center(
         child: AppLottieStateWidget.loading(
           title: 'Loading Device Groups',
-          lottieSize: 100,
+          lottieSize: 80,
           message: 'Please wait while we fetch your device groups.',
         ),
       );
@@ -389,11 +403,9 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       );
     }
 
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing16),
-        child: _buildViewContent(),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: _buildViewContent(),
     );
   }
 
@@ -428,6 +440,8 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       sortAscending: _sortAscending,
       onSort: _handleSort,
       isLoading: _isLoading,
+      totalItemsCount: _totalItems,
+      onSelectAllItems: _fetchAllDeviceGroups,
     );
   }
 
@@ -609,57 +623,442 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   }
 
   Widget _buildKanbanView() {
-    return DeviceGroupKanbanView(
-      deviceGroups: _filteredDeviceGroups,
-      onDeviceGroupSelected: _viewDeviceGroup,
-      isLoading: _isLoading,
-      enablePagination:
-          false, // Disable pagination for Kanban view as requested
-      itemsPerPage:
-          _itemsPerPage, // Keep for consistency but not used since pagination is disabled
+    if (_isLoading && _deviceGroups.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final groupedDeviceGroups = _groupDeviceGroupsByStatus();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: groupedDeviceGroups.entries.map((entry) {
+            return _buildDeviceGroupStatusColumn(entry.key, entry.value);
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Map<String, List<DeviceGroup>> _groupDeviceGroupsByStatus() {
+    final Map<String, List<DeviceGroup>> grouped = {
+      'Active': [],
+      'Inactive': [],
+    };
+
+    for (final deviceGroup in _filteredDeviceGroups) {
+      if (deviceGroup.active == true) {
+        grouped['Active']!.add(deviceGroup);
+      } else {
+        grouped['Inactive']!.add(deviceGroup);
+      }
+    }
+
+    return grouped;
+  }
+
+  Widget _buildDeviceGroupStatusColumn(
+    String status,
+    List<DeviceGroup> deviceGroups,
+  ) {
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (status.toLowerCase()) {
+      case 'active':
+        statusColor = AppColors.success;
+        statusIcon = Icons.group_outlined;
+        break;
+      case 'inactive':
+        statusColor = AppColors.textSecondary;
+        statusIcon = Icons.group_off_outlined;
+        break;
+      default:
+        statusColor = AppColors.textSecondary;
+        statusIcon = Icons.help_outline;
+    }
+
+    return Container(
+      width: 300,
+      margin: const EdgeInsets.only(right: AppSizes.spacing16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Column header
+          Container(
+            padding: const EdgeInsets.all(AppSizes.spacing16),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppSizes.radiusMedium),
+                topRight: Radius.circular(AppSizes.radiusMedium),
+              ),
+              border: Border(
+                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(statusIcon, color: statusColor, size: 20),
+                const SizedBox(width: AppSizes.spacing8),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                    fontSize: AppSizes.fontSizeMedium,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Text(
+                    '${deviceGroups.length}',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Device Group cards
+          Expanded(
+            child: deviceGroups.isEmpty
+                ? _buildDeviceGroupEmptyState(status)
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSizes.spacing8),
+                    itemCount: deviceGroups.length,
+                    itemBuilder: (context, index) {
+                      return _buildDeviceGroupKanbanCard(deviceGroups[index]);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceGroupEmptyState(String status) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.group_outlined,
+            size: 48,
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          const SizedBox(height: AppSizes.spacing12),
+          Text(
+            'No ${status.toLowerCase()} device groups',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.fontSizeSmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceGroupKanbanCard(DeviceGroup deviceGroup) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _viewDeviceGroup(deviceGroup),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with name, status, and actions
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    deviceGroup.name ?? 'Unnamed Group',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontSize: AppSizes.fontSizeMedium,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing8),
+                _buildDeviceGroupStatusChip(deviceGroup.active ?? false),
+                const SizedBox(width: AppSizes.spacing4),
+                _buildDeviceGroupActionsDropdown(deviceGroup),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spacing12),
+
+            // Device Group details
+            _buildDetailRow(
+              Icons.numbers,
+              'ID',
+              deviceGroup.id?.toString() ?? 'N/A',
+            ),
+            const SizedBox(height: AppSizes.spacing8),
+            if (deviceGroup.description?.isNotEmpty == true) ...[
+              _buildDetailRow(
+                Icons.description,
+                'Description',
+                deviceGroup.description!,
+              ),
+              const SizedBox(height: AppSizes.spacing8),
+            ],
+            _buildDetailRow(
+              Icons.devices,
+              'Device Count',
+              '${deviceGroup.devices?.length ?? 0} devices',
+            ),
+
+            // Active indicator footer
+            if (deviceGroup.active == true) ...[
+              const SizedBox(height: AppSizes.spacing12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing8,
+                  vertical: AppSizes.spacing4,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  border: Border.all(
+                    color: const Color(0xFF059669).withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 14,
+                      color: const Color(0xFF059669),
+                    ),
+                    const SizedBox(width: AppSizes.spacing4),
+                    Text(
+                      'Active Group',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeExtraSmall,
+                        color: const Color(0xFF059669),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeviceGroupStatusChip(bool isActive) {
+    Color backgroundColor;
+    Color borderColor;
+    Color textColor;
+
+    if (isActive) {
+      // Active - Green
+      backgroundColor = const Color(0xFF059669).withOpacity(0.1);
+      borderColor = const Color(0xFF059669).withOpacity(0.3);
+      textColor = const Color(0xFF059669);
+    } else {
+      // Inactive - Red
+      backgroundColor = const Color(0xFFDC2626).withOpacity(0.1);
+      borderColor = const Color(0xFFDC2626).withOpacity(0.3);
+      textColor = const Color(0xFFDC2626);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Text(
+        isActive ? 'Active' : 'Inactive',
+        style: TextStyle(
+          color: textColor,
+          fontSize: AppSizes.fontSizeSmall,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
+        const SizedBox(width: AppSizes.spacing8),
+        Text(
+          '$label:',
+          style: const TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing4),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeviceGroupActionsDropdown(DeviceGroup deviceGroup) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_vert,
+        color: AppColors.textSecondary,
+        size: 16,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'view',
+          child: Row(
+            children: [
+              Icon(Icons.visibility, size: 16, color: AppColors.primary),
+              SizedBox(width: AppSizes.spacing8),
+              Text('View Details'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16, color: AppColors.warning),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'manage_devices',
+          child: Row(
+            children: [
+              Icon(Icons.device_hub, size: 16, color: AppColors.info),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Manage Devices'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 16, color: AppColors.error),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Delete', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'view':
+            _viewDeviceGroup(deviceGroup);
+            break;
+          case 'edit':
+            _editDeviceGroup(deviceGroup);
+            break;
+          case 'manage_devices':
+            _manageDevices(deviceGroup);
+            break;
+          case 'delete':
+            _deleteDeviceGroup(deviceGroup);
+            break;
+        }
+      },
     );
   }
 
   Widget _buildPagination() {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border.withOpacity(0.1), width: 1),
-        ),
-      ),
-      child: ResultsPagination(
-        currentPage: _currentPage,
-        totalPages: _totalPages,
-        totalItems: _totalItems,
-        itemsPerPage: _itemsPerPage,
-        itemsPerPageOptions: const [
-          5,
-          10,
-          20,
-          25,
-          50,
-        ], // Include 25 to match _itemsPerPage default
-        startItem: (_currentPage - 1) * _itemsPerPage + 1,
-        endItem: (_currentPage * _itemsPerPage > _totalItems)
-            ? _totalItems
-            : _currentPage * _itemsPerPage,
-        onPageChanged: (page) {
-          setState(() {
-            _currentPage = page;
-          });
-          _loadDeviceGroups();
-        },
-        onItemsPerPageChanged: (itemsPerPage) {
-          setState(() {
-            _itemsPerPage = itemsPerPage;
-            _currentPage = 1;
-          });
-          _loadDeviceGroups();
-        },
-        // itemLabel: 'device groups',
-      ),
+    return ResultsPagination(
+      currentPage: _currentPage,
+      totalPages: _totalPages,
+      totalItems: _totalItems,
+      itemsPerPage: _itemsPerPage,
+      itemsPerPageOptions: const [5, 10, 20, 25, 50],
+      startItem: (_currentPage - 1) * _itemsPerPage + 1,
+      endItem: (_currentPage * _itemsPerPage > _totalItems)
+          ? _totalItems
+          : _currentPage * _itemsPerPage,
+      onPageChanged: (page) {
+        setState(() {
+          _currentPage = page;
+        });
+        _loadDeviceGroups();
+      },
+      onItemsPerPageChanged: (itemsPerPage) {
+        setState(() {
+          _itemsPerPage = itemsPerPage;
+          _currentPage = 1;
+        });
+        _loadDeviceGroups();
+      },
+      showItemsPerPageSelector: true,
     );
   }
 }

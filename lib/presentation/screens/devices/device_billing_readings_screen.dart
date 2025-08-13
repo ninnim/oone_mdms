@@ -1463,24 +1463,29 @@ class _DeviceBillingReadingsScreenState
         ? totalItems
         : _currentPage * _itemsPerPage;
 
-    return ResultsPagination(
-      currentPage: _currentPage,
-      totalPages: totalPages,
-      totalItems: totalItems,
-      itemsPerPage: _itemsPerPage,
-      startItem: startItem,
-      endItem: endItem,
-      onPageChanged: (page) {
-        setState(() {
-          _currentPage = page;
-        });
-      },
-      onItemsPerPageChanged: (newItemsPerPage) {
-        setState(() {
-          _itemsPerPage = newItemsPerPage;
-          _currentPage = 1; // Reset to first page
-        });
-      },
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      child: ResultsPagination(
+        currentPage: _currentPage,
+        totalPages: totalPages,
+        totalItems: totalItems,
+        itemsPerPage: _itemsPerPage,
+        itemsPerPageOptions: const [5, 10, 20, 25, 50],
+        startItem: startItem,
+        endItem: endItem,
+        onPageChanged: (page) {
+          setState(() {
+            _currentPage = page;
+          });
+        },
+        onItemsPerPageChanged: (newItemsPerPage) {
+          setState(() {
+            _itemsPerPage = newItemsPerPage;
+            _currentPage = 1; // Reset to first page
+          });
+        },
+        showItemsPerPageSelector: true,
+      ),
     );
   }
 

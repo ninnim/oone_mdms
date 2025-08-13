@@ -8,7 +8,6 @@ class BluNestDataTable<T> extends StatefulWidget {
   final List<BluNestTableColumn<T>> columns;
   final List<T> data;
   final Function(T)? onRowTap;
-  final Function(T)? onEdit;
   final Function(T)? onDelete;
   final Function(T)? onView;
   final Widget? emptyState;
@@ -21,6 +20,11 @@ class BluNestDataTable<T> extends StatefulWidget {
   final Function(Set<T>)? onSelectionChanged;
   final List<String> hiddenColumns;
   final Function(List<String>)? onColumnVisibilityChanged;
+
+  // New parameters for enhanced selection
+  final int? totalItemsCount;
+  final Future<List<T>> Function()? onSelectAllItems;
+  final Function(T)? onEdit;
 
   const BluNestDataTable({
     super.key,
@@ -40,6 +44,8 @@ class BluNestDataTable<T> extends StatefulWidget {
     this.onSelectionChanged,
     this.hiddenColumns = const [],
     this.onColumnVisibilityChanged,
+    this.totalItemsCount,
+    this.onSelectAllItems,
   });
 
   @override
@@ -47,10 +53,33 @@ class BluNestDataTable<T> extends StatefulWidget {
 }
 
 class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
+  bool _isSelectingAllItems = false;
+
+  /// Helper method to determine if all items are selected
+  bool _isAllItemsSelected() {
+    if (widget.selectedItems.isEmpty || widget.data.isEmpty) {
+      return false;
+    }
+
+    // If we have total items count, check against that
+    if (widget.totalItemsCount != null) {
+      return widget.selectedItems.length == widget.totalItemsCount;
+    }
+
+    // Otherwise, check against current page data
+    return widget.selectedItems.length == widget.data.length;
+  }
+
   List<BluNestTableColumn<T>> get visibleColumns {
-    return widget.columns
+    final columns = widget.columns
         .where((col) => !widget.hiddenColumns.contains(col.key))
         .toList();
+
+    // Sort columns: non-actions first, then actions columns at the end
+    final nonActionsColumns = columns.where((col) => !col.isActions).toList();
+    final actionsColumns = columns.where((col) => col.isActions).toList();
+
+    return [...nonActionsColumns, ...actionsColumns];
   }
 
   @override
@@ -114,9 +143,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                     child: Transform.scale(
                       scale: 0.9,
                       child: Checkbox(
-                        value:
-                            widget.selectedItems.length == widget.data.length &&
-                            widget.data.isNotEmpty,
+                        value: _isAllItemsSelected(),
                         onChanged: (value) {
                           if (value == true) {
                             widget.onSelectionChanged?.call(
@@ -148,11 +175,17 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                             }
                           : null,
                       child: Container(
+                        alignment: column.isActions
+                            ? Alignment.centerRight
+                            : (column.alignment ?? Alignment.centerLeft),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSizes.spacing4,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: column.isActions
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
                           children: [
                             Flexible(
                               child: Text(
@@ -164,6 +197,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                   letterSpacing: 0.25,
                                 ),
                                 overflow: TextOverflow.ellipsis,
+                                textAlign: column.isActions
+                                    ? TextAlign.right
+                                    : TextAlign.left,
                               ),
                             ),
                             if (column.sortable) ...[
@@ -269,7 +305,13 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                             ...visibleColumns.map(
                               (column) => Expanded(
                                 flex: column.flex ?? 1,
-                                child: column.builder(item),
+                                child: Container(
+                                  alignment: column.isActions
+                                      ? Alignment.centerRight
+                                      : (column.alignment ??
+                                            Alignment.centerLeft),
+                                  child: column.builder(item),
+                                ),
                               ),
                             ),
                           ],
@@ -320,20 +362,8 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                 ),
               ),
               const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () {
-                  widget.onSelectionChanged?.call(widget.data.toSet());
-                },
-                icon: const Icon(Icons.select_all, size: AppSizes.iconMedium),
-                label: const Text('Select All'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing12,
-                    vertical: AppSizes.spacing8,
-                  ),
-                ),
-              ),
+              // Enhanced Select All with dropdown
+              _buildSelectAllButton(),
             ],
           ],
           const Spacer(),
@@ -430,6 +460,100 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
     widget.onColumnVisibilityChanged?.call(newHiddenColumns);
   }
 
+  Widget _buildSelectAllButton() {
+    // If we don't have total count or select all callback, show simple select all
+    if (widget.totalItemsCount == null || widget.onSelectAllItems == null) {
+      return TextButton.icon(
+        onPressed: () {
+          widget.onSelectionChanged?.call(widget.data.toSet());
+        },
+        icon: const Icon(Icons.select_all, size: AppSizes.iconMedium),
+        label: const Text('Select All'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.spacing12,
+            vertical: AppSizes.spacing8,
+          ),
+        ),
+      );
+    }
+
+    // Enhanced version with dropdown
+    return PopupMenuButton<String>(
+      onSelected: (value) async {
+        if (value == 'current_page') {
+          widget.onSelectionChanged?.call(widget.data.toSet());
+        } else if (value == 'all_items') {
+          setState(() {
+            _isSelectingAllItems = true;
+          });
+
+          try {
+            final allItems = await widget.onSelectAllItems!();
+            widget.onSelectionChanged?.call(allItems.toSet());
+          } catch (e) {
+            // Handle error - maybe show a snackbar
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to select all items: $e'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          } finally {
+            if (mounted) {
+              setState(() {
+                _isSelectingAllItems = false;
+              });
+            }
+          }
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'current_page',
+          child: Row(
+            children: [
+              const Icon(Icons.select_all, size: AppSizes.iconSmall),
+              const SizedBox(width: AppSizes.spacing8),
+              Text('Select All (${widget.data.length} items)'),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'all_items',
+          child: Row(
+            children: [
+              const Icon(Icons.done_all, size: AppSizes.iconSmall),
+              const SizedBox(width: AppSizes.spacing8),
+              Text('Select All (${widget.totalItemsCount} items)'),
+            ],
+          ),
+        ),
+      ],
+      child: TextButton.icon(
+        onPressed: null, // Disabled, dropdown handles the action
+        icon: _isSelectingAllItems
+            ? const SizedBox(
+                width: AppSizes.iconMedium,
+                height: AppSizes.iconMedium,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.select_all, size: AppSizes.iconMedium),
+        label: Text(_isSelectingAllItems ? 'Selecting...' : 'Select All'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.spacing12,
+            vertical: AppSizes.spacing8,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyStateWithHeaders() {
     return Column(
       children: [
@@ -508,11 +632,17 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                   }
                                 : null,
                             child: Container(
+                              alignment: column.isActions
+                                  ? Alignment.centerRight
+                                  : (column.alignment ?? Alignment.centerLeft),
                               padding: const EdgeInsets.symmetric(
                                 vertical: AppSizes.spacing4,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: column.isActions
+                                    ? MainAxisAlignment.end
+                                    : MainAxisAlignment.start,
                                 children: [
                                   Flexible(
                                     child: Text(
@@ -524,6 +654,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                         letterSpacing: 0.25,
                                       ),
                                       overflow: TextOverflow.ellipsis,
+                                      textAlign: column.isActions
+                                          ? TextAlign.right
+                                          : TextAlign.left,
                                     ),
                                   ),
                                   if (column.sortable) ...[
@@ -601,6 +734,8 @@ class BluNestTableColumn<T> {
   final Widget Function(T) builder;
   final bool sortable;
   final int? flex;
+  final Alignment? alignment;
+  final bool isActions;
 
   BluNestTableColumn({
     required this.key,
@@ -608,5 +743,7 @@ class BluNestTableColumn<T> {
     required this.builder,
     this.sortable = false,
     this.flex,
+    this.alignment,
+    this.isActions = false,
   });
 }

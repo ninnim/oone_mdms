@@ -96,7 +96,7 @@ class SpecialDayService {
     try {
       final response = await _apiService.post(
         '/api/rest/SpecialDay',
-        data: {'SpecialDay': specialDay.toJson()},
+        data: {'SpecialDay': specialDay.toCreateJson()},
       );
 
       final data = response.data;
@@ -113,14 +113,14 @@ class SpecialDayService {
     }
   }
 
-  // Update special day
+  // Update special day - uses same endpoint as create but with different payload
   Future<ApiResponse<SpecialDay>> updateSpecialDay(
     SpecialDay specialDay,
   ) async {
     try {
       final response = await _apiService.post(
-        '/api/rest/SpecialDay/${specialDay.id}',
-        data: {'SpecialDay': specialDay.toJson()},
+        '/api/rest/SpecialDay',
+        data: {'SpecialDay': specialDay.toUpdateJson()},
       );
 
       final data = response.data;

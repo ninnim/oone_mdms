@@ -98,7 +98,7 @@ class MyApp extends StatelessWidget {
         Provider.value(value: specialDayService),
       ],
       child: MaterialApp.router(
-        title: 'MDMS Clone',
+        title: 'MDMS',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
         routerConfig: AppRouter.getRouter(keycloakService),

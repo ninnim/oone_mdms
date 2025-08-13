@@ -6,13 +6,11 @@ import '../../../core/models/device.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/device_service.dart';
-import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/devices/device_table_columns.dart';
-import '../../widgets/devices/device_kanban_view.dart';
 import '../../widgets/devices/flutter_map_device_view.dart';
 import '../../widgets/devices/device_summary_card.dart';
 import 'create_edit_device_screen.dart';
@@ -65,7 +63,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   Map<String, dynamic>? _selectedBillingRecord;
 
   // View mode
-  DeviceViewMode _currentViewMode = DeviceViewMode.table;
+  DeviceDisplayMode _currentViewMode = DeviceDisplayMode.table;
 
   // Filters
   String? _selectedStatus;
@@ -75,21 +73,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
   // Sorting
   String? _sortBy;
   bool _sortAscending = true;
-
-  // Sidebar state
-  bool _isSidebarOpen = false;
-  Device? _sidebarDevice;
-
-  // Available columns for table view
-  final List<String> _availableColumns = [
-    'Serial Number',
-    'Model',
-    'Type',
-    'Status',
-    'Link Status',
-    'Address',
-    'Actions',
-  ];
 
   @override
   void initState() {
@@ -207,18 +190,28 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  void _updatePaginationTotals() {
-    _totalItems = _filteredDevices.length;
-    _totalPages = _totalItems > 0
-        ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
-        : 1;
+  // Method to fetch all devices for selection
+  Future<List<Device>> _fetchAllDevices() async {
+    try {
+      final response = await _deviceService.getDevices(
+        offset: 0,
+        limit: _totalItems, // Fetch all devices
+      );
 
-    // Ensure current page is valid
-    if (_currentPage > _totalPages) {
-      _currentPage = _totalPages;
-    }
-    if (_currentPage < 1) {
-      _currentPage = 1;
+      if (response.success && response.data != null) {
+        print(
+          '✅ Devices Screen: Fetched ${response.data!.length} devices for selection',
+        );
+
+        // Apply the same filters as current view
+        final filteredDevices = _applyFilters(response.data!);
+        return filteredDevices;
+      } else {
+        throw Exception(response.message ?? 'Failed to fetch all devices');
+      }
+    } catch (e) {
+      print('❌ Devices Screen: Error fetching all devices - $e');
+      throw e;
     }
   }
 
@@ -320,14 +313,24 @@ class _DevicesScreenState extends State<DevicesScreen> {
     // Main devices view with sidebar support
     return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(
-            AppSizes.spacing12,
-          ), // Reduced from spacing16
-          child: Column(
-            children: [
-              // Filters and actions
-              DeviceFiltersAndActionsV2(
+        Column(
+          children: [
+            // Summary card with padding
+            SizedBox(height: AppSizes.spacing12),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing16,
+              ),
+
+              child: DeviceSummaryCard(devices: _filteredDevices),
+            ),
+            SizedBox(height: AppSizes.spacing8),
+            // Filters and actions with padding
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing16,
+              ),
+              child: DeviceFiltersAndActionsV2(
                 onSearchChanged: _onSearchChanged,
                 onStatusFilterChanged: _onStatusFilterChanged,
                 // onTypeFilterChanged: _onTypeFilterChanged,
@@ -345,19 +348,23 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 // selectedType: _selectedType,
                 selectedLinkStatus: _selectedLinkStatus,
               ),
+            ),
 
-              const SizedBox(height: AppSizes.spacing8),
+            const SizedBox(height: AppSizes.spacing8),
 
-              // Summary card
-              DeviceSummaryCard(devices: _filteredDevices),
+            // Error message with padding (compact banner for existing devices)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing16,
+              ),
+              child: _buildErrorMessage(),
+            ),
 
-              // Error message (compact banner for existing devices)
-              _buildErrorMessage(),
-
-              // Content based on view mode
-              Expanded(child: _buildContent()),
-            ],
-          ),
+            // Content based on view mode
+            Expanded(child: _buildContent()),
+            // Always show pagination area, even if empty (no padding)
+            _buildPagination(),
+          ],
         ),
 
         // // Sidebar overlay
@@ -431,40 +438,46 @@ class _DevicesScreenState extends State<DevicesScreen> {
         ? _getPaginatedDevices()
         : _filteredDevices;
 
-    return BluNestDataTable<Device>(
-      columns: DeviceTableColumns.getColumns(
-        onView: (device) =>
-            _viewDeviceDetails(device), // Keep original view action
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: BluNestDataTable<Device>(
+        columns: DeviceTableColumns.getColumns(
+          onView: (device) =>
+              _viewDeviceDetails(device), // Keep original view action
+          onEdit: (device) => _editDevice(device),
+          onDelete: (device) => _deleteDevice(device),
+          currentPage: _currentPage,
+          itemsPerPage: _itemsPerPage,
+          devices: displayDevices,
+        ),
+        data: displayDevices,
+        onRowTap: (device) => _viewDeviceDetails(device),
+        // _openSidebar(device), // Row click opens sidebar
         onEdit: (device) => _editDevice(device),
         onDelete: (device) => _deleteDevice(device),
-        currentPage: _currentPage,
-        itemsPerPage: _itemsPerPage,
-        devices: displayDevices,
+        onView: (device) =>
+            _viewDeviceDetails(device), // Keep original view action
+        enableMultiSelect: true,
+        selectedItems: _selectedDevices,
+        onSelectionChanged: (selectedItems) {
+          setState(() {
+            _selectedDevices = selectedItems;
+          });
+        },
+        hiddenColumns: _hiddenColumns,
+        onColumnVisibilityChanged: (hiddenColumns) {
+          setState(() {
+            _hiddenColumns = hiddenColumns;
+          });
+        },
+        sortBy: _sortBy,
+        sortAscending: _sortAscending,
+        onSort: _handleSort,
+        isLoading: _isLoading,
+        // Enhanced selection parameters
+        totalItemsCount: _totalItems,
+        onSelectAllItems: _fetchAllDevices,
       ),
-      data: displayDevices,
-      onRowTap: (device) => _viewDeviceDetails(device),
-      // _openSidebar(device), // Row click opens sidebar
-      onEdit: (device) => _editDevice(device),
-      onDelete: (device) => _deleteDevice(device),
-      onView: (device) =>
-          _viewDeviceDetails(device), // Keep original view action
-      enableMultiSelect: true,
-      selectedItems: _selectedDevices,
-      onSelectionChanged: (selectedItems) {
-        setState(() {
-          _selectedDevices = selectedItems;
-        });
-      },
-      hiddenColumns: _hiddenColumns,
-      onColumnVisibilityChanged: (hiddenColumns) {
-        setState(() {
-          _hiddenColumns = hiddenColumns;
-        });
-      },
-      sortBy: _sortBy,
-      sortAscending: _sortAscending,
-      onSort: _handleSort,
-      isLoading: _isLoading,
     );
   }
 
@@ -490,48 +503,39 @@ class _DevicesScreenState extends State<DevicesScreen> {
               ? _totalItems
               : _currentPage * _itemsPerPage);
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: ResultsPagination(
-        currentPage: _currentPage,
-        totalPages: displayTotalPages,
-        totalItems: displayTotalItems,
-        itemsPerPage: _itemsPerPage,
-        itemsPerPageOptions: const [
-          5,
-          10,
-          20,
-          25,
-          50,
-        ], // Include 25 to match _itemsPerPage default
-        startItem: startItem,
-        endItem: endItem,
-        onPageChanged: (page) {
-          setState(() {
-            _currentPage = page;
-          });
-          if (hasFilters) {
-            // For filtered data, just update the page (client-side pagination)
-            setState(() {});
-          } else {
-            // For unfiltered data, reload from server
-            _loadDevices();
-          }
-        },
-        onItemsPerPageChanged: (newItemsPerPage) {
-          setState(() {
-            _itemsPerPage = newItemsPerPage;
-            _currentPage = 1;
-            _totalPages = _totalItems > 0
-                ? ((_totalItems + _itemsPerPage - 1) ~/ _itemsPerPage)
-                : 1;
-          });
+    return ResultsPagination(
+      currentPage: _currentPage,
+      totalPages: displayTotalPages,
+      totalItems: displayTotalItems,
+      itemsPerPage: _itemsPerPage,
+      itemsPerPageOptions: const [5, 10, 20, 25, 50],
+      startItem: startItem,
+      endItem: endItem,
+      onPageChanged: (page) {
+        setState(() {
+          _currentPage = page;
+        });
+        if (hasFilters) {
+          // For filtered data, just update the page (client-side pagination)
+          setState(() {});
+        } else {
+          // For unfiltered data, reload from server
           _loadDevices();
-        },
+        }
+      },
+      onItemsPerPageChanged: (newItemsPerPage) {
+        setState(() {
+          _itemsPerPage = newItemsPerPage;
+          _currentPage = 1;
+          _totalPages = _totalItems > 0
+              ? ((_totalItems + _itemsPerPage - 1) ~/ _itemsPerPage)
+              : 1;
+        });
+        _loadDevices();
+      },
 
-        // itemLabel: 'devices',
-        showItemsPerPageSelector: true,
-      ),
+      // itemLabel: 'devices',
+      showItemsPerPageSelector: true,
     );
   }
 
@@ -545,21 +549,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
         },
       ),
     );
-  }
-
-  // Sidebar control methods
-  void _openSidebar(Device device) {
-    setState(() {
-      _isSidebarOpen = true;
-      _sidebarDevice = device;
-    });
-  }
-
-  void _closeSidebar() {
-    setState(() {
-      _isSidebarOpen = false;
-      _sidebarDevice = null;
-    });
   }
 
   void _viewDeviceDetails(Device device) {
@@ -674,137 +663,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
     }
   }
 
-  Widget _buildMultiSelectToolbar() {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.info,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            color: AppColors.surface,
-            size: AppSizes.iconSmall,
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          Text(
-            '${_selectedDevices.length} device${_selectedDevices.length == 1 ? '' : 's'} selected',
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeMedium,
-              fontWeight: FontWeight.w600,
-              color: AppColors.surface,
-            ),
-          ),
-          const Spacer(),
-          TextButton.icon(
-            onPressed: () {
-              // Bulk edit functionality
-              AppToast.showInfo(
-                context,
-                title: 'Bulk Edit',
-                message: 'Bulk edit ${_selectedDevices.length} devices',
-              );
-            },
-            icon: const Icon(
-              Icons.edit,
-              color: AppColors.surface,
-              size: AppSizes.iconSmall,
-            ),
-            label: const Text(
-              'Edit',
-              style: TextStyle(color: AppColors.surface),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          TextButton.icon(
-            onPressed: () {
-              // Bulk delete functionality
-              _showBulkDeleteConfirmation();
-            },
-            icon: const Icon(
-              Icons.delete,
-              color: AppColors.surface,
-              size: AppSizes.iconSmall,
-            ),
-            label: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.surface),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          TextButton.icon(
-            onPressed: () {
-              // Export selected devices
-              AppToast.showInfo(
-                context,
-                title: 'Export',
-                message: 'Export ${_selectedDevices.length} devices',
-              );
-            },
-            icon: const Icon(
-              Icons.file_download,
-              color: AppColors.surface,
-              size: AppSizes.iconSmall,
-            ),
-            label: const Text(
-              'Export',
-              style: TextStyle(color: AppColors.surface),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showBulkDeleteConfirmation() async {
-    final deviceCount = _selectedDevices.length;
-    final confirmed = await AppConfirmDialog.show(
-      context,
-      title: 'Delete Selected Devices',
-      message:
-          'Are you sure you want to delete $deviceCount selected device${deviceCount == 1 ? '' : 's'}? This action cannot be undone.',
-      confirmText: 'Delete All',
-      cancelText: 'Cancel',
-      confirmType: AppButtonType.danger,
-      icon: Icons.delete_sweep,
-    );
-
-    if (confirmed == true && mounted) {
-      try {
-        // TODO: Implement actual bulk delete functionality
-        // await _deviceService.bulkDeleteDevices(_selectedDevices.map((d) => d.id).toList());
-
-        // Simulate bulk delete for now
-        setState(() {
-          for (var device in _selectedDevices) {
-            _devices.remove(device);
-          }
-          _selectedDevices.clear();
-          _totalItems = _devices.length;
-          _totalPages = (_totalItems / _itemsPerPage).ceil();
-        });
-
-        // Show success toast
-        AppToast.showSuccess(
-          context,
-          title: 'Devices Deleted',
-          message:
-              '$deviceCount device${deviceCount == 1 ? '' : 's'} deleted successfully.',
-        );
-      } catch (e) {
-        // Show error toast
-        AppToast.showError(
-          context,
-          error: e,
-          title: 'Bulk Delete Failed',
-          errorContext: 'device_delete',
-        );
-      }
-    }
-  }
-
   void _updateFilteredPagination() {
     // For client-side filtering, calculate pagination based on filtered results
     final filteredTotal = _filteredDevices.length;
@@ -830,11 +688,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
     });
   }
 
-  void _onTypeFilterChanged(String? type) {
+  void _onViewModeChanged(DeviceDisplayMode mode) {
     setState(() {
-      _selectedType = type;
-      _filteredDevices = _applyFilters(_devices);
-      _updatePaginationTotals();
+      _currentViewMode = mode;
     });
   }
 
@@ -844,18 +700,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
       _filteredDevices = _applyFilters(_devices);
       // Update pagination for filtered results (client-side)
       _updateFilteredPagination();
-    });
-  }
-
-  void _onViewModeChanged(DeviceViewMode mode) {
-    setState(() {
-      _currentViewMode = mode;
-    });
-  }
-
-  void _onColumnVisibilityChanged(List<String> hiddenColumns) {
-    setState(() {
-      _hiddenColumns = hiddenColumns;
     });
   }
 
@@ -972,49 +816,441 @@ class _DevicesScreenState extends State<DevicesScreen> {
     }
 
     switch (_currentViewMode) {
-      case DeviceViewMode.table:
+      case DeviceDisplayMode.table:
         return _buildTableView();
-      case DeviceViewMode.kanban:
+      case DeviceDisplayMode.kanban:
         return _buildKanbanView();
-      case DeviceViewMode.map:
+      case DeviceDisplayMode.map:
         return _buildMapView();
     }
   }
 
   Widget _buildTableView() {
-    return AppCard(
-      padding: EdgeInsets.zero,
+    return _buildDeviceTable();
+  }
+
+  Widget _buildKanbanView() {
+    if (_isLoading && _devices.isEmpty) {
+      return const Center(child: AppLottieStateWidget.loading(lottieSize: 80));
+    }
+
+    final groupedDevices = _groupDevicesByStatus();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: groupedDevices.entries.map((entry) {
+            return _buildDeviceStatusColumn(entry.key, entry.value);
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Map<String, List<Device>> _groupDevicesByStatus() {
+    final Map<String, List<Device>> grouped = {
+      'Commissioned': [],
+      'Decommissioned': [],
+      'Unknown': [],
+    };
+
+    for (final device in _filteredDevices) {
+      if (device.status.toLowerCase() == 'commissioned') {
+        grouped['Commissioned']!.add(device);
+      } else if (device.status.toLowerCase() == 'decommissioned') {
+        grouped['Decommissioned']!.add(device);
+      } else {
+        grouped['Unknown']!.add(device);
+      }
+    }
+
+    return grouped;
+  }
+
+  Widget _buildDeviceStatusColumn(String status, List<Device> devices) {
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (status.toLowerCase()) {
+      case 'commissioned':
+        statusColor = AppColors.success;
+        statusIcon = Icons.check_circle_outline;
+        break;
+      case 'decommissioned':
+        statusColor = AppColors.error;
+        statusIcon = Icons.cancel_outlined;
+        break;
+      case 'unknown':
+      default:
+        statusColor = AppColors.textSecondary;
+        statusIcon = Icons.help_outline;
+    }
+
+    return Container(
+      width: 300,
+      margin: const EdgeInsets.only(right: AppSizes.spacing16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          //  _buildTableHeader(),
-          //if (_selectedDevices.isNotEmpty) _buildMultiSelectToolbar(),
-          Expanded(child: _buildDeviceTable()),
-          _buildPagination(),
+          // Column header
+          Container(
+            padding: const EdgeInsets.all(AppSizes.spacing16),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppSizes.radiusMedium),
+                topRight: Radius.circular(AppSizes.radiusMedium),
+              ),
+              border: Border(
+                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(statusIcon, color: statusColor, size: 20),
+                const SizedBox(width: AppSizes.spacing8),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                    fontSize: AppSizes.fontSizeMedium,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Text(
+                    '${devices.length}',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Device cards
+          Expanded(
+            child: devices.isEmpty
+                ? _buildDeviceEmptyState(status)
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSizes.spacing8),
+                    itemCount: devices.length,
+                    itemBuilder: (context, index) {
+                      return _buildDeviceKanbanCard(devices[index]);
+                    },
+                  ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildKanbanView() {
-    return AppCard(
-      padding: EdgeInsets.zero,
+  Widget _buildDeviceEmptyState(String status) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing24),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (_selectedDevices.isNotEmpty) _buildMultiSelectToolbar(),
-          Expanded(
-            child: DeviceKanbanView(
-              devices: _getPaginatedDevices(),
-              onDeviceSelected: _viewDeviceDetails,
-              isLoading: _isLoading,
-              enablePagination:
-                  false, // Disable internal pagination, use external pagination instead
-              itemsPerPage:
-                  _itemsPerPage, // Use the screen's items per page setting
+          Icon(
+            Icons.device_hub_outlined,
+            size: 48,
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          const SizedBox(height: AppSizes.spacing12),
+          Text(
+            'No ${status.toLowerCase()} devices',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.fontSizeSmall,
             ),
           ),
-          _buildPagination(),
         ],
       ),
+    );
+  }
+
+  Widget _buildDeviceKanbanCard(Device device) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _viewDeviceDetails(device),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with name, status, and actions
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    device.name.isNotEmpty ? device.name : device.serialNumber,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontSize: AppSizes.fontSizeMedium,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing8),
+                _buildDeviceStatusChip(device.status, device.active),
+                const SizedBox(width: AppSizes.spacing4),
+                _buildDeviceActionsDropdown(device),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spacing12),
+
+            // Device details
+            _buildDetailRow(Icons.tag, 'Serial', device.serialNumber),
+            const SizedBox(height: AppSizes.spacing8),
+            _buildDetailRow(Icons.memory, 'Type', device.deviceType),
+            const SizedBox(height: AppSizes.spacing8),
+            _buildDetailRow(Icons.settings, 'Model', device.model),
+            const SizedBox(height: AppSizes.spacing8),
+            _buildDetailRow(
+              Icons.business,
+              'Manufacturer',
+              device.manufacturer,
+            ),
+
+            // Link status indicator
+            if (device.linkStatus.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spacing12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing8,
+                  vertical: AppSizes.spacing4,
+                ),
+                decoration: BoxDecoration(
+                  color: _getDeviceLinkStatusColor(
+                    device.linkStatus,
+                  ).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  border: Border.all(
+                    color: _getDeviceLinkStatusColor(
+                      device.linkStatus,
+                    ).withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      device.linkStatus.toLowerCase() == 'connected'
+                          ? Icons.link
+                          : Icons.link_off,
+                      size: 14,
+                      color: _getDeviceLinkStatusColor(device.linkStatus),
+                    ),
+                    const SizedBox(width: AppSizes.spacing4),
+                    Text(
+                      'Link: ${device.linkStatus}',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeExtraSmall,
+                        color: _getDeviceLinkStatusColor(device.linkStatus),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeviceStatusChip(String status, bool isActive) {
+    Color backgroundColor;
+    Color borderColor;
+    Color textColor;
+
+    if (status.toLowerCase().contains('active') || isActive) {
+      // Active - Green
+      backgroundColor = const Color(0xFF059669).withOpacity(0.1);
+      borderColor = const Color(0xFF059669).withOpacity(0.3);
+      textColor = const Color(0xFF059669);
+    } else {
+      // Inactive - Red
+      backgroundColor = const Color(0xFFDC2626).withOpacity(0.1);
+      borderColor = const Color(0xFFDC2626).withOpacity(0.3);
+      textColor = const Color(0xFFDC2626);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Text(
+        isActive ? 'Active' : 'Inactive',
+        style: TextStyle(
+          color: textColor,
+          fontSize: AppSizes.fontSizeSmall,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
+        const SizedBox(width: AppSizes.spacing8),
+        Text(
+          '$label:',
+          style: const TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing4),
+        Expanded(
+          child: Text(
+            value.isNotEmpty ? value : 'Not specified',
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getDeviceStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'commissioned':
+        return AppColors.success;
+      case 'decommissioned':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  Color _getDeviceLinkStatusColor(String linkStatus) {
+    switch (linkStatus.toLowerCase()) {
+      case 'connected':
+      case 'online':
+      case 'multidrive':
+        return AppColors.success;
+      case 'disconnected':
+      case 'offline':
+        return AppColors.error;
+      case 'pending':
+        return AppColors.warning;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  Widget _buildDeviceActionsDropdown(Device device) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_vert,
+        color: AppColors.textSecondary,
+        size: 16,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'view',
+          child: Row(
+            children: [
+              Icon(Icons.visibility, size: 16, color: AppColors.primary),
+              SizedBox(width: AppSizes.spacing8),
+              Text('View Details'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16, color: AppColors.warning),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 16, color: AppColors.error),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Delete', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'view':
+            _viewDeviceDetails(device);
+            break;
+          case 'edit':
+            _editDevice(device);
+            break;
+          case 'delete':
+            _deleteDevice(device);
+            break;
+        }
+      },
     );
   }
 

@@ -1,43 +1,43 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_enums.dart';
 import '../common/universal_filters_and_actions.dart';
 import '../common/advanced_filters.dart';
 
-enum DeviceDisplayMode { table, kanban, map }
-
-class DeviceFiltersAndActionsV2 extends StatefulWidget {
+class ScheduleFiltersAndActionsV2 extends StatefulWidget {
   final Function(String) onSearchChanged;
   final Function(String?) onStatusFilterChanged;
-  final Function(String?) onLinkStatusFilterChanged;
-  final Function(DeviceDisplayMode) onViewModeChanged;
-  final VoidCallback onAddDevice;
+  final Function(String?) onTargetTypeFilterChanged;
+  final Function(ScheduleViewMode) onViewModeChanged;
+  final VoidCallback onAddSchedule;
   final VoidCallback onRefresh;
   final VoidCallback? onExport;
   final VoidCallback? onImport;
-  final DeviceDisplayMode currentViewMode;
+  final ScheduleViewMode currentViewMode;
   final String? selectedStatus;
-  final String? selectedLinkStatus;
+  final String? selectedTargetType;
 
-  const DeviceFiltersAndActionsV2({
+  const ScheduleFiltersAndActionsV2({
     super.key,
     required this.onSearchChanged,
     required this.onStatusFilterChanged,
-    required this.onLinkStatusFilterChanged,
+    required this.onTargetTypeFilterChanged,
     required this.onViewModeChanged,
-    required this.onAddDevice,
+    required this.onAddSchedule,
     required this.onRefresh,
     this.onExport,
     this.onImport,
     required this.currentViewMode,
     this.selectedStatus,
-    this.selectedLinkStatus,
+    this.selectedTargetType,
   });
 
   @override
-  State<DeviceFiltersAndActionsV2> createState() =>
-      _DeviceFiltersAndActionsV2State();
+  State<ScheduleFiltersAndActionsV2> createState() =>
+      _ScheduleFiltersAndActionsV2State();
 }
 
-class _DeviceFiltersAndActionsV2State extends State<DeviceFiltersAndActionsV2> {
+class _ScheduleFiltersAndActionsV2State
+    extends State<ScheduleFiltersAndActionsV2> {
   // Internal state to track current filter values
   Map<String, dynamic> _currentFilterValues = {};
 
@@ -48,34 +48,33 @@ class _DeviceFiltersAndActionsV2State extends State<DeviceFiltersAndActionsV2> {
   }
 
   @override
-  void didUpdateWidget(DeviceFiltersAndActionsV2 oldWidget) {
+  void didUpdateWidget(ScheduleFiltersAndActionsV2 oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Update internal state when external props change
     if (oldWidget.selectedStatus != widget.selectedStatus ||
-        oldWidget.selectedLinkStatus != widget.selectedLinkStatus) {
+        oldWidget.selectedTargetType != widget.selectedTargetType) {
       _currentFilterValues = _buildFilterValues();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return UniversalFiltersAndActions<DeviceDisplayMode>(
+    return UniversalFiltersAndActions<ScheduleViewMode>(
       // Basic properties
-      searchHint: 'Search devices...',
+      searchHint: 'Search schedules...',
       onSearchChanged: widget.onSearchChanged,
-      onAddItem: widget.onAddDevice,
+      onAddItem: widget.onAddSchedule,
       onRefresh: widget.onRefresh,
-      addButtonText: 'Add Device',
+      addButtonText: 'Add Schedule',
       addButtonIcon: Icons.add,
 
       // View modes
-      availableViewModes: DeviceDisplayMode.values,
+      availableViewModes: ScheduleViewMode.values,
       currentViewMode: widget.currentViewMode,
       onViewModeChanged: widget.onViewModeChanged,
       viewModeConfigs: const {
-        DeviceDisplayMode.table: CommonViewModes.table,
-        DeviceDisplayMode.kanban: CommonViewModes.kanban,
-        DeviceDisplayMode.map: CommonViewModes.map,
+        ScheduleViewMode.table: CommonViewModes.table,
+        ScheduleViewMode.kanban: CommonViewModes.kanban,
       },
 
       // Advanced filters only (removed quick filters)
@@ -86,8 +85,6 @@ class _DeviceFiltersAndActionsV2State extends State<DeviceFiltersAndActionsV2> {
       // Actions
       onExport: widget.onExport,
       onImport: widget.onImport,
-
-      // Removed column management
     );
   }
 
@@ -96,16 +93,23 @@ class _DeviceFiltersAndActionsV2State extends State<DeviceFiltersAndActionsV2> {
       FilterConfig.dropdown(
         key: 'status',
         label: 'Status',
-        options: ['Commissioned', 'Decommissioned', 'None'],
+        options: ['Active', 'Inactive'],
         placeholder: 'Select status',
         icon: Icons.check_circle,
       ),
       FilterConfig.dropdown(
-        key: 'linkStatus',
-        label: 'Link Status',
-        options: ['None', 'MULTIDRIVE', 'E-POWER'],
-        placeholder: 'Select link status',
-        icon: Icons.link,
+        key: 'targetType',
+        label: 'Target Type',
+        options: ['Device', 'DeviceGroup'],
+        placeholder: 'Select target type',
+        icon: Icons.device_hub,
+      ),
+      FilterConfig.dropdown(
+        key: 'interval',
+        label: 'Interval',
+        options: ['Daily', 'Weekly', 'Monthly', 'Yearly'],
+        placeholder: 'Select interval',
+        icon: Icons.schedule,
       ),
       FilterConfig.dateRange(
         key: 'dateRange',
@@ -119,7 +123,8 @@ class _DeviceFiltersAndActionsV2State extends State<DeviceFiltersAndActionsV2> {
   Map<String, dynamic> _buildFilterValues() {
     return {
       'status': widget.selectedStatus,
-      'linkStatus': widget.selectedLinkStatus,
+      'targetType': widget.selectedTargetType,
+      'interval': null,
       'dateRange': null,
     };
   }
@@ -132,8 +137,8 @@ class _DeviceFiltersAndActionsV2State extends State<DeviceFiltersAndActionsV2> {
     // Handle clear all filters (empty map)
     if (filters.isEmpty) {
       widget.onStatusFilterChanged(null);
-      widget.onLinkStatusFilterChanged(null);
-      print('Device filters cleared');
+      widget.onTargetTypeFilterChanged(null);
+      print('Schedule filters cleared');
       return;
     }
 
@@ -142,16 +147,13 @@ class _DeviceFiltersAndActionsV2State extends State<DeviceFiltersAndActionsV2> {
       widget.onStatusFilterChanged(filters['status']);
     }
 
-    // Handle link status filter change
-    if (filters.containsKey('linkStatus')) {
-      widget.onLinkStatusFilterChanged(filters['linkStatus']);
+    // Handle target type filter change
+    if (filters.containsKey('targetType')) {
+      widget.onTargetTypeFilterChanged(filters['targetType']);
     }
 
-    // Handle date range filter
-    // You can add more handling logic here for date range filtering
-    print('Device advanced filters applied: $filters');
-
-    // Implement your filtering logic here
-    // widget.onAdvancedFiltersChanged?.call(filters);
+    // Handle interval and date range filters
+    // You can add more handling logic here for additional filtering
+    print('Schedule advanced filters applied: $filters');
   }
 }

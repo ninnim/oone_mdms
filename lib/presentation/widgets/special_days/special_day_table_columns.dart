@@ -135,8 +135,9 @@ class SpecialDayTableColumns {
         title: 'Actions',
         flex: 1,
         sortable: false,
+        isActions: true,
         builder: (specialDay) => Container(
-          alignment: Alignment.center,
+          alignment: Alignment.centerRight,
           height: AppSizes.spacing40,
           child: PopupMenuButton<String>(
             icon: const Icon(

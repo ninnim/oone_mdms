@@ -156,6 +156,7 @@ class _TOUValidationScreenState extends State<TOUValidationScreen>
       actions: [
         if (_timeOfUse != null)
           StatusChip(
+            compact: true,
             text: _timeOfUse!.active ? 'Active' : 'Inactive',
             type: _timeOfUse!.active
                 ? StatusChipType.success
@@ -180,7 +181,7 @@ class _TOUValidationScreenState extends State<TOUValidationScreen>
   Widget _buildBody() {
     if (_isLoading) {
       return const AppLottieStateWidget.loading(
-        message: 'Loading TOU validation data...',
+        // message: 'Loading TOU validation data...',
       );
     }
 

@@ -154,19 +154,22 @@
 }
 
 // Update Schedule
-// Method POST https://mdms.oone.bz/core/api/rest/v1/Schedule/1d87143b-9eea-4646-b904-4d9b701f32fb
+// Method PUT https://mdms.oone.bz/core/api/rest/v1/Schedule/a2da7ec5-fd5d-4ead-bf07-c85b174eff52
 // Request Update Schedule
 {
-  "Code": "SD-001-Update",
-  "Name": "SD-001-Update",
-  "CronExpression": "0 0 0 4 * ?",
+  "JobId": 479,
+  "Code": "DVk01",
+  "Name": "KNONK",
+  "CronExpression": "0 0 0 12 * ?",
   "BillingDevice": {
-    "DeviceId": "7a0bcc8a-c520-4803-8329-ef957cd68b5f",
-    "SiteId": 134,
-    "TimeOfUseId": 10,
+    "Id": "a2da7ec5-fd5d-4ead-bf07-c85b174eff52",
+    "JobId": 479,
+    "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
+    "SiteId": 349,
+    "TimeOfUseId": 222,
     "Status": "Enabled",
-    "NextBillingDate": "2025-07-04",
-    "RetryCount": 1
+    "NextBillingDate": "2025-08-12T00:00:00+00:00",
+    "RetryCount": 2
   }
 }
 

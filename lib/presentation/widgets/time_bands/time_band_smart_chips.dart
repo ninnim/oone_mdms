@@ -38,16 +38,8 @@ class TimeBandSmartChips {
       'Sat', // 6
     ];
 
-    // Colors for each day
-    const dayColors = [
-      Color(0xFFEF4444), // Sun - Red
-      Color(0xFF3B82F6), // Mon - Blue
-      Color(0xFF10B981), // Tue - Green
-      Color(0xFFF59E0B), // Wed - Amber
-      Color(0xFF8B5CF6), // Thu - Purple
-      Color(0xFF06B6D4), // Fri - Cyan
-      Color(0xFFEC4899), // Sat - Pink
-    ];
+    // Use only primary color for easier theming
+    const primaryColor = AppColors.primary;
 
     // Sort days for consistent display (0=Sunday to 6=Saturday)
     final sortedDays = List.from(daysOfWeek)..sort();
@@ -72,15 +64,14 @@ class TimeBandSmartChips {
             runSpacing: 4,
             children: sortedDays.map((dayIndex) {
               final displayName = dayNames[dayIndex];
-              final color = dayColors[dayIndex];
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: color.withValues(alpha: 0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -89,7 +80,7 @@ class TimeBandSmartChips {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeExtraSmall,
                     fontWeight: FontWeight.w600,
-                    color: color,
+                    color: primaryColor,
                   ),
                 ),
               );
@@ -107,7 +98,6 @@ class TimeBandSmartChips {
                 // Show first few days that can fit
                 ...sortedDays.take(calculatedMaxVisible).map((dayIndex) {
                   final displayName = dayNames[dayIndex];
-                  final color = dayColors[dayIndex];
 
                   return Container(
                     padding: const EdgeInsets.symmetric(
@@ -115,10 +105,10 @@ class TimeBandSmartChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
+                      color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: color.withValues(alpha: 0.3),
+                        color: primaryColor.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -127,7 +117,7 @@ class TimeBandSmartChips {
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeExtraSmall,
                         fontWeight: FontWeight.w600,
-                        color: color,
+                        color: primaryColor,
                       ),
                     ),
                   );
@@ -142,10 +132,10 @@ class TimeBandSmartChips {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
+                        color: primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppColors.success.withOpacity(0.3),
+                          color: primaryColor.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -157,14 +147,14 @@ class TimeBandSmartChips {
                             style: const TextStyle(
                               fontSize: AppSizes.fontSizeExtraSmall,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.success,
+                              color: primaryColor,
                             ),
                           ),
                           const SizedBox(width: 2),
                           const Icon(
                             Icons.keyboard_arrow_down,
                             size: 12,
-                            color: AppColors.success,
+                            color: primaryColor,
                           ),
                         ],
                       ),
@@ -190,7 +180,6 @@ class TimeBandSmartChips {
                                 runSpacing: 4,
                                 children: sortedDays.map((dayIndex) {
                                   final displayName = dayNames[dayIndex];
-                                  final color = dayColors[dayIndex];
 
                                   return Container(
                                     padding: const EdgeInsets.symmetric(
@@ -198,10 +187,14 @@ class TimeBandSmartChips {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: color.withValues(alpha: 0.1),
+                                      color: primaryColor.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: color.withValues(alpha: 0.3),
+                                        color: primaryColor.withValues(
+                                          alpha: 0.3,
+                                        ),
                                         width: 1,
                                       ),
                                     ),
@@ -210,7 +203,7 @@ class TimeBandSmartChips {
                                       style: TextStyle(
                                         fontSize: AppSizes.fontSizeExtraSmall,
                                         fontWeight: FontWeight.w600,
-                                        color: color,
+                                        color: primaryColor,
                                       ),
                                     ),
                                   );
@@ -258,21 +251,8 @@ class TimeBandSmartChips {
       'Dec',
     ];
 
-    // Colors for each month - seasonal colors (same as seasons)
-    const monthColors = [
-      Color(0xFF3B82F6), // Jan - Blue (Winter)
-      Color(0xFF6366F1), // Feb - Indigo (Winter)
-      Color(0xFF10B981), // Mar - Green (Spring)
-      Color(0xFF059669), // Apr - Emerald (Spring)
-      Color(0xFF84CC16), // May - Lime (Spring)
-      Color(0xFFF59E0B), // Jun - Amber (Summer)
-      Color(0xFFEF4444), // Jul - Red (Summer)
-      Color(0xFFDC2626), // Aug - Red-600 (Summer)
-      Color(0xFFF97316), // Sep - Orange (Autumn)
-      Color(0xFFEA580C), // Oct - Orange-600 (Autumn)
-      Color(0xFF8B5CF6), // Nov - Purple (Autumn)
-      Color(0xFF1E40AF), // Dec - Blue-700 (Winter)
-    ];
+    // Use only primary color for easier theming (same as seasons)
+    const primaryColor = AppColors.primary;
 
     // Sort months for consistent display
     final sortedMonths = List.from(monthsOfYear)..sort();
@@ -300,15 +280,14 @@ class TimeBandSmartChips {
             runSpacing: 4,
             children: sortedMonths.map((monthIndex) {
               final displayName = monthNames[monthIndex - 1];
-              final color = monthColors[monthIndex - 1];
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: color.withValues(alpha: 0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -317,7 +296,7 @@ class TimeBandSmartChips {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeExtraSmall,
                     fontWeight: FontWeight.w600,
-                    color: color,
+                    color: primaryColor,
                   ),
                 ),
               );
@@ -335,7 +314,6 @@ class TimeBandSmartChips {
                 // Show first few months that can fit
                 ...sortedMonths.take(calculatedMaxVisible).map((monthIndex) {
                   final displayName = monthNames[monthIndex - 1];
-                  final color = monthColors[monthIndex - 1];
 
                   return Container(
                     padding: const EdgeInsets.symmetric(
@@ -343,10 +321,10 @@ class TimeBandSmartChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
+                      color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: color.withValues(alpha: 0.3),
+                        color: primaryColor.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -355,7 +333,7 @@ class TimeBandSmartChips {
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeExtraSmall,
                         fontWeight: FontWeight.w600,
-                        color: color,
+                        color: primaryColor,
                       ),
                     ),
                   );
@@ -419,7 +397,6 @@ class TimeBandSmartChips {
                                 children: sortedMonths.map((monthIndex) {
                                   final displayName =
                                       monthNames[monthIndex - 1];
-                                  final color = monthColors[monthIndex - 1];
 
                                   return Container(
                                     padding: const EdgeInsets.symmetric(
@@ -427,10 +404,10 @@ class TimeBandSmartChips {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: color.withOpacity(0.1),
+                                      color: primaryColor.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: color.withOpacity(0.3),
+                                        color: primaryColor.withOpacity(0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -439,7 +416,7 @@ class TimeBandSmartChips {
                                       style: TextStyle(
                                         fontSize: AppSizes.fontSizeExtraSmall,
                                         fontWeight: FontWeight.w600,
-                                        color: color,
+                                        color: primaryColor,
                                       ),
                                     ),
                                   );
@@ -466,7 +443,7 @@ class TimeBandSmartChips {
   ) {
     if (seasonIds.isEmpty) {
       return const Text(
-        'No seasons selected',
+        '',
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
           color: AppColors.textSecondary,
@@ -666,7 +643,7 @@ class TimeBandSmartChips {
   ) {
     if (specialDayIds.isEmpty) {
       return const Text(
-        'No special days selected',
+        '',
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
           color: AppColors.textSecondary,

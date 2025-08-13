@@ -341,6 +341,24 @@ class _DeviceGroupManageDevicesDialogState
     });
   }
 
+  Future<List<Device>> _fetchAllAvailableDevices() async {
+    try {
+      // Return all available devices (since they're already loaded)
+      return _availableDevices;
+    } catch (e) {
+      throw Exception('Error fetching all available devices: $e');
+    }
+  }
+
+  Future<List<Device>> _fetchAllCurrentDevices() async {
+    try {
+      // Return all current devices (since they're already loaded)
+      return _currentDevices;
+    } catch (e) {
+      throw Exception('Error fetching all current devices: $e');
+    }
+  }
+
   Future<void> _addDevicesToGroup() async {
     if (_selectedAvailableDevices.isEmpty) {
       AppToast.show(
@@ -676,6 +694,8 @@ class _DeviceGroupManageDevicesDialogState
             onSort: _onAvailableSort,
             hiddenColumns: _availableHiddenColumns,
             onColumnVisibilityChanged: _onAvailableColumnVisibilityChanged,
+            totalItemsCount: _availableDevices.length,
+            onSelectAllItems: _fetchAllAvailableDevices,
           ),
         ),
 
@@ -796,6 +816,8 @@ class _DeviceGroupManageDevicesDialogState
             onSort: _onCurrentSort,
             hiddenColumns: _currentHiddenColumns,
             onColumnVisibilityChanged: _onCurrentColumnVisibilityChanged,
+            totalItemsCount: _currentDevices.length,
+            onSelectAllItems: _fetchAllCurrentDevices,
           ),
         ),
 

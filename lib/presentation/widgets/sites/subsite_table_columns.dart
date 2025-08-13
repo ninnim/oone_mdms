@@ -74,8 +74,9 @@ class SubSiteTableColumns {
         title: 'Actions',
         flex: 1,
         sortable: false,
+        isActions: true,
         builder: (site) => Container(
-          alignment: Alignment.center,
+          alignment: Alignment.centerRight,
           child: PopupMenuButton<String>(
             tooltip: 'More actions',
             onSelected: (value) {
@@ -92,7 +93,9 @@ class SubSiteTableColumns {
                     print('🔄 Calling onDelete for subsite: ${site.name}');
                     onDelete(site);
                   } else {
-                    print('❌ Cannot delete subsite: ID is null for ${site.name}');
+                    print(
+                      '❌ Cannot delete subsite: ID is null for ${site.name}',
+                    );
                   }
                   break;
               }
@@ -114,13 +117,13 @@ class SubSiteTableColumns {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.delete, 
-                      size: 16, 
+                      Icons.delete,
+                      size: 16,
                       color: site.id != null ? Colors.red : Colors.grey,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Delete', 
+                      'Delete',
                       style: TextStyle(
                         color: site.id != null ? Colors.red : Colors.grey,
                       ),

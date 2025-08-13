@@ -38,7 +38,7 @@ class SpecialDay {
       data['Id'] = id;
     }
 
-    // Add SpecialDayDetails with the required format
+    // Add SpecialDayDetails with the required format for create operations
     if (specialDayDetails.isNotEmpty) {
       data['SpecialDayDetails'] = {
         'on_conflict': {
@@ -56,6 +56,40 @@ class SpecialDay {
     }
 
     return data;
+  }
+
+  // Separate method for update operations that includes SpecialDayDetails
+  Map<String, dynamic> toUpdateJson() {
+    final data = {'Name': name, 'Description': description, 'Active': active};
+
+    // Always include Id for updates
+    if (id > 0) {
+      data['Id'] = id;
+    }
+
+    // Include SpecialDayDetails for update operations as well
+    if (specialDayDetails.isNotEmpty) {
+      data['SpecialDayDetails'] = {
+        'on_conflict': {
+          'constraint': 'PK_SpecialDayDetail',
+          'update_columns': [
+            'Name',
+            'Description',
+            'StartDate',
+            'EndDate',
+            'Active',
+          ],
+        },
+        'data': specialDayDetails.map((detail) => detail.toJson()).toList(),
+      };
+    }
+
+    return data;
+  }
+
+  // Method specifically for create operations
+  Map<String, dynamic> toCreateJson() {
+    return toJson(); // Use the original toJson for create operations
   }
 
   // Helper method to get the full payload format for API calls

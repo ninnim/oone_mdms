@@ -45,21 +45,8 @@ class SeasonSmartMonthChips {
       'Dec',
     ];
 
-    // Colors for each month - seasonal colors
-    const monthColors = [
-      Color(0xFF3B82F6), // Jan - Blue (Winter)
-      Color(0xFF6366F1), // Feb - Indigo (Winter)
-      Color(0xFF10B981), // Mar - Green (Spring)
-      Color(0xFF059669), // Apr - Emerald (Spring)
-      Color(0xFF84CC16), // May - Lime (Spring)
-      Color(0xFFF59E0B), // Jun - Amber (Summer)
-      Color(0xFFEF4444), // Jul - Red (Summer)
-      Color(0xFFDC2626), // Aug - Red-600 (Summer)
-      Color(0xFFF97316), // Sep - Orange (Autumn)
-      Color(0xFFEA580C), // Oct - Orange-600 (Autumn)
-      Color(0xFF8B5CF6), // Nov - Purple (Autumn)
-      Color(0xFF1E40AF), // Dec - Blue-700 (Winter)
-    ];
+    // Use only primary color for easier theming
+    const primaryColor = AppColors.primary;
 
     // Use LayoutBuilder to determine available space and show "More..." automatically
     return LayoutBuilder(
@@ -82,15 +69,14 @@ class SeasonSmartMonthChips {
             runSpacing: 4,
             children: monthRange.map((monthIndex) {
               final displayName = monthNames[monthIndex - 1];
-              final color = monthColors[monthIndex - 1];
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: color.withValues(alpha: 0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -99,7 +85,7 @@ class SeasonSmartMonthChips {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeExtraSmall,
                     fontWeight: FontWeight.w600,
-                    color: color,
+                    color: primaryColor,
                   ),
                 ),
               );
@@ -117,7 +103,6 @@ class SeasonSmartMonthChips {
                 // Show first few months that can fit
                 ...monthRange.take(calculatedMaxVisible).map((monthIndex) {
                   final displayName = monthNames[monthIndex - 1];
-                  final color = monthColors[monthIndex - 1];
 
                   return Container(
                     padding: const EdgeInsets.symmetric(
@@ -125,10 +110,10 @@ class SeasonSmartMonthChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
+                      color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: color.withValues(alpha: 0.3),
+                        color: primaryColor.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -137,7 +122,7 @@ class SeasonSmartMonthChips {
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeExtraSmall,
                         fontWeight: FontWeight.w600,
-                        color: color,
+                        color: primaryColor,
                       ),
                     ),
                   );
@@ -201,7 +186,6 @@ class SeasonSmartMonthChips {
                                 children: monthRange.map((monthIndex) {
                                   final displayName =
                                       monthNames[monthIndex - 1];
-                                  final color = monthColors[monthIndex - 1];
 
                                   return Container(
                                     padding: const EdgeInsets.symmetric(
@@ -209,10 +193,14 @@ class SeasonSmartMonthChips {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: color.withValues(alpha: 0.1),
+                                      color: primaryColor.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: color.withValues(alpha: 0.3),
+                                        color: primaryColor.withValues(
+                                          alpha: 0.3,
+                                        ),
                                         width: 1,
                                       ),
                                     ),
@@ -221,7 +209,7 @@ class SeasonSmartMonthChips {
                                       style: TextStyle(
                                         fontSize: AppSizes.fontSizeExtraSmall,
                                         fontWeight: FontWeight.w600,
-                                        color: color,
+                                        color: primaryColor,
                                       ),
                                     ),
                                   );

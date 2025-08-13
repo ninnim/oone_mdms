@@ -18,11 +18,13 @@ import 'tou_form_validation_grid.dart';
 class TimeOfUseFormDialog extends StatefulWidget {
   final TimeOfUse? timeOfUse;
   final bool isReadOnly;
+  final VoidCallback? onSaved; // Callback for when save is successful
 
   const TimeOfUseFormDialog({
     super.key,
     this.timeOfUse,
     this.isReadOnly = false,
+    this.onSaved, // Add callback parameter
   });
 
   @override
@@ -257,7 +259,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     });
   }
 
-  /// Validates that each channel has 24-hour and 7-day coverage
+  /// Validates that each channel has 24-hour and 7-day coverage with detailed error messages
   String? _validateChannelCoverage() {
     // Group details by channel
     final channelGroups = <int, List<TimeOfUseDetail>>{};
@@ -268,16 +270,22 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       channelGroups[detail.channelId]!.add(detail);
     }
 
+    // Collect detailed errors for comprehensive display
+    final List<String> allErrors = [];
+
     // Validate each channel
     for (final channelEntry in channelGroups.entries) {
       final channelId = channelEntry.key;
       final channelDetails = channelEntry.value;
 
-      // Get channel name for error message
+      // Get channel information
       final channel = _availableChannels.firstWhere(
         (c) => c.id == channelId,
         orElse: () => Channel.simple(id: channelId, name: 'Channel $channelId'),
       );
+
+      // Create channel display name
+      final channelName = _getChannelDisplayName(channel);
 
       // Get all time bands for this channel
       final timeBandIds = channelDetails.map((d) => d.timeBandId).toSet();
@@ -285,30 +293,75 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
           .where((tb) => timeBandIds.contains(tb.id))
           .toList();
 
-      if (timeBands.isEmpty) {
-        return 'Channel "${channel.name}" has no valid time bands selected.';
+      // Debug logging for full time band
+      for (final timeBand in timeBands) {
+        if (timeBand.name.toLowerCase().contains('full')) {
+          print('🔍 Debug: Full TimeBand ${timeBand.id} (${timeBand.name})');
+          print('  StartTime: ${timeBand.startTime}');
+          print('  EndTime: ${timeBand.endTime}');
+          print('  DaysOfWeek: ${timeBand.daysOfWeek}');
+          print('  TimeBandAttributes: ${timeBand.timeBandAttributes.length}');
+          for (final attr in timeBand.timeBandAttributes) {
+            print(
+              '    ${attr.attributeType}: ${attr.attributeValue} (${attr.valueList})',
+            );
+          }
+        }
       }
 
-      // Check 7-day coverage first (more critical) - must be >= 7 days
+      if (timeBands.isEmpty) {
+        allErrors.add('❌ $channelName: No time bands assigned');
+        continue;
+      }
+
+      // Check 7-day coverage
       final dayCoverage = _calculateDayCoverage(timeBands);
       if (dayCoverage < 7) {
         final missingDays = _getMissingDays(timeBands);
         if (missingDays.length == 7) {
-          return 'Channel "${channel.name}" has no day coverage configured. Please ensure time bands include DayOfWeek attributes covering all 7 days (0=Sunday to 6=Saturday).';
+          allErrors.add('❌ $channelName\nMISSING: No day coverage');
         } else {
-          return 'Channel "${channel.name}" must have 7-day coverage. Missing ${7 - dayCoverage} days: ${missingDays.join(', ')}.';
+          allErrors.add('❌ $channelName\nMISSING: ${missingDays.join(', ')}');
         }
       }
 
-      // Check 24-hour coverage - must be >= 24 hours
+      // Check 24-hour coverage
       final hourCoverage = _calculateHourCoverage(timeBands);
       if (hourCoverage < 24.0) {
         final deficit = 24.0 - hourCoverage;
-        return 'Channel "${channel.name}" must have 24-hour coverage. Currently has ${hourCoverage.toStringAsFixed(1)} hours (missing ${deficit.toStringAsFixed(1)} hours).';
+        allErrors.add(
+          '❌ $channelName\nMISSING: ${deficit.toStringAsFixed(1)} hours',
+        );
       }
     }
 
+    // Return comprehensive error message if any issues found
+    if (allErrors.isNotEmpty) {
+      final errorCount = allErrors.length;
+      final totalChannels = channelGroups.length;
+
+      return '🚨 VALIDATION FAILED ($errorCount of $totalChannels channels)\n\n'
+          '${allErrors.join('\n\n')}';
+    }
+
     return null; // All validations passed
+  }
+
+  /// Gets user-friendly display name for a channel
+  String _getChannelDisplayName(Channel channel) {
+    final code = channel.code.isEmpty ? 'CH${channel.id}' : channel.code;
+    final name = channel.name.isNotEmpty
+        ? channel.name
+        : 'Channel ${channel.id}';
+
+    // If code and name are different, show both; otherwise show just one
+    if (channel.code.isNotEmpty &&
+        channel.name.isNotEmpty &&
+        channel.code != channel.name) {
+      return '$code - $name';
+    } else {
+      return name;
+    }
   }
 
   /// Gets list of missing day names
@@ -353,6 +406,12 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     final List<({double start, double end})> timeRanges = [];
 
     for (final timeBand in timeBands) {
+      // Special handling for "full" time band
+      if (timeBand.name.toLowerCase() == 'full') {
+        // Full time band covers full 24 hours
+        return 24.0;
+      }
+
       final startTime = _parseTimeToHours(timeBand.startTime);
       final endTime = _parseTimeToHours(timeBand.endTime);
 
@@ -414,6 +473,15 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     final Set<int> coveredDays = {};
 
     for (final timeBand in timeBands) {
+      // Special handling for "full" time band
+      if (timeBand.name.toLowerCase() == 'full') {
+        // Full time band should cover all 7 days
+        for (int day = 0; day <= 6; day++) {
+          coveredDays.add(day);
+        }
+        continue;
+      }
+
       // Get days of week from time band attributes (API: 0=Sunday, 6=Saturday)
       final apiDaysOfWeek = timeBand.daysOfWeek;
 
@@ -462,8 +530,13 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    print('🔄 TOU Dialog: Save method called');
+    if (!_formKey.currentState!.validate()) {
+      print('❌ TOU Dialog: Form validation failed');
+      return;
+    }
     if (_details.isEmpty) {
+      print('❌ TOU Dialog: No details provided');
       AppToast.showWarning(
         context,
         message: 'Please add at least one time of use detail',
@@ -475,14 +548,16 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     // Validate 24-hour and 7-day coverage for each channel
     final coverageError = _validateChannelCoverage();
     if (coverageError != null) {
-      AppToast.showError(
+      print('❌ TOU Dialog: Coverage validation failed');
+      AppToast.showWarning(
         context,
-        error: coverageError,
-        title: 'Coverage Validation Failed',
-        duration: const Duration(seconds: 6),
+        message: coverageError,
+        title: 'TOU Coverage Issues',
       );
       return;
     }
+
+    print('✅ TOU Dialog: All validations passed, proceeding with save');
 
     // Update register codes from controllers before saving
     for (int i = 0; i < _details.length; i++) {
@@ -499,6 +574,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
 
     try {
       setState(() => _isLoading = true);
+      print('🔄 TOU Dialog: Starting API call...');
 
       final response = widget.timeOfUse == null
           ? await _timeOfUseService.createTimeOfUse(
@@ -516,38 +592,59 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
               timeOfUseDetails: _details,
             );
 
+      print(
+        '📥 TOU Dialog: API response received - Success: ${response.success}',
+      );
+
       if (mounted) {
         setState(() => _isLoading = false);
 
         if (response.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.timeOfUse == null
-                    ? 'Time of Use created successfully'
-                    : 'Time of Use updated successfully',
-              ),
-              backgroundColor: AppColors.success,
-            ),
+          print('✅ TOU Dialog: Save successful, showing success toast');
+          // Show success toast message
+          AppToast.showSuccess(
+            context,
+            message: widget.timeOfUse == null
+                ? 'Time of Use "${_nameController.text.trim()}" has been created successfully'
+                : 'Time of Use "${_nameController.text.trim()}" has been updated successfully',
+            title: widget.timeOfUse == null
+                ? 'Created Successfully'
+                : 'Updated Successfully',
           );
+
+          // Call the callback if provided
+          if (widget.onSaved != null) {
+            print('🔄 TOU Dialog: Calling onSaved callback');
+            widget.onSaved!();
+          }
+
+          print(
+            '🚪 TOU Dialog: Closing dialog with result=true to trigger parent refresh',
+          );
+          // Close dialog and return true to trigger parent data refresh
           Navigator.of(context).pop(true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${response.message}'),
-              backgroundColor: AppColors.error,
-            ),
+          print('❌ TOU Dialog: Save failed - ${response.message}');
+          // Show error toast message
+          AppToast.showError(
+            context,
+            error: response.message ?? 'An unknown error occurred',
+            title: widget.timeOfUse == null
+                ? 'Creation Failed'
+                : 'Update Failed',
           );
         }
       }
     } catch (error) {
+      print('💥 TOU Dialog: Exception during save - $error');
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving Time of Use: $error'),
-            backgroundColor: AppColors.error,
-          ),
+
+        // Show error toast message for exceptions
+        AppToast.showError(
+          context,
+          error: 'An unexpected error occurred: ${error.toString()}',
+          title: 'Error',
         );
       }
     }
@@ -612,32 +709,29 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
             ),
           ),
           const Spacer(),
-          if (widget.isReadOnly &&
-              widget.timeOfUse != null &&
-              !_isEditMode) ...[
-            IconButton(
-              onPressed: _toggleEditMode,
-              icon: const Icon(Icons.edit, size: 18),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.warning.withOpacity(0.1),
-                foregroundColor: AppColors.warning,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                ),
-              ),
-              tooltip: 'Edit Time of Use',
-            ),
-            const SizedBox(width: AppSizes.spacing8),
-          ],
+          // if (widget.isReadOnly &&
+          //     widget.timeOfUse != null &&
+          //     !_isEditMode) ...[
+          //   IconButton(
+          //     onPressed: _toggleEditMode,
+          //     icon: const Icon(Icons.edit, size: 18),
+          //     style: IconButton.styleFrom(
+          //       backgroundColor: AppColors.warning.withOpacity(0.1),
+          //       foregroundColor: AppColors.warning,
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          //       ),
+          //     ),
+          //     tooltip: 'Edit Time of Use',
+          //   ),
+          //   const SizedBox(width: AppSizes.spacing8),
+          // ],
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.close, size: 18),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.textSecondary.withOpacity(0.1),
               foregroundColor: AppColors.textSecondary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              ),
             ),
           ),
         ],
@@ -650,7 +744,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       child: Form(
         key: _formKey,
@@ -763,55 +857,57 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         ),
         const SizedBox(height: AppSizes.spacing16),
 
-        if (_details.isEmpty) ...[
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing24),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.schedule,
-                    color: AppColors.textSecondary.withOpacity(0.5),
+        // Scrollable Time of Use Details List
+        Expanded(
+          child: _details.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(AppSizes.spacing24),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  const SizedBox(height: AppSizes.spacing8),
-                  Text(
-                    'No Time of Use details added yet',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppSizes.fontSizeSmall,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color: AppColors.textSecondary.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: AppSizes.spacing8),
+                        Text(
+                          'No Time of Use details added yet',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: AppSizes.fontSizeSmall,
+                          ),
+                        ),
+                        if (_isEditMode) ...[
+                          const SizedBox(height: AppSizes.spacing12),
+                          AppButton(
+                            text: 'Add First Detail',
+                            type: AppButtonType.outline,
+                            onPressed: _addDetail,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  if (_isEditMode) ...[
-                    const SizedBox(height: AppSizes.spacing12),
-                    AppButton(
-                      text: 'Add First Detail',
-                      type: AppButtonType.outline,
-                      onPressed: _addDetail,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ] else ...[
-          ReorderableListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            itemCount: _details.length,
-            onReorder: _isEditMode ? _reorderDetails : (oldIndex, newIndex) {},
-            itemBuilder: (context, index) => Container(
-              key: ValueKey('detail_$index'),
-              margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
-              child: _buildDetailItem(index, _details[index]),
-            ),
-          ),
-        ],
+                )
+              : ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  itemCount: _details.length,
+                  onReorder: _isEditMode
+                      ? _reorderDetails
+                      : (oldIndex, newIndex) {},
+                  itemBuilder: (context, index) => Container(
+                    key: ValueKey('detail_$index'),
+                    margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
+                    child: _buildDetailItem(index, _details[index]),
+                  ),
+                ),
+        ),
       ],
     );
   }
@@ -819,61 +915,62 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   Widget _buildValidationGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+
       children: [
         // Header with title and filter dropdown
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Time of use validate',
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeMedium,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const Spacer(),
-            // Channel filter dropdown
-            if (_details.isNotEmpty) ...[
-              const Text(
-                'Filter Channel: ',
+            const Expanded(
+              child: Text(
+                'Time of use validate',
                 style: TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  fontWeight: FontWeight.w500,
+                  fontSize: AppSizes.fontSizeLarge,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
               ),
+            ),
+            // Channel filter dropdown
+            const Spacer(),
+            if (_details.isNotEmpty) ...[
               const SizedBox(width: AppSizes.spacing8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 200, minWidth: 150),
-                child: AppSearchableDropdown<int?>(
-                  value: _selectedFilterChannelId,
-                  hintText: 'All Selected Channels',
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('All Selected Channels'),
-                    ),
-                    ..._details.map((d) => d.channelId).toSet().map((
-                      channelId,
-                    ) {
-                      final channel = _availableChannels.firstWhere(
-                        (c) => c.id == channelId,
-                        orElse: () => Channel.simple(
-                          id: channelId,
-                          name: 'Channel $channelId',
-                        ),
-                      );
-                      return DropdownMenuItem<int?>(
-                        value: channelId,
-                        child: Text(_getFilterChannelDisplayText(channel)),
-                      );
-                    }),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedFilterChannelId = value;
-                    });
-                  },
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 200,
+                    minWidth: 150,
+                  ),
+                  child: AppSearchableDropdown<int?>(
+                    value: _selectedFilterChannelId,
+                    hintText: 'All Selected Channels',
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('All Selected Channels'),
+                      ),
+                      ..._details.map((d) => d.channelId).toSet().map((
+                        channelId,
+                      ) {
+                        final channel = _availableChannels.firstWhere(
+                          (c) => c.id == channelId,
+                          orElse: () => Channel.simple(
+                            id: channelId,
+                            name: 'Channel $channelId',
+                          ),
+                        );
+                        return DropdownMenuItem<int?>(
+                          value: channelId,
+                          child: Text(_getFilterChannelDisplayText(channel)),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedFilterChannelId = value;
+                      });
+                    },
+                  ),
                 ),
               ),
             ],
@@ -881,50 +978,50 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         ),
         const SizedBox(height: AppSizes.spacing16),
 
-        if (_details.isEmpty) ...[
-          Container(
-            height: 300,
-            padding: const EdgeInsets.all(AppSizes.spacing24),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.grid_view,
-                    color: AppColors.textSecondary.withOpacity(0.5),
+        // Scrollable Validation Grid Container
+        Expanded(
+          flex: 1,
+          child: _details.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(AppSizes.spacing24),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  const SizedBox(height: AppSizes.spacing8),
-                  Text(
-                    'No data to validate yet',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppSizes.fontSizeSmall,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.grid_view,
+                          color: AppColors.textSecondary.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: AppSizes.spacing8),
+                        Text(
+                          'No data to validate yet',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: AppSizes.fontSizeSmall,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ] else ...[
-          TOUFormValidationGrid(
-            timeOfUseDetails: _details,
-            availableTimeBands: _availableTimeBands,
-            availableChannels: _availableChannels,
-            selectedChannelIds: _details
-                .map((d) => d.channelId)
-                .toSet()
-                .toList(),
-            selectedFilterChannelId: _selectedFilterChannelId,
-            // Fixed height for validation grid
-            height: MediaQuery.of(context).size.width * 0.40,
-            showLegend: true,
-          ),
-        ],
+                )
+              : TOUFormValidationGrid(
+                  timeOfUseDetails: _details,
+                  availableTimeBands: _availableTimeBands,
+                  availableChannels: _availableChannels,
+                  selectedChannelIds: _details
+                      .map((d) => d.channelId)
+                      .toSet()
+                      .toList(),
+                  selectedFilterChannelId: _selectedFilterChannelId,
+                  // No height specified - will expand to fill available space
+                  showLegend: true,
+                ),
+        ),
       ],
     );
   }

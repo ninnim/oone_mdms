@@ -15,9 +15,7 @@ import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/blunest_data_table.dart';
-import '../../widgets/common/kanban_view.dart';
 import '../../widgets/common/results_pagination.dart';
-import '../../widgets/common/status_chip.dart';
 import '../../widgets/time_bands/time_band_form_dialog.dart';
 import '../../widgets/time_bands/time_band_table_columns.dart';
 import '../../widgets/time_bands/time_band_smart_chips.dart';
@@ -263,6 +261,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
       title: 'Delete Time Band',
       message: 'Are you sure you want to delete "${timeBand.name}"?',
       confirmText: 'Delete',
+      icon: Icons.delete_outline,
       confirmType: AppButtonType.danger,
     );
 
@@ -281,6 +280,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
           'Are you sure you want to delete ${_selectedTimeBands.length} time band(s)?',
       confirmText: 'Delete All',
       confirmType: AppButtonType.danger,
+      icon: Icons.delete_outline,
     );
 
     if (confirmed == true) {
@@ -365,6 +365,25 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
     );
   }
 
+  Future<List<TimeBand>> _fetchAllTimeBands() async {
+    try {
+      // Fetch all time bands without pagination
+      final response = await _timeBandService.getTimeBands(
+        search: _searchQuery.isNotEmpty ? _searchQuery : '%%',
+        offset: 0,
+        limit: 10000, // Large limit to get all items
+      );
+
+      if (response.success && response.data != null) {
+        return response.data!;
+      } else {
+        throw Exception(response.message ?? 'Failed to fetch all time bands');
+      }
+    } catch (e) {
+      throw Exception('Error fetching all time bands: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -374,68 +393,22 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
           // Header with summary card and filters
           _buildHeader(),
 
-          // Multi-select actions bar
-          if (_selectedTimeBands.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spacing16,
-                vertical: AppSizes.spacing8,
-              ),
-              color: AppColors.primary.withOpacity(0.1),
-              child: Row(
-                children: [
-                  Text(
-                    '${_selectedTimeBands.length} time band(s) selected',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  const Spacer(),
-                  AppButton(
-                    text: 'Delete Selected',
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    type: AppButtonType.text,
-                    size: AppButtonSize.small,
-                    onPressed: _deleteSelectedTimeBands,
-                  ),
-                  const SizedBox(width: AppSizes.spacing8),
-                  AppButton(
-                    text: 'Clear Selection',
-                    type: AppButtonType.text,
-                    size: AppButtonSize.small,
-                    onPressed: () {
-                      setState(() {
-                        _selectedTimeBands.clear();
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-
           // Content
           Expanded(child: _buildContent()),
 
-          // Pagination
-          if (_timeBands.isNotEmpty && !_isLoading)
-            Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              color: Colors.white,
-              child: ResultsPagination(
-                currentPage: _currentPage,
-                totalPages: _totalPages,
-                totalItems: _totalItems,
-                startItem: ((_currentPage - 1) * _itemsPerPage) + 1,
-                endItem: (_currentPage * _itemsPerPage).clamp(0, _totalItems),
-                onPageChanged: _handlePageChanged,
-                itemsPerPage: _itemsPerPage,
-                itemsPerPageOptions: const [
-                  10,
-                  25,
-                  50,
-                  100,
-                ], // Include 25 in options
-                onItemsPerPageChanged: _handlePageSizeChanged,
-              ),
-            ),
+          // Pagination - Always visible for consistency (no padding)
+          ResultsPagination(
+            currentPage: _currentPage,
+            totalPages: _totalPages,
+            totalItems: _totalItems,
+            itemsPerPage: _itemsPerPage,
+            itemsPerPageOptions: const [5, 10, 20, 25, 50],
+            startItem: ((_currentPage - 1) * _itemsPerPage) + 1,
+            endItem: (_currentPage * _itemsPerPage).clamp(0, _totalItems),
+            onPageChanged: _handlePageChanged,
+            onItemsPerPageChanged: _handlePageSizeChanged,
+            showItemsPerPageSelector: true,
+          ),
         ],
       ),
     );
@@ -443,13 +416,14 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       color: Colors.white,
       child: Column(
         children: [
+          SizedBox(height: AppSizes.spacing12),
           // Summary Card
           _buildSummaryCard(),
-          const SizedBox(height: AppSizes.spacing16),
+          const SizedBox(height: AppSizes.spacing8),
 
           // Filters and Actions
           TimeBandFiltersAndActionsV2(
@@ -581,7 +555,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const AppLottieStateWidget.loading();
+      return const AppLottieStateWidget.loading(lottieSize: 80);
     }
 
     if (_errorMessage.isNotEmpty) {
@@ -613,7 +587,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
 
   Widget _buildTableView() {
     return Container(
-      margin: const EdgeInsets.all(AppSizes.spacing16),
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
@@ -645,6 +619,8 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
             _hiddenColumns = hiddenColumns;
           });
         },
+        totalItemsCount: _totalItems,
+        onSelectAllItems: _fetchAllTimeBands,
       ),
     );
   }
@@ -658,46 +634,76 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
       onView: _viewTimeBandDetails,
       availableSeasons: _availableSeasons,
       availableSpecialDays: _availableSpecialDays,
+      currentPage: _currentPage,
+      itemsPerPage: _itemsPerPage,
+      data: _timeBands,
     );
   }
 
   Widget _buildKanbanView() {
-    return KanbanView<TimeBand>(
-      columns: [
-        KanbanColumn<TimeBand>(
-          id: 'active',
-          title: 'Active Time Bands',
-          color: AppColors.success,
-          icon: Icons.access_time,
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final groupedTimeBands = _groupTimeBandsByStatus();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: groupedTimeBands.entries.map((entry) {
+            return _buildStatusColumn(entry.key, entry.value);
+          }).toList(),
         ),
-        KanbanColumn<TimeBand>(
-          id: 'inactive',
-          title: 'Inactive Time Bands',
-          color: AppColors.textSecondary,
-          icon: Icons.pause_circle,
-        ),
-      ],
-      items: _timeBands,
-      getItemColumn: (timeBand) => timeBand.active ? 'active' : 'inactive',
-      cardBuilder: (timeBand) => _buildTimeBandKanbanCard(timeBand),
-      onItemTapped: _viewTimeBandDetails,
-      isLoading: _isLoading,
-      enableDragDrop: false,
+      ),
     );
   }
 
-  Widget _buildTimeBandKanbanCard(TimeBand timeBand) {
+  Map<String, List<TimeBand>> _groupTimeBandsByStatus() {
+    final Map<String, List<TimeBand>> grouped = {'Active': [], 'Inactive': []};
+
+    for (final timeBand in _timeBands) {
+      if (timeBand.active) {
+        grouped['Active']!.add(timeBand);
+      } else {
+        grouped['Inactive']!.add(timeBand);
+      }
+    }
+
+    return grouped;
+  }
+
+  Widget _buildStatusColumn(String status, List<TimeBand> timeBands) {
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (status.toLowerCase()) {
+      case 'active':
+        statusColor = AppColors.success;
+        statusIcon = Icons.access_time;
+        break;
+      case 'inactive':
+        statusColor = AppColors.textSecondary;
+        statusIcon = Icons.pause_circle;
+        break;
+      default:
+        statusColor = AppColors.textSecondary;
+        statusIcon = Icons.help_outline;
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      width: 300,
+      margin: const EdgeInsets.only(right: AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -705,228 +711,355 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with name and status
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  timeBand.name,
-                  style: const TextStyle(
+          // Column header
+          Container(
+            padding: const EdgeInsets.all(AppSizes.spacing16),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppSizes.radiusMedium),
+                topRight: Radius.circular(AppSizes.radiusMedium),
+              ),
+              border: Border(
+                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(statusIcon, color: statusColor, size: 20),
+                const SizedBox(width: AppSizes.spacing8),
+                Text(
+                  status,
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
+                    color: statusColor,
                     fontSize: AppSizes.fontSizeMedium,
-                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-              StatusChip(
-                text: timeBand.active ? 'Active' : 'Inactive',
-                compact: true,
-                type: timeBand.active
-                    ? StatusChipType.success
-                    : StatusChipType.secondary,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSizes.spacing8),
-
-          // Time Range
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing8,
-              vertical: AppSizes.spacing4,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-            ),
-            child: Text(
-              timeBand.timeRangeDisplay,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: AppSizes.spacing8),
-
-          // Description
-          if (timeBand.description.isNotEmpty) ...[
-            Text(
-              timeBand.description,
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: AppSizes.spacing8),
-          ],
-
-          // Days of Week Chips
-          if (timeBand.daysOfWeek.isNotEmpty) ...[
-            const Text(
-              'Days:',
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSizes.spacing4),
-            TimeBandSmartChips.buildDayOfWeekChips(timeBand.daysOfWeek),
-            const SizedBox(height: AppSizes.spacing8),
-          ],
-
-          // Months Chips
-          if (timeBand.monthsOfYear.isNotEmpty) ...[
-            const Text(
-              'Months:',
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSizes.spacing4),
-            TimeBandSmartChips.buildMonthOfYearChips(timeBand.monthsOfYear),
-            const SizedBox(height: AppSizes.spacing8),
-          ],
-
-          // Seasons and Special Days (if any)
-          if (timeBand.seasonIds.isNotEmpty ||
-              timeBand.specialDayIds.isNotEmpty) ...[
-            Row(
-              children: [
-                if (timeBand.seasonIds.isNotEmpty) ...[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Seasons:',
-                          style: TextStyle(
-                            fontSize: AppSizes.fontSizeSmall,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.spacing4),
-                        TimeBandSmartChips.buildSeasonChips(
-                          timeBand.seasonIds,
-                          _availableSeasons,
-                        ),
-                      ],
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Text(
+                    '${timeBands.length}',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
                     ),
                   ),
-                ],
-                if (timeBand.seasonIds.isNotEmpty &&
-                    timeBand.specialDayIds.isNotEmpty)
-                  const SizedBox(width: AppSizes.spacing8),
-                if (timeBand.specialDayIds.isNotEmpty) ...[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Special Days:',
-                          style: TextStyle(
-                            fontSize: AppSizes.fontSizeSmall,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.spacing4),
-                        TimeBandSmartChips.buildSpecialDayChips(
-                          timeBand.specialDayIds,
-                          _availableSpecialDays,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
-            const SizedBox(height: AppSizes.spacing8),
-          ],
+          ),
 
-          // Actions dropdown
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                alignment: Alignment.center,
-                height: AppSizes.spacing40,
-                child: PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: AppColors.textSecondary,
-                    size: 16,
+          // Time Band cards
+          Expanded(
+            child: timeBands.isEmpty
+                ? _buildEmptyState(status)
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSizes.spacing8),
+                    itemCount: timeBands.length,
+                    itemBuilder: (context, index) {
+                      return _buildTimeBandKanbanCard(timeBands[index]);
+                    },
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  ),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem<String>(
-                      value: 'view',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.visibility,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          SizedBox(width: AppSizes.spacing8),
-                          Text('View Details'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit, size: 16, color: AppColors.warning),
-                          SizedBox(width: AppSizes.spacing8),
-                          Text('Edit'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, size: 16, color: AppColors.error),
-                          SizedBox(width: AppSizes.spacing8),
-                          Text(
-                            'Delete',
-                            style: TextStyle(color: AppColors.error),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'view':
-                        _viewTimeBandDetails(timeBand);
-                        break;
-                      case 'edit':
-                        _editTimeBand(timeBand);
-                        break;
-                      case 'delete':
-                        _deleteTimeBand(timeBand);
-                        break;
-                    }
-                  },
-                ),
-              ),
-            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyState(String status) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.access_time_outlined,
+            size: 48,
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          const SizedBox(height: AppSizes.spacing12),
+          Text(
+            'No ${status.toLowerCase()} time bands',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.fontSizeSmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeBandKanbanCard(TimeBand timeBand) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _viewTimeBandDetails(timeBand),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with name, status, and actions
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    timeBand.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontSize: AppSizes.fontSizeMedium,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing8),
+                _buildTimeBandStatusChip(timeBand.active),
+                const SizedBox(width: AppSizes.spacing4),
+                _buildActionsDropdown(timeBand),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spacing12),
+
+            // Time range and description
+            _buildDetailRow(Icons.schedule, 'Time', timeBand.timeRangeDisplay),
+
+            if (timeBand.description.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spacing8),
+              _buildDetailRow(
+                Icons.description,
+                'Description',
+                timeBand.description,
+              ),
+            ],
+
+            const SizedBox(height: AppSizes.spacing8),
+            _buildDetailRow(
+              Icons.layers,
+              'Attributes',
+              '${timeBand.timeBandAttributes.length}',
+            ),
+
+            // Days of Week chips
+            if (timeBand.daysOfWeek.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spacing12),
+              const Text(
+                'Days:',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacing4),
+              TimeBandSmartChips.buildDayOfWeekChips(timeBand.daysOfWeek),
+            ],
+
+            // Months chips
+            if (timeBand.monthsOfYear.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spacing8),
+              const Text(
+                'Months:',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacing4),
+              TimeBandSmartChips.buildMonthOfYearChips(timeBand.monthsOfYear),
+            ],
+
+            // Seasons and Special Days (if any)
+            if (timeBand.seasonIds.isNotEmpty ||
+                timeBand.specialDayIds.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spacing8),
+              if (timeBand.seasonIds.isNotEmpty) ...[
+                const Text(
+                  'Seasons:',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeSmall,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spacing4),
+                TimeBandSmartChips.buildSeasonChips(
+                  timeBand.seasonIds,
+                  _availableSeasons,
+                ),
+              ],
+              if (timeBand.specialDayIds.isNotEmpty) ...[
+                if (timeBand.seasonIds.isNotEmpty)
+                  const SizedBox(height: AppSizes.spacing8),
+                const Text(
+                  'Special Days:',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeSmall,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spacing4),
+                TimeBandSmartChips.buildSpecialDayChips(
+                  timeBand.specialDayIds,
+                  _availableSpecialDays,
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeBandStatusChip(bool isActive) {
+    Color backgroundColor;
+    Color borderColor;
+    Color textColor;
+    String text;
+
+    if (isActive) {
+      backgroundColor = AppColors.success.withOpacity(0.1);
+      borderColor = AppColors.success.withOpacity(0.3);
+      textColor = AppColors.success;
+      text = 'Active';
+    } else {
+      backgroundColor = AppColors.textSecondary.withOpacity(0.1);
+      borderColor = AppColors.textSecondary.withOpacity(0.3);
+      textColor = AppColors.textSecondary;
+      text = 'Inactive';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: AppSizes.fontSizeSmall,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
+        const SizedBox(width: AppSizes.spacing8),
+        Text(
+          '$label:',
+          style: const TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing4),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionsDropdown(TimeBand timeBand) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_vert,
+        color: AppColors.textSecondary,
+        size: 16,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'view',
+          child: Row(
+            children: [
+              Icon(Icons.visibility, size: 16, color: AppColors.primary),
+              SizedBox(width: AppSizes.spacing8),
+              Text('View Details'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16, color: AppColors.warning),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 16, color: AppColors.error),
+              SizedBox(width: AppSizes.spacing8),
+              Text('Delete', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'view':
+            _viewTimeBandDetails(timeBand);
+            break;
+          case 'edit':
+            _editTimeBand(timeBand);
+            break;
+          case 'delete':
+            _deleteTimeBand(timeBand);
+            break;
+        }
+      },
     );
   }
 }

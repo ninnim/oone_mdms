@@ -157,6 +157,15 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     }
   }
 
+  Future<List<Site>> _fetchAllSubSites() async {
+    try {
+      // Return all current subsites (since this is for a single parent site)
+      return _subSites;
+    } catch (e) {
+      throw Exception('Error fetching all sub-sites: $e');
+    }
+  }
+
   void _createSubSite() {
     if (_site == null) return;
 
@@ -703,6 +712,8 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
           _selectedSubSites.addAll(selected);
         });
       },
+      totalItemsCount: _subSites.length,
+      onSelectAllItems: _fetchAllSubSites,
       emptyState: Center(
         child: AppLottieStateWidget.noData(
           title: 'No sub sites found',

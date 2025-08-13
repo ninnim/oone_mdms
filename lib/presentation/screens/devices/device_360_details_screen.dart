@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_enums.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
@@ -19,6 +20,8 @@ import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_dropdown_field.dart';
+import '../../widgets/common/app_confirm_dialog.dart';
+import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
@@ -28,10 +31,13 @@ import '../../widgets/devices/device_location_viewer.dart';
 import '../../widgets/devices/interactive_map_dialog.dart';
 import '../../widgets/devices/metrics_table_columns.dart';
 import '../../widgets/devices/billing_table_columns.dart';
+import '../../widgets/schedules/schedule_form_dialog.dart';
+import '../../widgets/schedules/schedule_table_columns.dart';
+import '../../widgets/schedules/schedule_filters_and_actions_v2.dart';
+import '../../widgets/schedules/schedule_summary_card.dart';
+import '../../widgets/schedules/schedule_kanban_view.dart';
 import 'widgets/device_channel_table_columns.dart';
 import '../../widgets/common/custom_date_range_picker.dart';
-import '../../widgets/common/app_toast.dart';
-import '../../widgets/common/app_confirm_dialog.dart';
 import '../../routes/app_router.dart';
 
 class Device360DetailsScreen extends StatefulWidget {
@@ -120,7 +126,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   final List<String> _selectedMetricTypes = ['Voltage', 'Current', 'Power'];
   ChartType _selectedChartType = ChartType.line;
   bool _showHover = true;
-  final Map<String, bool> _phaseVisibility = {'L1': true, 'L2': true, 'L3': true};
+  final Map<String, bool> _phaseVisibility = {
+    'L1': true,
+    'L2': true,
+    'L3': true,
+  };
 
   // Overview edit mode state
   bool _isEditingOverview = false;
@@ -149,9 +159,40 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   // Schedule dropdown data
   List<Schedule> _schedules = [];
   bool _isLoadingSchedules = false;
-  String _scheduleSearchQuery = '';
   bool _hasMoreSchedules = true;
   int? _selectedScheduleIdEdit;
+
+  // Schedules tab data
+  List<Schedule> _deviceSchedules = [];
+  List<Schedule> _deviceGroupSchedules = [];
+  List<Schedule> _allSchedules = [];
+  List<Schedule> _filteredSchedules = [];
+  Set<Schedule> _selectedSchedules = {};
+  bool _schedulesLoaded = false;
+  bool _isLoadingDeviceSchedules = false;
+  bool _isLoadingDeviceGroupSchedules = false;
+  String? _schedulesError;
+
+  // Schedule table state
+  List<String> _schedulesHiddenColumns = [];
+  int _schedulesCurrentPage = 1;
+  int _schedulesTotalPages = 1;
+  int _schedulesTotalItems = 0;
+  int _schedulesItemsPerPage = 10;
+  Timer? _schedulesDebounceTimer;
+
+  // Schedule filters
+  String? _selectedScheduleStatus;
+  String? _selectedScheduleTargetType;
+  String _schedulesSearchQuery = '';
+
+  // Schedule tab state (matching device group details style)
+  bool _isSchedulesLoading = false;
+  ScheduleViewMode _scheduleViewMode = ScheduleViewMode.table;
+
+  // Schedule sorting
+  String? _schedulesSortBy;
+  bool _schedulesSortAscending = true;
 
   // Device type options
   final List<String> _deviceTypes = ['None', 'Smart Meter', 'IoT'];
@@ -203,7 +244,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     // if (widget.device!.scheduleId != null) {
     //   _selectedScheduleIdEdit = widget.device!.scheduleId;
     // }
-    }
+  }
 
   void _onTabChanged(int index) {
     setState(() {
@@ -229,6 +270,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       case 4: // Location
         if (!_locationLoaded) _loadLocationData();
         break;
+      case 5: // Schedules
+        if (!_schedulesLoaded) _loadSchedulesData();
+        break;
     }
   }
 
@@ -245,24 +289,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   // Helper method to get device group name
-  String? _getDeviceGroupName() {
-    if (widget.device.deviceGroupId == 0) {
-      return 'None';
-    }
-
-    final deviceGroup = _deviceGroups.firstWhere(
-      (group) => group.id == widget.device.deviceGroupId,
-      orElse: () => DeviceGroup(
-        id: 0,
-        name: 'None',
-        description: '',
-        active: false,
-        devices: [],
-      ),
-    );
-    return deviceGroup.name;
-  }
-
   // Start editing overview
   void _startEditingOverview() {
     setState(() {
@@ -326,7 +352,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     try {
       // Clear search queries and load initial data
       _deviceGroupSearchQuery = '';
-      _scheduleSearchQuery = '';
+      _schedulesSearchQuery = '';
 
       // Load device groups and schedules in parallel
       await Future.wait([
@@ -469,7 +495,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       final response = await _scheduleService.getSchedules(
         limit: 20,
         offset: reset ? 0 : _schedules.length,
-        search: _scheduleSearchQuery.isNotEmpty ? _scheduleSearchQuery : '',
+        search: _schedulesSearchQuery.isNotEmpty ? _schedulesSearchQuery : '',
       );
 
       if (response.success) {
@@ -490,12 +516,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         _isLoadingSchedules = false;
       });
     }
-  }
-
-  // Handle schedule search
-  void _onScheduleSearchChanged(String query) {
-    _scheduleSearchQuery = query;
-    _loadSchedules(reset: true);
   }
 
   // Handle load more schedules
@@ -598,8 +618,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     }
   }
 
-  // Build dropdown field for edit mode
-
   // Build device group dropdown for edit mode
   Widget _buildDeviceGroupEditDropdown() {
     return AppSearchableDropdown<int?>(
@@ -659,20 +677,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
         ),
       ),
-      ..._schedules
-          .map(
-            (schedule) => DropdownMenuItem<int?>(
-              value: schedule.id,
-              child: Text(
-                schedule.name ?? 'Unnamed Schedule',
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  color: Color(0xFF374151),
-                ),
-              ),
+      ..._schedules.map(
+        (schedule) => DropdownMenuItem<int?>(
+          value: schedule.id,
+          child: Text(
+            schedule.name ?? 'Unnamed Schedule',
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: Color(0xFF374151),
             ),
-          )
-          ,
+          ),
+        ),
+      ),
     ];
 
     return AppSearchableDropdown<int?>(
@@ -683,7 +699,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       items: items,
       isLoading: _isLoadingSchedules,
       hasMore: _hasMoreSchedules,
-      searchQuery: _scheduleSearchQuery,
+      searchQuery: _schedulesSearchQuery,
       onChanged: (int? value) {
         setState(() {
           _selectedScheduleIdEdit = value;
@@ -1035,6 +1051,102 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     }
   }
 
+  Future<void> _loadSchedulesData() async {
+    setState(() {
+      _isSchedulesLoading = true;
+      _schedulesError = null;
+    });
+
+    try {
+      // Load device schedules only (API by device ID, no pagination)
+      final deviceSchedulesResponse = await _scheduleService
+          .getSchedulesByDeviceId(widget.device.id!);
+
+      List<Schedule> deviceSchedules = [];
+      if (deviceSchedulesResponse.success &&
+          deviceSchedulesResponse.data != null) {
+        deviceSchedules = deviceSchedulesResponse.data!;
+      }
+
+      setState(() {
+        _deviceSchedules = deviceSchedules;
+        _deviceGroupSchedules = []; // No group schedules needed
+        _allSchedules = deviceSchedules; // Only device schedules
+        _filteredSchedules = _applyScheduleFilters(_allSchedules);
+        _schedulesLoaded = true;
+        _isSchedulesLoading = false;
+      });
+
+      print('Loaded ${deviceSchedules.length} device schedules only');
+    } catch (e) {
+      print('Error loading schedules data: $e');
+      setState(() {
+        _schedulesError = e.toString();
+        _isSchedulesLoading = false;
+      });
+    }
+  }
+
+  List<Schedule> _applyScheduleFilters(List<Schedule> schedules) {
+    var filtered = schedules;
+
+    // Apply search filter
+    if (_schedulesSearchQuery.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (schedule) =>
+                schedule.displayName.toLowerCase().contains(
+                  _schedulesSearchQuery.toLowerCase(),
+                ) ||
+                schedule.displayCode.toLowerCase().contains(
+                  _schedulesSearchQuery.toLowerCase(),
+                ),
+          )
+          .toList();
+    }
+
+    // Apply status filter
+    if (_selectedScheduleStatus != null) {
+      filtered = filtered
+          .where(
+            (schedule) => schedule.displayStatus == _selectedScheduleStatus,
+          )
+          .toList();
+    }
+
+    // Apply target type filter
+    if (_selectedScheduleTargetType != null) {
+      filtered = filtered
+          .where(
+            (schedule) =>
+                schedule.displayTargetType == _selectedScheduleTargetType,
+          )
+          .toList();
+    }
+
+    return filtered;
+  }
+
+  List<Schedule> _getPaginatedSchedules() {
+    // For device 360, we don't use pagination - return all filtered schedules
+    return _filteredSchedules;
+  }
+
+  void _updateSchedulePaginationTotals() {
+    _schedulesTotalItems = _filteredSchedules.length;
+    _schedulesTotalPages = _schedulesTotalItems > 0
+        ? ((_schedulesTotalItems - 1) ~/ _schedulesItemsPerPage) + 1
+        : 1;
+
+    // Ensure current page is valid
+    if (_schedulesCurrentPage > _schedulesTotalPages) {
+      _schedulesCurrentPage = _schedulesTotalPages;
+    }
+    if (_schedulesCurrentPage < 1) {
+      _schedulesCurrentPage = 1;
+    }
+  }
+
   // Refresh metrics data when filters change
   void _refreshMetricsData() {
     print('Refreshing metrics data with new filters');
@@ -1086,6 +1198,17 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           _locationLoaded = false;
         });
         await _loadLocationData();
+        break;
+      case 5: // Schedules
+        setState(() {
+          _schedulesLoaded = false;
+          _deviceSchedules.clear();
+          _deviceGroupSchedules.clear();
+          _allSchedules.clear();
+          _filteredSchedules.clear();
+          _schedulesError = null;
+        });
+        await _loadSchedulesData();
         break;
     }
   }
@@ -1291,6 +1414,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       label: 'Location',
                       icon: Icon(Icons.location_on, size: AppSizes.iconSmall),
                       content: _buildLocationTab(),
+                    ),
+                    AppTab(
+                      label: 'Schedules',
+                      icon: Icon(Icons.schedule, size: AppSizes.iconSmall),
+                      content: _buildSchedulesTab(),
                     ),
                   ],
                   // selectedColor:
@@ -3678,167 +3806,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     return months[month];
   }
 
-  Widget _buildTimeSeriesChart() {
-    // Group metrics by phase and metric type
-    final groupedData = <String, List<FlSpot>>{};
-    final timeLabels = <String>[];
-
-    // Sort metrics by timestamp
-    final sortedMetrics = List<LoadProfileMetric>.from(_analyticsMetrics)
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    // Get unique timestamps for x-axis
-    final uniqueTimestamps =
-        sortedMetrics.map((m) => m.timestamp).toSet().toList()..sort();
-
-    for (int i = 0; i < uniqueTimestamps.length; i++) {
-      final timestamp = uniqueTimestamps[i];
-      timeLabels.add(
-        '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-      );
-
-      // For each phase and metric type combination
-      for (final phase in _selectedPhases) {
-        for (final metricType in _selectedMetricTypes) {
-          final key = '${phase}_$metricType';
-          if (!groupedData.containsKey(key)) {
-            groupedData[key] = [];
-          }
-
-          // Find metric for this timestamp, phase, and type
-          final metric = sortedMetrics
-              .where(
-                (m) =>
-                    m.timestamp == timestamp &&
-                    m.phase == phase &&
-                    m.metricType == metricType,
-              )
-              .firstOrNull;
-
-          if (metric != null) {
-            groupedData[key]!.add(FlSpot(i.toDouble(), metric.value));
-          }
-        }
-      }
-    }
-
-    // Define colors for phases
-    final phaseColors = {
-      'L1': AppColors.primary,
-      'L2': AppColors.success,
-      'L3': AppColors.warning,
-    };
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(color: AppColors.border, strokeWidth: 1);
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(color: AppColors.border, strokeWidth: 1);
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              interval: (timeLabels.length / 6).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < timeLabels.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      timeLabels[index],
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 60,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(1),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 10,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(color: AppColors.border),
-        ),
-        lineBarsData: groupedData.entries.map((entry) {
-          final parts = entry.key.split('_');
-          final phase = parts[0];
-          // final metricType = parts[1]; // Unused for now
-          final color = phaseColors[phase] ?? AppColors.primary;
-
-          return LineChartBarData(
-            spots: entry.value,
-            isCurved: true,
-            color: color,
-            barWidth: 2,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: _showHover,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 3,
-                  color: color,
-                  strokeWidth: 1,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-          );
-        }).toList(),
-        lineTouchData: LineTouchData(
-          enabled: _showHover,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-              return touchedBarSpots.map((barSpot) {
-                final index = barSpot.x.toInt();
-                final timestamp = index < timeLabels.length
-                    ? timeLabels[index]
-                    : '';
-                return LineTooltipItem(
-                  '$timestamp\n${barSpot.y.toStringAsFixed(2)}',
-                  const TextStyle(color: Colors.white, fontSize: 12),
-                );
-              }).toList();
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildAnalyticsGrid() {
     if (_analyticsMetrics.isEmpty) {
       return const SizedBox.shrink();
@@ -4945,6 +4912,388 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildSchedulesTab() {
+    // Show loading state for schedules tab
+    if (_isSchedulesLoading) {
+      return AppLottieStateWidget.loading(
+        title: 'Loading Schedules',
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
+        message: 'Please wait while we fetch schedules for this device...',
+        lottieSize: 80,
+      );
+    }
+
+    // Show error state for schedules tab
+    if (_schedulesError != null) {
+      return AppLottieStateWidget.error(
+        title: 'Failed to Load Schedules',
+        message: _schedulesError!,
+        buttonText: 'Retry',
+        onButtonPressed: _refreshSchedules,
+      );
+    }
+
+    return Column(
+      children: [
+        // Summary card with padding (same style as device group details)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+          child: ScheduleSummaryCard(schedules: _filteredSchedules),
+        ),
+
+        const SizedBox(height: AppSizes.spacing8),
+
+        // Filters and actions with padding (same style as device group details)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+          child: ScheduleFiltersAndActionsV2(
+            onSearchChanged: _onScheduleSearchChanged,
+            onStatusFilterChanged: _onScheduleStatusFilterChanged,
+            onTargetTypeFilterChanged: _onScheduleTargetTypeFilterChanged,
+            onViewModeChanged: _onScheduleViewModeChanged,
+            onAddSchedule: _showCreateScheduleDialog,
+            onRefresh: _refreshSchedules,
+            onExport: _exportSchedules,
+            onImport: _importSchedules,
+            currentViewMode: _scheduleViewMode,
+            selectedStatus: _selectedScheduleStatus,
+            selectedTargetType: _selectedScheduleTargetType,
+          ),
+        ),
+
+        const SizedBox(height: AppSizes.spacing8),
+
+        // Content based on view mode
+        Expanded(child: _buildScheduleContent()),
+      ],
+    );
+  }
+
+  void _onScheduleSearchChanged(String value) {
+    // Cancel the previous timer
+    _schedulesDebounceTimer?.cancel();
+
+    // Set a new timer
+    _schedulesDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _schedulesSearchQuery = value;
+        _filteredSchedules = _applyScheduleFilters(_allSchedules);
+        _schedulesCurrentPage = 1;
+        _updateSchedulePaginationTotals();
+      });
+    });
+  }
+
+  void _onScheduleStatusFilterChanged(String? status) {
+    setState(() {
+      _selectedScheduleStatus = status;
+      _filteredSchedules = _applyScheduleFilters(_allSchedules);
+      _schedulesCurrentPage = 1;
+      _updateSchedulePaginationTotals();
+    });
+  }
+
+  void _onScheduleTargetTypeFilterChanged(String? targetType) {
+    setState(() {
+      _selectedScheduleTargetType = targetType;
+      _filteredSchedules = _applyScheduleFilters(_allSchedules);
+      _schedulesCurrentPage = 1;
+      _updateSchedulePaginationTotals();
+    });
+  }
+
+  void _onScheduleViewModeChanged(ScheduleViewMode mode) {
+    setState(() {
+      _scheduleViewMode = mode;
+    });
+  }
+
+  Widget _buildScheduleContent() {
+    // Show no data state if no schedules (loading is handled at tab level)
+    if (_allSchedules.isEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Schedules Found',
+        message: 'This device has no scheduled tasks configured.',
+        buttonText: 'Create Schedule',
+        titleColor: AppColors.primary,
+        messageColor: AppColors.secondary,
+        onButtonPressed: _showCreateScheduleDialog,
+      );
+    }
+
+    // Show filtered empty state if filtered schedules are empty but original schedules exist
+    if (_filteredSchedules.isEmpty && _allSchedules.isNotEmpty) {
+      return AppLottieStateWidget.noData(
+        title: 'No Matching Schedules',
+        message:
+            'No schedules match your current filters. Try adjusting your search criteria.',
+        buttonText: 'Clear Filters',
+        onButtonPressed: _clearScheduleFilters,
+      );
+    }
+
+    // Build content based on view mode
+    return switch (_scheduleViewMode) {
+      ScheduleViewMode.table => _buildScheduleTableView(),
+      ScheduleViewMode.kanban => _buildScheduleKanbanView(),
+    };
+  }
+
+  Widget _buildScheduleTableView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: _buildScheduleTable(),
+    );
+  }
+
+  Widget _buildScheduleKanbanView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: ScheduleKanbanView(
+        schedules: _filteredSchedules,
+        onScheduleSelected: _showViewScheduleDialog,
+        onScheduleView: _showViewScheduleDialog,
+        onScheduleEdit: (schedule) => _canEditSchedule(schedule)
+            ? _showEditScheduleDialog(schedule)
+            : null,
+        onScheduleDelete: (schedule) => _canEditSchedule(schedule)
+            ? _showDeleteScheduleDialog(schedule)
+            : null,
+        isLoading: false,
+        enablePagination: false,
+        itemsPerPage: _filteredSchedules.length,
+      ),
+    );
+  }
+
+  Widget _buildScheduleTable() {
+    return BluNestDataTable<Schedule>(
+      columns: ScheduleTableColumns.getBluNestColumns(
+        onView: (schedule) => _showViewScheduleDialog(schedule),
+        onEdit: (schedule) => _canEditSchedule(schedule)
+            ? _showEditScheduleDialog(schedule)
+            : null,
+        onDelete: (schedule) => _canEditSchedule(schedule)
+            ? _showDeleteScheduleDialog(schedule)
+            : null,
+        currentPage: 1,
+        itemsPerPage: _filteredSchedules.length,
+        schedules: _filteredSchedules,
+      ),
+      data: _filteredSchedules,
+      onRowTap: (schedule) => _showViewScheduleDialog(schedule),
+      onEdit: (schedule) =>
+          _canEditSchedule(schedule) ? _showEditScheduleDialog(schedule) : null,
+      onDelete: (schedule) => _canEditSchedule(schedule)
+          ? _showDeleteScheduleDialog(schedule)
+          : null,
+      onView: (schedule) => _showViewScheduleDialog(schedule),
+      enableMultiSelect: true,
+      selectedItems: _selectedSchedules,
+      onSelectionChanged: (selectedItems) {
+        setState(() {
+          _selectedSchedules = selectedItems;
+        });
+      },
+      hiddenColumns: _schedulesHiddenColumns,
+      onColumnVisibilityChanged: (hiddenColumns) {
+        setState(() {
+          _schedulesHiddenColumns = hiddenColumns;
+        });
+      },
+      sortBy: _schedulesSortBy,
+      sortAscending: _schedulesSortAscending,
+      onSort: _handleScheduleSort,
+      isLoading: false,
+      totalItemsCount: _filteredSchedules.length,
+      onSelectAllItems: () async => _filteredSchedules,
+    );
+  }
+
+  // Helper method to determine if a schedule can be edited (only device schedules, not group schedules)
+  bool _canEditSchedule(Schedule schedule) {
+    // If Target Type is 'Group', it's view-only
+    return schedule.displayTargetType != 'Group';
+  }
+
+  void _clearScheduleFilters() {
+    setState(() {
+      _selectedScheduleStatus = null;
+      _selectedScheduleTargetType = null;
+      _schedulesSearchQuery = '';
+      _filteredSchedules = List.from(_allSchedules);
+    });
+  }
+
+  void _handleScheduleSort(String columnKey, bool ascending) {
+    setState(() {
+      _schedulesSortBy = columnKey;
+      _schedulesSortAscending = ascending;
+      _sortSchedules();
+    });
+  }
+
+  void _sortSchedules() {
+    if (_schedulesSortBy == null) return;
+
+    _filteredSchedules.sort((a, b) {
+      dynamic aValue;
+      dynamic bValue;
+
+      switch (_schedulesSortBy) {
+        case 'code':
+          aValue = a.displayCode.toLowerCase();
+          bValue = b.displayCode.toLowerCase();
+          break;
+        case 'name':
+          aValue = a.displayName.toLowerCase();
+          bValue = b.displayName.toLowerCase();
+          break;
+        case 'targetType':
+          aValue = a.displayTargetType.toLowerCase();
+          bValue = b.displayTargetType.toLowerCase();
+          break;
+        case 'status':
+          aValue = a.displayStatus.toLowerCase();
+          bValue = b.displayStatus.toLowerCase();
+          break;
+        case 'interval':
+          aValue = a.displayInterval.toLowerCase();
+          bValue = b.displayInterval.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      int comparison = aValue.toString().compareTo(bValue.toString());
+      return _schedulesSortAscending ? comparison : -comparison;
+    });
+  }
+
+  Future<void> _refreshSchedules() async {
+    setState(() {
+      _schedulesLoaded = false;
+      _deviceSchedules.clear();
+      _deviceGroupSchedules.clear();
+      _allSchedules.clear();
+      _filteredSchedules.clear();
+      _schedulesError = null;
+    });
+    await _loadSchedulesData();
+  }
+
+  void _showCreateScheduleDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => ScheduleFormDialog(
+        preselectedTargetType: 'Device',
+        preselectedDeviceId: widget.device.id,
+        onSuccess: () {
+          _refreshSchedules();
+          AppToast.showSuccess(
+            context,
+            message: 'Schedule created successfully',
+          );
+        },
+      ),
+    );
+  }
+
+  void _exportSchedules() {
+    AppToast.showInfo(
+      context,
+      title: 'Export',
+      message: 'Export functionality coming soon',
+    );
+  }
+
+  void _importSchedules() {
+    AppToast.showInfo(
+      context,
+      title: 'Import',
+      message: 'Import functionality coming soon',
+    );
+  }
+
+  void _showViewScheduleDialog(Schedule schedule) {
+    showDialog(
+      context: context,
+      builder: (context) => ScheduleFormDialog(
+        schedule: schedule,
+        mode: 'view',
+        onSuccess: () {
+          _refreshSchedules();
+          AppToast.showSuccess(
+            context,
+            message: 'Schedule updated successfully',
+          );
+        },
+      ),
+    );
+  }
+
+  void _showEditScheduleDialog(Schedule schedule) {
+    showDialog(
+      context: context,
+      builder: (context) => ScheduleFormDialog(
+        schedule: schedule,
+        onSuccess: () {
+          _refreshSchedules();
+          AppToast.showSuccess(
+            context,
+            message: 'Schedule updated successfully',
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showDeleteScheduleDialog(Schedule schedule) async {
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Delete Schedule',
+      message:
+          'Are you sure you want to delete schedule "${schedule.displayName}"? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      confirmType: AppButtonType.danger,
+      icon: Icons.delete_outline,
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteSchedule(schedule);
+    }
+  }
+
+  Future<void> _deleteSchedule(Schedule schedule) async {
+    try {
+      await _scheduleService.deleteSchedule(
+        schedule.billingDevice!.id!.toLowerCase(),
+      );
+
+      if (mounted) {
+        AppToast.showSuccess(
+          context,
+          title: 'Schedule Deleted',
+          message:
+              'Schedule "${schedule.displayName}" has been successfully deleted.',
+        );
+
+        await _refreshSchedules();
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(
+          context,
+          error: e,
+          title: 'Delete Failed',
+          errorContext: 'schedule_delete',
+        );
+      }
+    }
   }
 
   Widget _buildInfoRow(

@@ -11,3 +11,5 @@ enum TimeBandViewMode { table, kanban }
 enum SpecialDayViewMode { table, kanban }
 
 enum TimeOfUseViewMode { table, kanban }
+
+enum ScheduleViewMode { table, kanban }

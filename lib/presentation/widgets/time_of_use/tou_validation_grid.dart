@@ -386,31 +386,190 @@ class _TOUValidationGridState extends State<TOUValidationGrid> {
           bottom: BorderSide(color: AppColors.border),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          const Text(
-            'Legend:',
-            style: TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+          // Status Legend Row
+          Row(
+            children: [
+              const Text(
+                'Status: [UPDATED]',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spacing16),
+              _buildLegendItem('Covered', AppColors.success),
+              _buildLegendItem('Overlap', AppColors.warning),
+              _buildLegendItem('Conflict', AppColors.error),
+              _buildLegendItem('Empty', AppColors.textTertiary),
+              const Spacer(),
+              _buildValidationToggle('Conflicts', _showConflicts, (value) {
+                setState(() => _showConflicts = value);
+              }),
+              _buildValidationToggle('Gaps', _showGaps, (value) {
+                setState(() => _showGaps = value);
+              }),
+              _buildValidationToggle('Overlaps', _showOverlaps, (value) {
+                setState(() => _showOverlaps = value);
+              }),
+            ],
           ),
-          const SizedBox(width: AppSizes.spacing16),
-          _buildLegendItem('Covered', AppColors.success),
-          _buildLegendItem('Overlap', AppColors.warning),
-          _buildLegendItem('Conflict', AppColors.error),
-          _buildLegendItem('Gap', AppColors.textTertiary),
-          const Spacer(),
-          _buildValidationToggle('Conflicts', _showConflicts, (value) {
-            setState(() => _showConflicts = value);
-          }),
-          _buildValidationToggle('Gaps', _showGaps, (value) {
-            setState(() => _showGaps = value);
-          }),
-          _buildValidationToggle('Overlaps', _showOverlaps, (value) {
-            setState(() => _showOverlaps = value);
-          }),
+
+          // Dynamic Channel and Time Band Legend
+          const SizedBox(height: AppSizes.spacing8),
+          _buildDynamicChannelTimeBandLegend(),
+
+          // Channel Legend Row (if multiple channels are selected)
+          if (_selectedChannels.length > 1) ...[
+            const SizedBox(height: AppSizes.spacing8),
+            Row(
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.palette_outlined,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: AppSizes.spacing4),
+                    const Text(
+                      'Grid Colors by Channel:',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: AppSizes.spacing16),
+                ...widget.availableChannels
+                    .where((channel) => _selectedChannels.contains(channel.id))
+                    .map((channel) => _buildChannelLegendItem(channel))
+                    .toList(),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Text(
+                    '${_selectedChannels.length} of ${widget.availableChannels.length} channels',
+                    style: const TextStyle(
+                      fontSize: AppSizes.fontSizeExtraSmall,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Add time band color row for multi-channel scenarios too
+            const SizedBox(height: AppSizes.spacing8),
+            Row(
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule_outlined,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: AppSizes.spacing4),
+                    const Text(
+                      'Time Band Colors:',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: AppSizes.spacing16),
+                _buildTimeBandColorExample('Mon-Fri', 0),
+                _buildTimeBandColorExample('Weekend', 1),
+                _buildTimeBandColorExample('Holiday', 2),
+                const Spacer(),
+                Text(
+                  'Grid shows time bands when no channels configured',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeExtraSmall,
+                    color: AppColors.textTertiary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ] else if (_selectedChannels.length == 1) ...[
+            // Single Channel Context
+            const SizedBox(height: AppSizes.spacing8),
+            Row(
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule_outlined,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: AppSizes.spacing4),
+                    const Text(
+                      'Grid Colors by Time Band:',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: AppSizes.spacing16),
+                // Show time band color examples since this is the current display mode
+                _buildTimeBandColorExample('Mon-Fri', 0),
+                _buildTimeBandColorExample('Weekend', 1),
+                _buildTimeBandColorExample('Holiday', 2),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    border: Border.all(
+                      color: AppColors.info.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    'Channel: ${widget.availableChannels.firstWhere((c) => c.id == _selectedChannels.first).name}',
+                    style: const TextStyle(
+                      fontSize: AppSizes.fontSizeExtraSmall,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.info,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Each time band gets a unique color',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeExtraSmall,
+                    color: AppColors.textTertiary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -441,6 +600,273 @@ class _TOUValidationGridState extends State<TOUValidationGrid> {
         ],
       ),
     );
+  }
+
+  Widget _buildChannelLegendItem(Channel channel) {
+    final color = _getChannelColor(channel.id);
+    return Container(
+      margin: const EdgeInsets.only(right: AppSizes.spacing8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 16,
+            height: 14,
+            decoration: BoxDecoration(
+              color: color, // EXACT same color as grid cells
+              borderRadius: BorderRadius.circular(4), // Same as grid cells
+            ),
+          ),
+          const SizedBox(width: AppSizes.spacing6),
+          Text(
+            'Ch ${channel.id}: ${channel.name}',
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeBandColorExample(String label, int colorIndex) {
+    final color = _getTimeBandColor(colorIndex);
+    return Container(
+      margin: const EdgeInsets.only(right: AppSizes.spacing8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 16,
+            height: 14,
+            decoration: BoxDecoration(
+              color: color, // EXACT same color as grid cells
+              borderRadius: BorderRadius.circular(4), // Same as grid cells
+            ),
+          ),
+          const SizedBox(width: AppSizes.spacing6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicChannelTimeBandLegend() {
+    // Always show something to verify the method is being called
+    return Column(
+      children: [
+        // VERY VISIBLE DEBUG CONTAINER
+        Container(
+          width: double.infinity,
+          height: 40,
+          color: Colors.red,
+          child: const Center(
+            child: Text(
+              'DYNAMIC LEGEND TEST - THIS SHOULD BE VISIBLE',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.color_lens_outlined,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Channel Time Band Colors',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Show channels and their time bands
+              ..._buildChannelTimeBandRows(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildChannelTimeBandRows() {
+    final selectedChannels = widget.availableChannels
+        .where((channel) => _selectedChannels.contains(channel.id))
+        .toList();
+
+    if (selectedChannels.isEmpty) {
+      return [
+        Text(
+          'No channels selected - please select channels to see their time band colors',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textTertiary,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ];
+    }
+
+    final rows = <Widget>[];
+
+    for (final channel in selectedChannels) {
+      final timeBands = _getTimeBandsForChannel(channel);
+
+      rows.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Channel name
+              SizedBox(
+                width: 120,
+                child: Text(
+                  'Channel ${channel.code.isNotEmpty ? channel.code : channel.name}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Time bands with colors
+              Expanded(
+                child: timeBands.isEmpty
+                    ? Text(
+                        'No time bands assigned',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textTertiary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: timeBands.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final timeBand = entry.value;
+                          final color = _getTimeBandColor(index);
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: color, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  timeBand.name,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return rows;
+  }
+
+  List<TimeBand> _getTimeBandsForChannel(Channel channel) {
+    // Get time bands that are used in the TOU details for this channel
+    final channelDetails = widget.timeOfUseDetails
+        .where((detail) => detail.channelId == channel.id)
+        .toList();
+
+    // Extract unique time band IDs from the details
+    final timeBandIds = <int>{};
+    for (final detail in channelDetails) {
+      timeBandIds.add(detail.timeBandId);
+    }
+
+    // Get the corresponding TimeBand objects that are also in selected time bands
+    return widget.availableTimeBands
+        .where(
+          (timeBand) =>
+              timeBandIds.contains(timeBand.id) &&
+              _selectedTimeBands.contains(timeBand.id),
+        )
+        .toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
   }
 
   Widget _buildValidationToggle(
@@ -562,19 +988,53 @@ class _TOUValidationGridState extends State<TOUValidationGrid> {
       height: 32,
       margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
-        color: _getCellColor(validation),
+        color: Colors.transparent, // Let the content show its true colors
         borderRadius: BorderRadius.circular(4),
         border: validation.hasConflict && _showConflicts
             ? Border.all(color: AppColors.error, width: 2)
+            : validation.isEmpty && _showGaps
+            ? Border.all(
+                color: AppColors.textTertiary.withValues(alpha: 0.5),
+                width: 1,
+              )
+            : validation.timeBands.length > 1 && _showOverlaps
+            ? Border.all(color: AppColors.warning, width: 1.5)
             : null,
       ),
       child: validation.timeBands.isNotEmpty
           ? _buildCellContent(validation)
-          : null,
+          : Container(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
     );
   }
 
   Widget _buildCellContent(TimeSlotValidation validation) {
+    // If multiple channels are selected, prioritize channel colors
+    if (_selectedChannels.length > 1 && validation.channels.isNotEmpty) {
+      if (validation.channels.length == 1) {
+        return Container(
+          decoration: BoxDecoration(
+            color: _getChannelColor(validation.channels.first),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const SizedBox.expand(),
+        );
+      }
+
+      // Multiple channels - show stripes with channel colors
+      return CustomPaint(
+        painter: StripePainter(
+          colors: validation.channels.map(_getChannelColor).toList(),
+        ),
+        child: const SizedBox.expand(),
+      );
+    }
+
+    // Single channel or no channel preference - use time band colors
     if (validation.timeBands.length == 1) {
       return Container(
         decoration: BoxDecoration(
@@ -706,6 +1166,7 @@ class _TOUValidationGridState extends State<TOUValidationGrid> {
       hour: hour,
       dayIndex: dayIndex,
       timeBands: applicableDetails.map((d) => d.timeBandId).toList(),
+      channels: applicableDetails.map((d) => d.channelId).toList(),
       hasConflict: applicableDetails.length > 1,
       isEmpty: applicableDetails.isEmpty,
     );
@@ -746,22 +1207,6 @@ class _TOUValidationGridState extends State<TOUValidationGrid> {
     return 0;
   }
 
-  Color _getCellColor(TimeSlotValidation validation) {
-    if (validation.hasConflict && _showConflicts) {
-      return AppColors.error.withValues(alpha: 0.3);
-    }
-    if (validation.isEmpty && _showGaps) {
-      return AppColors.textTertiary.withValues(alpha: 0.1);
-    }
-    if (validation.timeBands.length > 1 && _showOverlaps) {
-      return AppColors.warning.withValues(alpha: 0.3);
-    }
-    if (validation.timeBands.isNotEmpty) {
-      return AppColors.success.withValues(alpha: 0.2);
-    }
-    return AppColors.background;
-  }
-
   Color _getTimeBandColor(int timeBandId) {
     final colors = [
       AppColors.primary,
@@ -774,6 +1219,25 @@ class _TOUValidationGridState extends State<TOUValidationGrid> {
       const Color(0xFF607D8B), // Blue Grey
     ];
     return colors[timeBandId % colors.length];
+  }
+
+  Color _getChannelColor(int channelId) {
+    // Use a distinct, vibrant color palette for channels
+    final channelColors = [
+      const Color(0xFF2196F3), // Bright Blue
+      const Color(0xFF4CAF50), // Bright Green
+      const Color(0xFFFF5722), // Deep Orange Red
+      const Color(0xFF9C27B0), // Purple
+      const Color(0xFFFF9800), // Orange
+      const Color(0xFF607D8B), // Blue Grey
+      const Color(0xFFE91E63), // Pink
+      const Color(0xFF009688), // Teal
+      const Color(0xFF8BC34A), // Light Green
+      const Color(0xFF795548), // Brown
+      const Color(0xFF3F51B5), // Indigo
+      const Color(0xFFCDDC39), // Lime
+    ];
+    return channelColors[channelId % channelColors.length];
   }
 
   ValidationStats _calculateValidationStats() {
@@ -838,6 +1302,7 @@ class TimeSlotValidation {
   final int hour;
   final int dayIndex;
   final List<int> timeBands;
+  final List<int> channels;
   final bool hasConflict;
   final bool isEmpty;
 
@@ -845,6 +1310,7 @@ class TimeSlotValidation {
     required this.hour,
     required this.dayIndex,
     required this.timeBands,
+    required this.channels,
     required this.hasConflict,
     required this.isEmpty,
   });

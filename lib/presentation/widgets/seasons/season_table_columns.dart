@@ -1,0 +1,315 @@
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
+import '../../../core/models/season.dart';
+import '../common/blunest_data_table.dart';
+import '../common/status_chip.dart';
+import 'season_smart_month_chips.dart';
+
+class SeasonTableColumns {
+  static List<BluNestTableColumn<Season>> buildAllColumns({
+    String? sortBy,
+    bool sortAscending = true,
+    Function(Season)? onEdit,
+    Function(Season)? onDelete,
+    Function(Season)? onView,
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<Season>? data,
+  }) {
+    return [
+      // No. (Row Number)
+      BluNestTableColumn<Season>(
+        key: 'no',
+        title: 'No.',
+        flex: 1,
+        sortable: false,
+        builder: (season) {
+          final index = data?.indexOf(season) ?? 0;
+          final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
+          return Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+            child: Text(
+              '$rowNumber',
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          );
+        },
+      ),
+
+      // Name column
+      BluNestTableColumn<Season>(
+        key: 'name',
+        title: 'Name',
+        sortable: true,
+        flex: 2,
+        builder: (season) => _buildNameColumn(season),
+      ),
+
+      // Description column
+      BluNestTableColumn<Season>(
+        key: 'description',
+        title: 'Description',
+        sortable: true,
+        flex: 3,
+        builder: (season) => _buildDescriptionColumn(season),
+      ),
+
+      // Month Range column
+      BluNestTableColumn<Season>(
+        key: 'monthRange',
+        title: 'Month Range',
+        sortable: false,
+        flex: 3,
+        builder: (season) => _buildMonthRangeColumn(season),
+      ),
+
+      // Status column
+      BluNestTableColumn<Season>(
+        key: 'active',
+        title: 'Status',
+        sortable: true,
+        flex: 1,
+        builder: (season) => _buildStatusColumn(season),
+      ),
+
+      // Actions column
+      BluNestTableColumn<Season>(
+        key: 'actions',
+        title: 'Actions',
+        isActions: true,
+        sortable: false,
+        flex: 1,
+        alignment: Alignment.centerRight,
+        builder: (season) => _buildActionsColumn(
+          season,
+          onEdit: onEdit,
+          onDelete: onDelete,
+          onView: onView,
+        ),
+      ),
+    ];
+  }
+
+  static Widget _buildNameColumn(Season season) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            season.name,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildDescriptionColumn(Season season) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: Text(
+        season.description,
+        style: const TextStyle(
+          fontSize: AppSizes.fontSizeSmall,
+          color: AppColors.textSecondary,
+        ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 2,
+      ),
+    );
+  }
+
+  static Widget _buildMonthRangeColumn(Season season) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: SeasonSmartMonthChips.buildSmartMonthChips(season.monthRange),
+    );
+  }
+
+  static Widget _buildStatusColumn(Season season) {
+    return Container(
+      alignment: Alignment.centerLeft,
+      child: StatusChip(
+        text: season.active ? 'Active' : 'Inactive',
+        compact: true,
+        type: season.active ? StatusChipType.success : StatusChipType.secondary,
+      ),
+    );
+  }
+
+  static Widget _buildActionsColumn(
+    Season season, {
+    Function(Season)? onEdit,
+    Function(Season)? onDelete,
+    Function(Season)? onView,
+  }) {
+    return Container(
+      alignment: Alignment.centerRight,
+      height: AppSizes.spacing40,
+      child: PopupMenuButton<String>(
+        icon: const Icon(
+          Icons.more_vert,
+          color: AppColors.textSecondary,
+          size: 16,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        ),
+        itemBuilder: (context) => [
+          const PopupMenuItem<String>(
+            value: 'view',
+            child: Row(
+              children: [
+                Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                SizedBox(width: AppSizes.spacing8),
+                Text('View Details'),
+              ],
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit, size: 16, color: AppColors.warning),
+                SizedBox(width: AppSizes.spacing8),
+                Text('Edit'),
+              ],
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete, size: 16, color: AppColors.error),
+                SizedBox(width: AppSizes.spacing8),
+                Text('Delete', style: TextStyle(color: AppColors.error)),
+              ],
+            ),
+          ),
+        ],
+        onSelected: (value) {
+          switch (value) {
+            case 'view':
+              onView?.call(season);
+              break;
+            case 'edit':
+              onEdit?.call(season);
+              break;
+            case 'delete':
+              onDelete?.call(season);
+              break;
+          }
+        },
+      ),
+    );
+  }
+
+  // Helper methods for getting specific column configurations
+  static List<BluNestTableColumn<Season>> getDefaultColumns({
+    Function(Season)? onEdit,
+    Function(Season)? onDelete,
+    Function(Season)? onView,
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<Season>? data,
+  }) {
+    return buildAllColumns(
+      onEdit: onEdit,
+      onDelete: onDelete,
+      onView: onView,
+      currentPage: currentPage,
+      itemsPerPage: itemsPerPage,
+      data: data,
+    );
+  }
+
+  static List<BluNestTableColumn<Season>> getCompactColumns({
+    Function(Season)? onEdit,
+    Function(Season)? onDelete,
+    Function(Season)? onView,
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<Season>? data,
+  }) {
+    return [
+      // No. (Row Number)
+      BluNestTableColumn<Season>(
+        key: 'no',
+        title: 'No.',
+        flex: 1,
+        sortable: false,
+        builder: (season) {
+          final index = data?.indexOf(season) ?? 0;
+          final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
+          return Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+            child: Text(
+              '$rowNumber',
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          );
+        },
+      ),
+
+      // Name column
+      BluNestTableColumn<Season>(
+        key: 'name',
+        title: 'Name',
+        sortable: true,
+        flex: 2,
+        builder: (season) => _buildNameColumn(season),
+      ),
+
+      // Month Range column
+      BluNestTableColumn<Season>(
+        key: 'monthRange',
+        title: 'Month Range',
+        sortable: false,
+        flex: 3,
+        builder: (season) => _buildMonthRangeColumn(season),
+      ),
+
+      // Status column
+      BluNestTableColumn<Season>(
+        key: 'active',
+        title: 'Status',
+        sortable: true,
+        flex: 1,
+        builder: (season) => _buildStatusColumn(season),
+      ),
+
+      // Actions column
+      BluNestTableColumn<Season>(
+        key: 'actions',
+        title: 'Actions',
+        isActions: true,
+        sortable: false,
+        flex: 1,
+        alignment: Alignment.centerRight,
+        builder: (season) => _buildActionsColumn(
+          season,
+          onEdit: onEdit,
+          onDelete: onDelete,
+          onView: onView,
+        ),
+      ),
+    ];
+  }
+}

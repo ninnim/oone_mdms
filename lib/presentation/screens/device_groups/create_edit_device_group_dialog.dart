@@ -224,6 +224,25 @@ class _CreateEditDeviceGroupDialogState
         .toList();
   }
 
+  Future<List<Device>> _fetchAllAvailableDevices() async {
+    try {
+      // Fetch all available devices without pagination
+      final response = await _deviceGroupService.getAvailableDevices(
+        search: _deviceSearchQuery.isEmpty ? '%%' : '%$_deviceSearchQuery%',
+        offset: 0,
+        limit: 10000, // Large limit to get all items
+      );
+
+      if (response.success && response.data != null) {
+        return response.data!;
+      } else {
+        throw Exception(response.message ?? 'Failed to fetch all devices');
+      }
+    } catch (e) {
+      throw Exception('Error fetching all available devices: $e');
+    }
+  }
+
   Future<void> _saveDeviceGroup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -405,6 +424,8 @@ class _CreateEditDeviceGroupDialogState
                         hiddenColumns: _hiddenColumns,
                         onColumnVisibilityChanged: _onColumnVisibilityChanged,
                         isLoading: false,
+                        totalItemsCount: _totalDevices,
+                        onSelectAllItems: _fetchAllAvailableDevices,
                       ),
                     ),
 

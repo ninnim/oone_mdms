@@ -18,6 +18,9 @@ class TimeBandTableColumns {
     Function(TimeBand)? onView,
     List<Season> availableSeasons = const [],
     List<SpecialDay> availableSpecialDays = const [],
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<TimeBand>? data,
   }) {
     final allColumns = _buildAllColumnDefinitions(
       sortBy: sortBy,
@@ -27,6 +30,9 @@ class TimeBandTableColumns {
       onView: onView,
       availableSeasons: availableSeasons,
       availableSpecialDays: availableSpecialDays,
+      currentPage: currentPage,
+      itemsPerPage: itemsPerPage,
+      data: data,
     );
 
     return allColumns.where((col) => visibleColumns.contains(col.key)).toList();
@@ -40,6 +46,9 @@ class TimeBandTableColumns {
     Function(TimeBand)? onView,
     List<Season> availableSeasons = const [],
     List<SpecialDay> availableSpecialDays = const [],
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<TimeBand>? data,
   }) {
     return _buildAllColumnDefinitions(
       sortBy: sortBy,
@@ -49,6 +58,9 @@ class TimeBandTableColumns {
       onView: onView,
       availableSeasons: availableSeasons,
       availableSpecialDays: availableSpecialDays,
+      currentPage: currentPage,
+      itemsPerPage: itemsPerPage,
+      data: data,
     );
   }
 
@@ -60,8 +72,35 @@ class TimeBandTableColumns {
     Function(TimeBand)? onView,
     List<Season> availableSeasons = const [],
     List<SpecialDay> availableSpecialDays = const [],
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<TimeBand>? data,
   }) {
     return [
+      // No. (Row Number)
+      BluNestTableColumn<TimeBand>(
+        key: 'no',
+        title: 'No.',
+        flex: 1,
+        sortable: false,
+        builder: (timeBand) {
+          final index = data?.indexOf(timeBand) ?? 0;
+          final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
+          return Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+            child: Text(
+              '$rowNumber',
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          );
+        },
+      ),
+
       // Name column
       BluNestTableColumn<TimeBand>(
         key: 'name',
@@ -149,6 +188,7 @@ class TimeBandTableColumns {
         key: 'actions',
         title: 'Actions',
         flex: 1,
+        isActions: true,
         builder: (timeBand) =>
             _buildActionsColumn(timeBand, onEdit, onDelete, onView),
       ),
@@ -162,15 +202,18 @@ class TimeBandTableColumns {
       children: [
         Text(
           timeBand.name,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: AppSizes.fontSizeSmall,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
-        Text(
-          'ID: ${timeBand.id}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
+        // const SizedBox(height: 2),
+        // Text(
+        //   'ID: ${timeBand.id}',
+        //   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        // ),
       ],
     );
   }
@@ -294,7 +337,7 @@ class TimeBandTableColumns {
     Function(TimeBand)? onView,
   ) {
     return Container(
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.centerRight,
       height: AppSizes.spacing40,
       child: PopupMenuButton<String>(
         icon: const Icon(

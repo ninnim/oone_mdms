@@ -66,9 +66,11 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       if (response.success && response.data != null) {
         setState(() {
           _specialDays = response.data!;
-          _totalItems =
-              response.data!.length; // This should come from API paging
-          _totalPages = (_totalItems / _itemsPerPage).ceil();
+          // Get total from pagination info, fallback to data length if not available
+          _totalItems = response.paging?.item.total ?? response.data!.length;
+          _totalPages = _totalItems > 0
+              ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
+              : 1;
           _isLoading = false;
         });
       } else {
@@ -90,9 +92,10 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
     // Show loading state
     if (_isLoading && _specialDays.isEmpty) {
       return const AppLottieStateWidget.loading(
-        title: 'Loading Special Days',
-        message:
-            'Please wait while we fetch your special day configurations...',
+        // title: 'Loading Special Days',
+        // message:
+        //     'Please wait while we fetch your special day configurations...',
+        lottieSize: 80,
       );
     }
 
@@ -131,16 +134,23 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       );
     }
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          _buildTableHeader(),
-          if (_selectedSpecialDays.isNotEmpty) _buildMultiSelectToolbar(),
-          Expanded(child: _buildSpecialDaysTable()),
-          _buildPagination(),
-        ],
-      ),
+    return Column(
+      children: [
+        Expanded(
+          child: AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _buildTableHeader(),
+                if (_selectedSpecialDays.isNotEmpty) _buildMultiSelectToolbar(),
+                Expanded(child: _buildSpecialDaysTable()),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSizes.spacing16),
+        _buildPagination(),
+      ],
     );
   }
 
@@ -423,7 +433,30 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       onEdit: _editSpecialDay,
       onDelete: _deleteSpecialDay,
       onView: _viewSpecialDayDetails,
+      totalItemsCount: _totalItems,
+      onSelectAllItems: _fetchAllSpecialDays,
     );
+  }
+
+  Future<List<SpecialDay>> _fetchAllSpecialDays() async {
+    try {
+      // Fetch all special days without pagination
+      final response = await _touService.getSpecialDays(
+        search: _searchController.text.isEmpty
+            ? '%%'
+            : '%${_searchController.text}%',
+        offset: 0,
+        limit: 10000, // Large limit to get all items
+      );
+
+      if (response.success && response.data != null) {
+        return response.data!;
+      } else {
+        throw Exception(response.message ?? 'Failed to fetch all special days');
+      }
+    } catch (e) {
+      throw Exception('Error fetching all special days: $e');
+    }
   }
 
   Widget _buildMultiSelectToolbar() {

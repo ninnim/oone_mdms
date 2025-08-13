@@ -65,6 +65,42 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
     super.dispose();
   }
 
+  /// Build smart select/clear all button based on current selection state
+  Widget _buildSmartSelectButton() {
+    final selectedCount = _selectedMonths.where((selected) => selected).length;
+    final allSelected = selectedCount == 12;
+
+    if (allSelected) {
+      // Show Clear All button when all are selected
+      return TextButton.icon(
+        onPressed: _clearAllMonths,
+        icon: const Icon(Icons.clear_all, size: AppSizes.iconSmall),
+        label: const Text('Clear All'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.error,
+          textStyle: const TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else {
+      // Show Select All button when not all are selected
+      return TextButton.icon(
+        onPressed: _selectAllMonths,
+        icon: const Icon(Icons.select_all, size: AppSizes.iconSmall),
+        label: const Text('Select All'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          textStyle: const TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+  }
+
   /// Select all months
   void _selectAllMonths() {
     setState(() {
@@ -240,7 +276,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
 
                       const SizedBox(height: AppSizes.spacing24),
 
-                      // Month Selection Header with Bulk Actions
+                      // Month Selection Header with Smart Bulk Action
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -252,41 +288,8 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          Row(
-                            children: [
-                              TextButton.icon(
-                                onPressed: _selectAllMonths,
-                                icon: const Icon(
-                                  Icons.select_all,
-                                  size: AppSizes.iconSmall,
-                                ),
-                                label: const Text('Select All'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.primary,
-                                  textStyle: const TextStyle(
-                                    fontSize: AppSizes.fontSizeSmall,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: AppSizes.spacing8),
-                              TextButton.icon(
-                                onPressed: _clearAllMonths,
-                                icon: const Icon(
-                                  Icons.clear_all,
-                                  size: AppSizes.iconSmall,
-                                ),
-                                label: const Text('Clear All'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.error,
-                                  textStyle: const TextStyle(
-                                    fontSize: AppSizes.fontSizeSmall,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          // Smart Select All/Clear All button
+                          _buildSmartSelectButton(),
                         ],
                       ),
                       const SizedBox(height: AppSizes.spacing12),
@@ -325,22 +328,22 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                                   12,
                                   1,
                                   2,
-                                ], const Color(0xFF3B82F6)),
+                                ], AppColors.primary),
                                 _buildQuickPatternChip('Spring', [
                                   3,
                                   4,
                                   5,
-                                ], const Color(0xFF10B981)),
+                                ], AppColors.primary),
                                 _buildQuickPatternChip('Summer', [
                                   6,
                                   7,
                                   8,
-                                ], const Color(0xFFEF4444)),
+                                ], AppColors.primary),
                                 _buildQuickPatternChip('Autumn', [
                                   9,
                                   10,
                                   11,
-                                ], const Color(0xFFF97316)),
+                                ], AppColors.primary),
                               ],
                             ),
                           ],
@@ -398,21 +401,8 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
   }
 
   Widget _buildMonthSelection() {
-    // Colors for each month - seasonal colors (matching table view)
-    const monthColors = [
-      Color(0xFF3B82F6), // Jan - Blue (Winter)
-      Color(0xFF6366F1), // Feb - Indigo (Winter)
-      Color(0xFF10B981), // Mar - Green (Spring)
-      Color(0xFF059669), // Apr - Emerald (Spring)
-      Color(0xFF84CC16), // May - Lime (Spring)
-      Color(0xFFF59E0B), // Jun - Amber (Summer)
-      Color(0xFFEF4444), // Jul - Red (Summer)
-      Color(0xFFDC2626), // Aug - Red-600 (Summer)
-      Color(0xFFF97316), // Sep - Orange (Autumn)
-      Color(0xFFEA580C), // Oct - Orange-600 (Autumn)
-      Color(0xFF8B5CF6), // Nov - Purple (Autumn)
-      Color(0xFF1E40AF), // Dec - Blue-700 (Winter)
-    ];
+    // Use only primary color for easier theming
+    const primaryColor = AppColors.primary;
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
@@ -431,7 +421,6 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
         ),
         itemCount: 12,
         itemBuilder: (context, index) {
-          final color = monthColors[index];
           final isSelected = _selectedMonths[index];
 
           return GestureDetector(
@@ -444,11 +433,13 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? color.withValues(alpha: 0.2)
-                    : color.withValues(alpha: 0.05),
+                    ? primaryColor.withValues(alpha: 0.2)
+                    : primaryColor.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                 border: Border.all(
-                  color: isSelected ? color : color.withValues(alpha: 0.3),
+                  color: isSelected
+                      ? primaryColor
+                      : primaryColor.withValues(alpha: 0.3),
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -459,7 +450,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                     if (isSelected) ...[
                       Icon(
                         Icons.check_circle,
-                        color: color,
+                        color: primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       const SizedBox(width: 4),
@@ -473,8 +464,8 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                               ? FontWeight.w600
                               : FontWeight.w500,
                           color: isSelected
-                              ? color
-                              : color.withValues(alpha: 0.8),
+                              ? primaryColor
+                              : primaryColor.withValues(alpha: 0.8),
                         ),
                         textAlign: TextAlign.center,
                         overflow: TextOverflow.ellipsis,
@@ -491,25 +482,11 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
   }
 
   Widget _buildSelectedMonthsSummary() {
+    // Use only primary color for easier theming
+    const primaryColor = AppColors.primary;
     final selectedCount = _selectedMonths.where((selected) => selected).length;
     final selectedMonthNames = <String>[];
     final selectedIndices = <int>[];
-
-    // Colors for each month - seasonal colors (matching table view)
-    const monthColors = [
-      Color(0xFF3B82F6), // Jan - Blue (Winter)
-      Color(0xFF6366F1), // Feb - Indigo (Winter)
-      Color(0xFF10B981), // Mar - Green (Spring)
-      Color(0xFF059669), // Apr - Emerald (Spring)
-      Color(0xFF84CC16), // May - Lime (Spring)
-      Color(0xFFF59E0B), // Jun - Amber (Summer)
-      Color(0xFFEF4444), // Jul - Red (Summer)
-      Color(0xFFDC2626), // Aug - Red-600 (Summer)
-      Color(0xFFF97316), // Sep - Orange (Autumn)
-      Color(0xFFEA580C), // Oct - Orange-600 (Autumn)
-      Color(0xFF8B5CF6), // Nov - Purple (Autumn)
-      Color(0xFF1E40AF), // Dec - Blue-700 (Winter)
-    ];
 
     for (int i = 0; i < 12; i++) {
       if (_selectedMonths[i]) {
@@ -579,9 +556,9 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing12),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.05),
+        color: primaryColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,14 +567,14 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
             children: [
               Icon(
                 Icons.check_circle,
-                color: AppColors.success,
+                color: primaryColor,
                 size: AppSizes.iconMedium,
               ),
               const SizedBox(width: AppSizes.spacing8),
               Text(
                 'Selected $selectedCount month${selectedCount == 1 ? '' : 's'}:',
                 style: TextStyle(
-                  color: AppColors.success,
+                  color: primaryColor,
                   fontWeight: FontWeight.w600,
                   fontSize: AppSizes.fontSizeSmall,
                 ),
@@ -609,14 +586,13 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
             spacing: AppSizes.spacing4,
             runSpacing: AppSizes.spacing4,
             children: selectedIndices.map((index) {
-              final color = monthColors[index];
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: color.withValues(alpha: 0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -625,7 +601,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeExtraSmall,
                     fontWeight: FontWeight.w600,
-                    color: color,
+                    color: primaryColor,
                   ),
                 ),
               );

@@ -124,8 +124,9 @@ class SiteTableColumns {
         title: 'Actions',
         flex: 1,
         sortable: false,
+        isActions: true,
         builder: (site) => Container(
-          alignment: Alignment.center,
+          alignment: Alignment.centerRight,
           height: AppSizes.spacing40,
           child: PopupMenuButton<String>(
             icon: const Icon(

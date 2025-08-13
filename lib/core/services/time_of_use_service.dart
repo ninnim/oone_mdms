@@ -291,6 +291,58 @@ class TimeOfUseService {
     }
   }
 
+  /// Delete multiple Time of Use entries
+  Future<ApiResponse<bool>> deleteTimeOfUseList(List<int> ids) async {
+    try {
+      print('🔄 TimeOfUseService: Deleting ${ids.length} time of use entries');
+
+      int successCount = 0;
+      int failureCount = 0;
+
+      for (final id in ids) {
+        final result = await deleteTimeOfUse(id);
+        if (result.success) {
+          successCount++;
+        } else {
+          failureCount++;
+        }
+      }
+
+      if (failureCount == 0) {
+        print(
+          '✅ TimeOfUseService: All time of use entries deleted successfully',
+        );
+        return ApiResponse<bool>(
+          success: true,
+          data: true,
+          message: 'All time of use entries deleted successfully',
+        );
+      } else if (successCount > 0) {
+        print('⚠️ TimeOfUseService: Partial deletion success');
+        return ApiResponse<bool>(
+          success: true,
+          data: true,
+          message:
+              '$successCount time of use entries deleted, $failureCount failed',
+        );
+      } else {
+        print('❌ TimeOfUseService: All deletions failed');
+        return ApiResponse<bool>(
+          success: false,
+          data: false,
+          message: 'Failed to delete time of use entries',
+        );
+      }
+    } catch (e) {
+      print('❌ TimeOfUseService: Exception in deleteTimeOfUseList: $e');
+      return ApiResponse<bool>(
+        success: false,
+        data: false,
+        message: 'Error deleting time of use entries: $e',
+      );
+    }
+  }
+
   /// Get available Time Bands for selection
   Future<ApiResponse<List<TimeBand>>> getAvailableTimeBands({
     String search = '',

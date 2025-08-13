@@ -56,6 +56,20 @@ class Channel {
       'Active': active,
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Channel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() {
+    return 'Channel(id: $id, code: $code, name: $name, units: $units, flowDirection: $flowDirection, phase: $phase, apportionPolicy: $apportionPolicy, active: $active)';
+  }
 }
 
 /// Time of Use Detail model
@@ -131,6 +145,20 @@ class TimeOfUseDetail {
       channel: channel ?? this.channel,
       timeBand: timeBand ?? this.timeBand,
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TimeOfUseDetail && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() {
+    return 'TimeOfUseDetail(id: $id, timeBandId: $timeBandId, channelId: $channelId, registerDisplayCode: $registerDisplayCode, priorityOrder: $priorityOrder, active: $active)';
   }
 }
 
@@ -269,4 +297,18 @@ class TimeOfUse {
 
   /// Get status color
   String get statusColor => active ? 'success' : 'error';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TimeOfUse && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() {
+    return 'TimeOfUse(id: $id, code: $code, name: $name, description: $description, active: $active)';
+  }
 }

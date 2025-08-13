@@ -52,22 +52,37 @@ class Schedule {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'BillingDeviceId': billingDeviceId,
-      'JobId': jobId,
-      'JobTriggerId': jobTriggerId,
+    final data = <String, dynamic>{
       'Code': code,
       'Name': name,
-      'JobStatus': jobStatus,
-      'TargetType': targetType,
       'CronExpression': cronExpression,
       'BillingDevice': billingDevice?.toJson(),
-      'Id': id,
-      'Active': active,
-      'CreatedDate': createdDate?.toIso8601String(),
-      'CreatedBy': createdBy,
     };
+
+    // For updates, include JobId at root level
+    if (jobId != null) {
+      data['JobId'] = jobId;
+    }
+
+    return data;
   }
+
+  // Helper getters for easier access to nested properties
+  String get displayTargetType => targetType ?? 'Unknown';
+  String get displayInterval => billingDevice?.interval ?? 'Monthly';
+  DateTime? get nextBillingDate => billingDevice?.nextBillingDate;
+  DateTime? get lastExecutionTime => billingDevice?.lastExecutionTime;
+  String get displayStatus => billingDevice?.status ?? 'Unknown';
+  int get retryCount => billingDevice?.retryCount ?? 0;
+  int? get siteId => billingDevice?.siteId;
+  String? get deviceId => billingDevice?.deviceId;
+  int? get deviceGroupId => billingDevice?.deviceGroupId;
+  int? get timeOfUseId => billingDevice?.timeOfUseId;
+
+  // Display helpers
+  String get displayCode => code ?? 'N/A';
+  String get displayName => name ?? 'N/A';
+  bool get isActive => active ?? false;
 
   Schedule copyWith({
     String? billingDeviceId,
@@ -100,6 +115,20 @@ class Schedule {
       createdBy: createdBy ?? this.createdBy,
     );
   }
+
+  @override
+  String toString() {
+    return 'Schedule(id: $id, code: $code, name: $name, targetType: $targetType)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Schedule && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class BillingDevice {
@@ -173,25 +202,83 @@ class BillingDevice {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'JobId': jobId,
-      'JobTriggerId': jobTriggerId,
+    final data = <String, dynamic>{
       'SiteId': siteId,
-      'DeviceId': deviceId,
-      'DeviceGroupId': deviceGroupId,
       'TimeOfUseId': timeOfUseId,
       'Status': status,
-      'NextBillingDate': nextBillingDate?.toIso8601String(),
-      'Interval': interval,
       'RetryCount': retryCount,
-      'LastExecutionTime': lastExecutionTime?.toIso8601String(),
-      'UserId': userId,
-      'Active': active,
-      'Id': id,
-      'TenantId': tenantId,
-      'CreatedBy': createdBy,
-      'CreatedDate': createdDate?.toIso8601String(),
-      'RowDate': rowDate?.toIso8601String(),
     };
+
+    // For updates, include Id and JobId
+    if (id != null) {
+      data['Id'] = id;
+    }
+
+    if (jobId != null) {
+      data['JobId'] = jobId;
+    }
+
+    if (deviceId != null) {
+      data['DeviceId'] = deviceId;
+    }
+
+    if (deviceGroupId != null) {
+      data['DeviceGroupId'] = deviceGroupId;
+    }
+
+    if (nextBillingDate != null) {
+      // Use full ISO format with timezone for API compatibility
+      data['NextBillingDate'] = nextBillingDate!.toUtc().toIso8601String();
+    }
+
+    return data;
+  }
+}
+
+// Enums for Schedule management
+enum ScheduleTargetType {
+  device('Device'),
+  group('Group');
+
+  const ScheduleTargetType(this.value);
+  final String value;
+
+  static ScheduleTargetType fromString(String value) {
+    return ScheduleTargetType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ScheduleTargetType.device,
+    );
+  }
+}
+
+enum ScheduleInterval {
+  monthly('Monthly'),
+  weekly('Weekly'),
+  daily('Daily');
+
+  const ScheduleInterval(this.value);
+  final String value;
+
+  static ScheduleInterval fromString(String value) {
+    return ScheduleInterval.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ScheduleInterval.monthly,
+    );
+  }
+}
+
+enum ScheduleStatus {
+  enabled('Enabled'),
+  disabled('Disabled'),
+  paused('Paused');
+
+  const ScheduleStatus(this.value);
+  final String value;
+
+  static ScheduleStatus fromString(String value) {
+    return ScheduleStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ScheduleStatus.enabled,
+    );
   }
 }

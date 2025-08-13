@@ -21,7 +21,7 @@ class SeasonService {
       );
 
       final response = await _apiService.get(
-        '/api/rest/Season',
+        '/api/rest/v2/Season',
         queryParameters: {'search': search, 'offset': offset, 'limit': limit},
       );
 
@@ -73,7 +73,7 @@ class SeasonService {
     try {
       print('🔄 SeasonService: Fetching season by ID: $id');
 
-      final response = await _apiService.get('/api/rest/Season/$id');
+      final response = await _apiService.get('/api/rest/v2/Season/$id');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -127,7 +127,7 @@ class SeasonService {
       print('📤 SeasonService: Request data: $requestData');
 
       final response = await _apiService.post(
-        '/api/rest/Season',
+        '/api/rest/v2/Season',
         data: requestData,
       );
 
@@ -184,7 +184,7 @@ class SeasonService {
       print('📤 SeasonService: Request data: $requestData');
 
       final response = await _apiService.post(
-        '/api/rest/Season/${season.id}',
+        '/api/rest/v2/Season/${season.id}',
         data: requestData,
       );
 
@@ -227,7 +227,7 @@ class SeasonService {
     try {
       print('🔄 SeasonService: Deleting season ID: $id');
 
-      final response = await _apiService.delete('/api/rest/Season/$id');
+      final response = await _apiService.delete('/api/rest/v2/Season/$id');
 
       print('📥 SeasonService: Response status: ${response.statusCode}');
 

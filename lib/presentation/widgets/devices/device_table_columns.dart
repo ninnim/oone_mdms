@@ -220,11 +220,11 @@ class DeviceTableColumns {
       BluNestTableColumn<Device>(
         key: 'actions',
         title: 'Actions',
-
         flex: 1,
         sortable: false,
+        isActions: true,
         builder: (device) => Container(
-          alignment: Alignment.center,
+          alignment: Alignment.centerRight,
           height: AppSizes.spacing40,
           //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           child: PopupMenuButton<String>(

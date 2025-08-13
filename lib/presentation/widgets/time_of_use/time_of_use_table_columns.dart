@@ -3,7 +3,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_of_use.dart';
 import '../common/blunest_data_table.dart';
-import '../common/status_chip.dart';
 
 class TimeOfUseTableColumns {
   static List<BluNestTableColumn<TimeOfUse>> buildAllColumns({
@@ -12,8 +11,35 @@ class TimeOfUseTableColumns {
     Function(TimeOfUse)? onEdit,
     Function(TimeOfUse)? onDelete,
     Function(TimeOfUse)? onView,
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<TimeOfUse>? data,
   }) {
     return [
+      // No. (Row Number)
+      BluNestTableColumn<TimeOfUse>(
+        key: 'no',
+        title: 'No.',
+        flex: 1,
+        sortable: false,
+        builder: (timeOfUse) {
+          final index = data?.indexOf(timeOfUse) ?? 0;
+          final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
+          return Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              '$rowNumber',
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          );
+        },
+      ),
+
       // Name column
       BluNestTableColumn<TimeOfUse>(
         key: 'name',
@@ -71,6 +97,7 @@ class TimeOfUseTableColumns {
         key: 'actions',
         title: 'Actions',
         flex: 1,
+        isActions: true,
         builder: (timeOfUse) =>
             _buildActionsColumn(timeOfUse, onEdit, onDelete, onView),
       ),
@@ -84,6 +111,9 @@ class TimeOfUseTableColumns {
     Function(TimeOfUse)? onEdit,
     Function(TimeOfUse)? onDelete,
     Function(TimeOfUse)? onView,
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<TimeOfUse>? data,
   }) {
     final allColumns = buildAllColumns(
       sortBy: sortBy,
@@ -91,9 +121,35 @@ class TimeOfUseTableColumns {
       onEdit: onEdit,
       onDelete: onDelete,
       onView: onView,
+      currentPage: currentPage,
+      itemsPerPage: itemsPerPage,
+      data: data,
     );
 
     return allColumns.where((col) => visibleColumns.contains(col.key)).toList();
+  }
+
+  // New method that returns all columns without filtering (for BluNestDataTable column visibility)
+  static List<BluNestTableColumn<TimeOfUse>> buildAllBluNestColumns({
+    String? sortBy,
+    bool sortAscending = true,
+    Function(TimeOfUse)? onEdit,
+    Function(TimeOfUse)? onDelete,
+    Function(TimeOfUse)? onView,
+    int currentPage = 1,
+    int itemsPerPage = 25,
+    List<TimeOfUse>? data,
+  }) {
+    return buildAllColumns(
+      sortBy: sortBy,
+      sortAscending: sortAscending,
+      onEdit: onEdit,
+      onDelete: onDelete,
+      onView: onView,
+      currentPage: currentPage,
+      itemsPerPage: itemsPerPage,
+      data: data,
+    );
   }
 
   static Widget _buildNameColumn(TimeOfUse timeOfUse) {
@@ -107,22 +163,22 @@ class TimeOfUseTableColumns {
             timeOfUse.name,
             style: const TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: AppSizes.fontSizeMedium,
+              fontSize: AppSizes.fontSizeSmall,
               color: AppColors.textPrimary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          if (timeOfUse.id != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              'ID: ${timeOfUse.id}',
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+          // if (timeOfUse.id != null) ...[
+          //   const SizedBox(height: 2),
+          //   Text(
+          //     'ID: ${timeOfUse.id}',
+          //     style: const TextStyle(
+          //       fontSize: AppSizes.fontSizeSmall,
+          //       color: AppColors.textSecondary,
+          //     ),
+          //   ),
+          // ],
         ],
       ),
     );
@@ -253,9 +309,27 @@ class TimeOfUseTableColumns {
   static Widget _buildStatusColumn(TimeOfUse timeOfUse) {
     return Container(
       padding: const EdgeInsets.all(8),
-      child: StatusChip(
-        text: timeOfUse.statusText,
-        type: timeOfUse.active ? StatusChipType.success : StatusChipType.error,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: timeOfUse.active
+              ? AppColors.success.withOpacity(0.1)
+              : AppColors.error.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          border: Border.all(
+            color: timeOfUse.active
+                ? AppColors.success.withOpacity(0.3)
+                : AppColors.error.withOpacity(0.3),
+          ),
+        ),
+        child: Text(
+          timeOfUse.active ? 'Active' : 'Inactive',
+          style: TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            fontWeight: FontWeight.w600,
+            color: timeOfUse.active ? AppColors.success : AppColors.error,
+          ),
+        ),
       ),
     );
   }
@@ -267,7 +341,7 @@ class TimeOfUseTableColumns {
     Function(TimeOfUse)? onView,
   ) {
     return Container(
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.centerRight,
       height: AppSizes.spacing40,
       child: PopupMenuButton<String>(
         icon: const Icon(
@@ -329,6 +403,7 @@ class TimeOfUseTableColumns {
 
   // Available columns list for column visibility
   static List<String> get availableColumns => [
+    'no',
     'name',
     'code',
     'description',
@@ -338,11 +413,51 @@ class TimeOfUseTableColumns {
     'actions',
   ];
 
+  // Get display names for column visibility UI
+  static List<String> getDisplayNames() => [
+    'No.',
+    'Name',
+    'Code',
+    'Description',
+    'Time Bands',
+    'Channels',
+    'Status',
+    'Actions',
+  ];
+
+  // Get column keys to display names mapping
+  static Map<String, String> getColumnMapping() => {
+    'no': 'No.',
+    'name': 'Name',
+    'code': 'Code',
+    'description': 'Description',
+    'timeBands': 'Time Bands',
+    'channels': 'Channels',
+    'status': 'Status',
+    'actions': 'Actions',
+  };
+
+  // Convert display names back to keys
+  static List<String> convertDisplayNamesToKeys(List<String> displayNames) {
+    final mapping = getColumnMapping();
+    final reverseMapping = {
+      for (var entry in mapping.entries) entry.value: entry.key,
+    };
+    return displayNames.map((name) => reverseMapping[name] ?? name).toList();
+  }
+
+  // Convert keys to display names
+  static List<String> convertKeysToDisplayNames(List<String> keys) {
+    final mapping = getColumnMapping();
+    return keys.map((key) => mapping[key] ?? key).toList();
+  }
+
   // Get all column keys (alias for availableColumns)
   static List<String> getAllColumnKeys() => availableColumns;
 
   // Default visible columns
   static List<String> get defaultVisibleColumns => [
+    'no',
     'name',
     'code',
     'description',

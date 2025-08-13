@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:mdms_clone/presentation/screens/schedules/schedule_screen.dart';
 import 'package:mdms_clone/presentation/screens/tou_management/tou_management_screen.dart';
 import 'package:mdms_clone/presentation/screens/tou_management/seasons_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_bands/time_bands_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_of_use/time_of_use_screen.dart';
+import 'package:mdms_clone/presentation/screens/schedules/schedule_screen.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
@@ -15,7 +17,6 @@ import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
 import '../screens/auth/simple_auth_redirect_screen.dart';
-import '../screens/settings/token_management_test_screen.dart';
 import '../screens/special_days/special_days_screen.dart';
 import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
@@ -165,6 +166,13 @@ class AppRouter {
               },
             ),
 
+            // Schedule Routes
+            GoRoute(
+              path: '/schedules',
+              name: 'schedules',
+              builder: (context, state) => const ScheduleRouteWrapper(),
+            ),
+
             // TOU Management Routes
             GoRoute(
               path: '/tou-management',
@@ -243,11 +251,7 @@ class AppRouter {
               name: 'billing',
               builder: (context, state) => const SettingsRouteWrapper(),
             ),
-            GoRoute(
-              path: '/token-management-test',
-              name: 'token-management-test',
-              builder: (context, state) => const TokenManagementTestScreen(),
-            ),
+
             // TOU Management Sub-routes
             GoRoute(
               path: '/time-bands',
@@ -708,6 +712,15 @@ class DeviceGroupsRouteWrapper extends StatelessWidget {
   }
 }
 
+class ScheduleRouteWrapper extends StatelessWidget {
+  const ScheduleRouteWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ScheduleScreen();
+  }
+}
+
 class DeviceGroupDetailsRouteWrapper extends StatefulWidget {
   final int deviceGroupId;
   final DeviceGroup? deviceGroup;
@@ -1116,6 +1129,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/dashboard')) return 'dashboard';
     if (location.startsWith('/devices')) return 'devices';
     if (location.startsWith('/device-groups')) return 'device-groups';
+    if (location.startsWith('/schedules')) return 'schedules';
     if (location.startsWith('/sites')) return 'sites';
     if (location.startsWith('/tou-management')) return 'tou-management';
     if (location.startsWith('/tickets')) return 'tickets';
@@ -1170,7 +1184,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildCollapsedSidebarMenu(String selectedScreen) {
     // Auto-expand groups when their children are selected (same as expanded mode)
-    if (['devices', 'device-groups'].contains(selectedScreen)) {
+    if (['devices', 'device-groups', 'schedules'].contains(selectedScreen)) {
       _expandedGroups['device-management'] = true;
     }
     if ([
@@ -1186,12 +1200,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     }
     if ([
       'sites',
-      'my-profile',
-      'security',
       'integrations',
-      'billing',
-      'token-management-test',
-      'token-test',
+
+      //'billing',
     ].contains(selectedScreen)) {
       _expandedGroups['settings'] = true;
     }
@@ -1215,6 +1226,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         _buildCollapsedGroupHeader('device-management', Icons.devices, [
           'devices',
           'device-groups',
+          'schedules',
         ], selectedScreen),
 
         if (_expandedGroups['device-management'] == true) ...[
@@ -1228,6 +1240,11 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             'device-groups',
             Icons.group_work,
             selectedScreen == 'device-groups',
+          ),
+          _buildCollapsedSubMenuItem(
+            'schedules',
+            Icons.schedule,
+            selectedScreen == 'schedules',
           ),
         ],
 
@@ -1563,7 +1580,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildSidebarHeader() {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: const EdgeInsets.all(AppSizes.spacing12),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
       ),
@@ -1586,7 +1603,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
-                'MDMS Clone',
+                'MDMS',
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeXLarge,
                   fontWeight: FontWeight.bold,
@@ -1691,7 +1708,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           'device-management',
           'Device Management',
           Icons.devices,
-          ['devices', 'device-groups'],
+          ['devices', 'device-groups', 'schedules'],
           selectedScreen,
         ),
 
@@ -1708,6 +1725,12 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               'Device Groups',
               Icons.group_work,
               selectedScreen == 'device-groups',
+            ),
+            _buildSubMenuItem(
+              'schedules',
+              'Schedules',
+              Icons.schedule,
+              selectedScreen == 'schedules',
             ),
           ]),
         ],
@@ -2135,7 +2158,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildSidebarFooter() {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: const EdgeInsets.all(AppSizes.spacing12),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
       ),
@@ -2373,6 +2396,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       }
       return 'Device Groups';
     }
+    if (location.startsWith('/schedules')) return 'Schedules';
     if (location.startsWith('/sites')) {
       if (location.contains('/details')) {
         return 'Site Details';
@@ -2414,33 +2438,6 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         location.contains('/billing') ||
         location.split('/').length > 2;
   }
-
-  // void _copyUrlToClipboard(BuildContext context, String route) {
-  //   // Get the full URL with current domain
-  //   final fullUrl = 'http://localhost:8088$route';
-
-  //   // Copy to clipboard using Flutter's Clipboard
-  //   Clipboard.setData(ClipboardData(text: fullUrl))
-  //       .then((_) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(
-  //             content: Text('URL copied: $fullUrl'),
-  //             duration: const Duration(seconds: 2),
-  //             backgroundColor: const Color(0xFF10b981),
-  //           ),
-  //         );
-  //       })
-  //       .catchError((_) {
-  //         // Fallback if clipboard fails
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(
-  //             content: Text('URL: $fullUrl'),
-  //             duration: const Duration(seconds: 3),
-  //             backgroundColor: const Color(0xFF2563eb),
-  //           ),
-  //         );
-  //       });
-  // }
 }
 
 // Custom painter for connecting lines in expandable menu groups
