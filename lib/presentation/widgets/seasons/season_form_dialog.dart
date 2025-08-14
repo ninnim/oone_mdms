@@ -7,11 +7,18 @@ import '../common/app_input_field.dart';
 import '../common/app_toast.dart';
 
 class SeasonFormDialog extends StatefulWidget {
-  final Season? season; // null for create, populated for edit
+  final Season? season; // null for create, populated for edit/view
   final Function(Season)? onSave;
   final VoidCallback? onSuccess;
+  final bool isReadOnly; // New parameter for view-only mode
 
-  const SeasonFormDialog({super.key, this.season, this.onSave, this.onSuccess});
+  const SeasonFormDialog({
+    super.key,
+    this.season,
+    this.onSave,
+    this.onSuccess,
+    this.isReadOnly = false,
+  });
 
   @override
   State<SeasonFormDialog> createState() => _SeasonFormDialogState();
@@ -24,6 +31,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
 
   List<bool> _selectedMonths = List.filled(12, false);
   bool _isLoading = false;
+  bool _isInEditMode = false; // Track if we're in edit mode
 
   final List<String> _monthNames = [
     'January',
@@ -43,6 +51,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
   @override
   void initState() {
     super.initState();
+    _isInEditMode = !widget.isReadOnly; // Start in edit mode if not read-only
     _initializeForm();
   }
 
@@ -63,6 +72,13 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  /// Toggle between view and edit modes
+  void _toggleEditMode() {
+    setState(() {
+      _isInEditMode = !_isInEditMode;
+    });
   }
 
   /// Build smart select/clear all button based on current selection state
@@ -128,11 +144,16 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
   }
 
   /// Build a quick pattern chip for common season selections
-  Widget _buildQuickPatternChip(String label, List<int> months, Color color) {
+  Widget _buildQuickPatternChip(
+    String label,
+    List<int> months,
+    Color color, {
+    bool isReadOnly = false,
+  }) {
     final isCurrentPattern = _isCurrentPattern(months);
 
     return GestureDetector(
-      onTap: () => _setMonthPattern(months),
+      onTap: isReadOnly ? null : () => _setMonthPattern(months),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -191,7 +212,17 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.season != null;
+    final isCreate = widget.season == null;
+    final isViewMode = widget.isReadOnly && !_isInEditMode;
+
+    String dialogTitle;
+    if (isCreate) {
+      dialogTitle = 'Create Season';
+    } else if (isViewMode) {
+      dialogTitle = 'Season Details';
+    } else {
+      dialogTitle = 'Edit Season';
+    }
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -213,7 +244,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               child: Row(
                 children: [
                   Text(
-                    isEdit ? 'Edit Season' : 'Create Season',
+                    dialogTitle,
                     style: const TextStyle(
                       fontSize: AppSizes.fontSizeLarge,
                       fontWeight: FontWeight.w600,
@@ -246,6 +277,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                       AppInputField(
                         label: 'Name',
                         controller: _nameController,
+                        readOnly: isViewMode,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Season name is required';
@@ -264,6 +296,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                       AppInputField(
                         label: 'Description',
                         controller: _descriptionController,
+                        readOnly: isViewMode,
                         maxLines: 3,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -288,13 +321,14 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          // Smart Select All/Clear All button
-                          _buildSmartSelectButton(),
+                          // Smart Select All/Clear All button (only in edit mode)
+                          if (!isViewMode) _buildSmartSelectButton(),
                         ],
                       ),
                       const SizedBox(height: AppSizes.spacing12),
 
-                      // Quick Season Patterns
+                      // Quick Season Patterns (only in edit mode)
+                      // if (!isViewMode) ...[
                       Container(
                         padding: const EdgeInsets.all(AppSizes.spacing12),
                         decoration: BoxDecoration(
@@ -324,42 +358,46 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                               spacing: AppSizes.spacing8,
                               runSpacing: AppSizes.spacing4,
                               children: [
-                                _buildQuickPatternChip('Winter', [
-                                  12,
-                                  1,
-                                  2,
-                                ], AppColors.primary),
-                                _buildQuickPatternChip('Spring', [
-                                  3,
-                                  4,
-                                  5,
-                                ], AppColors.primary),
+                                _buildQuickPatternChip(
+                                  'Winter',
+                                  [12, 1, 2],
+                                  AppColors.primary,
+                                  isReadOnly: isViewMode,
+                                ),
+                                _buildQuickPatternChip(
+                                  'Spring',
+                                  [3, 4, 5],
+                                  AppColors.primary,
+                                  isReadOnly: isViewMode,
+                                ),
                                 _buildQuickPatternChip('Summer', [
                                   6,
                                   7,
                                   8,
                                 ], AppColors.primary),
-                                _buildQuickPatternChip('Autumn', [
-                                  9,
-                                  10,
-                                  11,
-                                ], AppColors.primary),
+                                _buildQuickPatternChip(
+                                  'Autumn',
+                                  [9, 10, 11],
+                                  AppColors.primary,
+                                  isReadOnly: isViewMode,
+                                ),
                               ],
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: AppSizes.spacing8),
-                      const Text(
+                      // ],
+                      Text(
                         'Choose the months that belong to this season',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: AppSizes.fontSizeMedium,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: AppSizes.spacing16),
 
-                      _buildMonthSelection(),
+                      _buildMonthSelection(isReadOnly: isViewMode),
 
                       const SizedBox(height: AppSizes.spacing16),
 
@@ -386,10 +424,19 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                     type: AppButtonType.outline,
                   ),
                   const SizedBox(width: AppSizes.spacing12),
+                  // Always show a button in the second position for consistent spacing
                   AppButton(
-                    text: isEdit ? 'Update Season' : 'Create Season',
-                    onPressed: _isLoading ? null : _handleSave,
-                    isLoading: _isLoading,
+                    text: (isViewMode && !isCreate)
+                        ? 'Edit'
+                        : (isCreate ? 'Create Season' : 'Update Season'),
+                    onPressed: (isViewMode && !isCreate)
+                        ? () {
+                            setState(() {
+                              _isInEditMode = true;
+                            });
+                          }
+                        : (_isLoading ? null : _handleSave),
+                    isLoading: (isViewMode && !isCreate) ? false : _isLoading,
                   ),
                 ],
               ),
@@ -400,7 +447,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
     );
   }
 
-  Widget _buildMonthSelection() {
+  Widget _buildMonthSelection({bool isReadOnly = false}) {
     // Use only primary color for easier theming
     const primaryColor = AppColors.primary;
 
@@ -424,16 +471,18 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
           final isSelected = _selectedMonths[index];
 
           return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedMonths[index] = !_selectedMonths[index];
-              });
-            },
+            onTap: isReadOnly
+                ? null
+                : () {
+                    setState(() {
+                      _selectedMonths[index] = !_selectedMonths[index];
+                    });
+                  },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? primaryColor.withValues(alpha: 0.2)
+                    ? primaryColor.withValues(alpha: isReadOnly ? 0.1 : 0.2)
                     : primaryColor.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                 border: Border.all(

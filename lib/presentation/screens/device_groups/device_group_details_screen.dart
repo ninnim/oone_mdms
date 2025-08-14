@@ -688,6 +688,11 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
       padding: const EdgeInsets.all(AppSizes.spacing12),
       child: Column(
         children: [
+           SizedBox(height: AppSizes.spacing12),
+
+          // Summary card (same style as devices screen)
+          DeviceSummaryCard(devices: filteredDevices),
+             const SizedBox(height: AppSizes.spacing8),
           // Filters and actions (same style as devices screen)
           DeviceFiltersAndActionsV2(
             onSearchChanged: _onDeviceSearchChanged,
@@ -704,12 +709,9 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
                 null, // Group devices don't have link status filter
           ),
 
-          SizedBox(height: AppSizes.spacing12),
+         
 
-          // Summary card (same style as devices screen)
-          DeviceSummaryCard(devices: filteredDevices),
-
-          const SizedBox(height: AppSizes.spacing8),
+       
 
           // Content based on view mode
           Expanded(child: _buildDeviceContent()),
@@ -1562,6 +1564,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
     return Column(
       children: [
         // Summary card with padding (same style as schedule screen)
+        const SizedBox(height: AppSizes.spacing12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
           child: ScheduleSummaryCard(schedules: _filteredSchedules),

@@ -10,6 +10,7 @@ import '../../widgets/seasons/season_filters_and_actions_v2.dart';
 import '../../widgets/seasons/season_form_dialog.dart';
 import '../../widgets/seasons/season_smart_month_chips.dart';
 import '../../widgets/seasons/season_table_columns.dart';
+import '../../widgets/seasons/season_summary_card.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
@@ -213,12 +214,14 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
   }
 
   void _viewSeasonDetails(Season season) {
-    // TODO: Implement season details view
-    AppToast.show(
-      context,
-      title: 'Coming Soon',
-      message: 'Season details view will be available soon.',
-      type: ToastType.info,
+    showDialog(
+      context: context,
+      builder: (context) => SeasonFormDialog(
+        season: season,
+        isReadOnly: true,
+        onSave: _handleUpdateSeason,
+        onSuccess: _loadSeasons,
+      ),
     );
   }
 
@@ -335,6 +338,12 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
             child: _buildHeader(),
           ),
+          // Summary Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+            child: SeasonSummaryCard(seasons: _seasons),
+          ),
+          const SizedBox(height: AppSizes.spacing8),
           Expanded(child: _buildContent()),
           // Always show pagination area, even if empty (no padding)
           ResultsPagination(

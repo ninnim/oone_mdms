@@ -1284,13 +1284,13 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
         const SizedBox(height: 8),
 
-        // Tickets
-        _buildCollapsedMenuItem(
-          'tickets',
-          Icons.support_agent,
-          selectedScreen == 'tickets',
-          badge: '3',
-        ),
+        // // Tickets
+        // _buildCollapsedMenuItem(
+        //   'tickets',
+        //   Icons.support_agent,
+        //   selectedScreen == 'tickets',
+        //   badge: '3',
+        // ),
 
         const SizedBox(height: 8),
 
@@ -1325,12 +1325,12 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         // Settings Group
         _buildCollapsedGroupHeader('settings', Icons.settings, [
           'sites',
-          'my-profile',
-          'security',
+          // 'my-profile',
+          // 'security',
           'integrations',
-          'billing',
-          'token-management-test',
-          'token-test',
+          // 'billing',
+          // 'token-management-test',
+          // 'token-test',
         ], selectedScreen),
 
         if (_expandedGroups['settings'] == true) ...[
@@ -1340,36 +1340,36 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             Icons.business,
             selectedScreen == 'sites',
           ),
-          _buildCollapsedSubMenuItem(
-            'my-profile',
-            Icons.account_circle,
-            selectedScreen == 'my-profile',
-          ),
-          _buildCollapsedSubMenuItem(
-            'security',
-            Icons.security,
-            selectedScreen == 'security',
-          ),
+          // _buildCollapsedSubMenuItem(
+          //   'my-profile',
+          //   Icons.account_circle,
+          //   selectedScreen == 'my-profile',
+          // ),
+          // _buildCollapsedSubMenuItem(
+          //   'security',
+          //   Icons.security,
+          //   selectedScreen == 'security',
+          // ),
           _buildCollapsedSubMenuItem(
             'integrations',
             Icons.integration_instructions,
             selectedScreen == 'integrations',
           ),
-          _buildCollapsedSubMenuItem(
-            'billing',
-            Icons.receipt_long,
-            selectedScreen == 'billing',
-          ),
-          _buildCollapsedSubMenuItem(
-            'token-management-test',
-            Icons.vpn_key,
-            selectedScreen == 'token-management-test',
-          ),
-          _buildCollapsedSubMenuItem(
-            'token-test',
-            Icons.vpn_key,
-            selectedScreen == 'token-test',
-          ),
+          // _buildCollapsedSubMenuItem(
+          //   'billing',
+          //   Icons.receipt_long,
+          //   selectedScreen == 'billing',
+          // ),
+          // _buildCollapsedSubMenuItem(
+          //   'token-management-test',
+          //   Icons.vpn_key,
+          //   selectedScreen == 'token-management-test',
+          // ),
+          // _buildCollapsedSubMenuItem(
+          //   'token-test',
+          //   Icons.vpn_key,
+          //   selectedScreen == 'token-test',
+          // ),
         ],
       ],
     );

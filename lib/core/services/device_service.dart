@@ -378,29 +378,28 @@ class DeviceService {
     String deviceId, {
     String? startDate,
     String? endDate,
-    int limit = 25,
-    int offset = 0,
+    int pageSize = 25,
+    int currentPage = 1,
   }) async {
     try {
-      final requestData = {
-        'limit': limit,
-        'offset': offset,
-        'where': {
-          '_and': [
-            if (startDate != null)
-              {
-                'Timestamp': {'_gte': startDate},
-              },
-            if (endDate != null)
-              {
-                'Timestamp': {'_lte': endDate},
-              },
-          ],
-        },
+      final queryParameters = {
+        'DeviceId': deviceId,
+        'PageSize': pageSize,
+        'CurrentPage': currentPage,
       };
 
-      final endpoint = ApiConstants.deviceMetrics.replaceAll('{id}', deviceId);
-      final response = await _apiService.post(endpoint, data: requestData);
+      // Add date parameters if provided
+      if (startDate != null) {
+        queryParameters['From'] = startDate;
+      }
+      if (endDate != null) {
+        queryParameters['To'] = endDate;
+      }
+
+      final response = await _apiService.get(
+        ApiConstants.deviceMetrics,
+        queryParameters: queryParameters,
+      );
 
       return ApiResponse.success(response.data);
     } catch (e) {

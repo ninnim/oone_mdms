@@ -93,6 +93,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
     }
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (widget.onColumnVisibilityChanged != null ||
             widget.enableMultiSelect)
@@ -116,6 +117,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Table Header60
           Container(
@@ -577,6 +579,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               ],
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Table Header - Same as in _buildTable()
                 Container(

@@ -329,83 +329,149 @@ Method GET https://mdms.oone.bz/api/rest/Device/Id=369b43d6-6564-418e-98d1-aede8
     
 
 // Read Device by Id Metrics
+//Method: GET https://mdms.oone.bz/core/api/rest/v1/Device/Metric?DeviceId=369b43d6-6564-418e-98d1-aede8d65434d&From=2025-08-14T00:00:00.000+07&To=2025-08-20T23:59:59.999+07&PageSize=25&CurrentPage=1
 
-Method Post https://mdms.oone.bz/api/rest/v1/Device/369b43d6-6564-418e-98d1-aede8d65434d/MatricsV2
-
-//Request Paylaod Read Device by Id Metrics
+//Response Metrics
 {
-  "limit": 25,
-  "offset": 0,
-  "where": {
-    "_and": [
-      {
-        "Timestamp": {
-          "_gte": "2025-03-01T00:00:00.000+07"
-        }
-      },
-      {
-        "Timestamp": {
-          "_lte": "2025-07-31T23:59:59.999+07"
-        }
-      }
-    ]
-  }
-}
-
-// Response Payload Read Device by Id Metrics
-{
-  "DeviceMetrics": {
-    "Id": "369b43d6-6564-418e-98d1-aede8d65434d",
-    "Name": "",
-    "Model": "EDMI",
-    "SerialNumber": "000252240670",
-    "Status": "Commissioned",
-    "Paging": {
-      "Item": {
-        "Total": 1
-      }
-    },
-    "Metrics": [
-      {
-        "Timestamp": "2025-05-03T08:15:00+07:00",
-        "PreValue": -2858.91,
-        "Value": -2450.49,
-        "Labels": {
-          "Phase": "TOTAL",
-          "Units": "W",
-          "ChannelId": 14,
-          "FlowDirection": "NONE",
-          "ApportionPolicy": "AVG",
-          "DeviceChannelId": "06428767-b94f-4a82-bfcb-96083d1ed4f0"
-        }
-      }
-    ]
-  }
-}
-
-// Read Device by Id Billing
-
-Method GET https://mdms.oone.bz/api/rest/v1/Device/369b43d6-6564-418e-98d1-aede8d65434d/Billing?offset=0&limit=25
-
-// Response Payload Read Device by Id Billing
-{
-  "Paging": {
-    "Item": {
-      "Total": 1
-    }
+  "QueryParam": {
+    "RowCount": 7,
+    "PageCount": 1,
+    "HasPreviousPage": false,
+    "HasNextPage": false,
+    "PageSize": 25,
+    "CurrentPage": 1,
+    "Sorts": "Timestamp-",
+    "Filter": ""
   },
-  "Billing": [
+  "Result": [
     {
-      "DeviceId": "369b43d6-6564-418e-98d1-aede8d65434d",
-      "TimeOfUseId": 9,
-      "StartTime": "2025-03-10T07:00:00+07:00",
-      "EndTime": "2025-04-10T07:00:00+07:00",
-      "TimeOfUse": {
-        "Id": 9,
-        "Name": "Full"
-      }
+      "Timestamp": "2025-08-13T23:00:00+00:00",
+      "ExportWhTotal": 20544399360,
+      "ExportVarhTotal": 963900032,
+      "ImportWhTotal": 69100000,
+      "ImportVarhTotal": 92200000,
+      "ActivePowerTotal": 1752104,
+      "ApparentEnergyDelivered": 20630800384,
+      "ApparentEnergyReceived": 74300000,
+      "CurrentPhaseA": 45.08000183105469,
+      "CurrentPhaseB": 46.79999923706055,
+      "CurrentPhaseC": 45.08000183105469,
+      "FrequencyTotal": 50.060001373291016,
+      "PowerFactorTotal": -1,
+      "VoltagePhaseA": 12977.3896484375,
+      "VoltagePhaseB": 13068.08984375,
+      "VoltagePhaseC": 12962.26953125
+    },
+    {
+      "Timestamp": "2025-08-13T22:00:00+00:00",
+      "ExportWhTotal": 20542599168,
+      "ExportVarhTotal": 963900032,
+      "ImportWhTotal": 69100000,
+      "ImportVarhTotal": 92200000,
+      "ActivePowerTotal": 1617326.75,
+      "ApparentEnergyDelivered": 20629000192,
+      "ApparentEnergyReceived": 74300000,
+      "CurrentPhaseA": 42.08000183105469,
+      "CurrentPhaseB": 43.9900016784668,
+      "CurrentPhaseC": 41.720001220703125,
+      "FrequencyTotal": 50.06999969482422,
+      "PowerFactorTotal": -1,
+      "VoltagePhaseA": 13007.6201171875,
+      "VoltagePhaseB": 13086.98046875,
+      "VoltagePhaseC": 12984.9501953125
+    },
+    {
+      "Timestamp": "2025-08-13T21:00:00+00:00",
+      "ExportWhTotal": 20540999680,
+      "ExportVarhTotal": 963800000,
+      "ImportWhTotal": 69100000,
+      "ImportVarhTotal": 92200000,
+      "ActivePowerTotal": 1617326.75,
+      "ApparentEnergyDelivered": 20627300352,
+      "ApparentEnergyReceived": 74300000,
+      "CurrentPhaseA": 42.27000045776367,
+      "CurrentPhaseB": 43.900001525878906,
+      "CurrentPhaseC": 41.720001220703125,
+      "FrequencyTotal": 50.18000030517578,
+      "PowerFactorTotal": -1,
+      "VoltagePhaseA": 12992.509765625,
+      "VoltagePhaseB": 13075.650390625,
+      "VoltagePhaseC": 12966.0498046875
+    },
+    {
+      "Timestamp": "2025-08-13T20:00:00+00:00",
+      "ExportWhTotal": 20539299840,
+      "ExportVarhTotal": 963800000,
+      "ImportWhTotal": 69100000,
+      "ImportVarhTotal": 92200000,
+      "ActivePowerTotal": 1662252.5,
+      "ApparentEnergyDelivered": 20625700864,
+      "ApparentEnergyReceived": 74300000,
+      "CurrentPhaseA": 43.720001220703125,
+      "CurrentPhaseB": 45.439998626708984,
+      "CurrentPhaseC": 43.16999816894531,
+      "FrequencyTotal": 50.20000076293945,
+      "PowerFactorTotal": -1,
+      "VoltagePhaseA": 12950.9404296875,
+      "VoltagePhaseB": 13034.080078125,
+      "VoltagePhaseC": 12928.259765625
+    },
+    {
+      "Timestamp": "2025-08-13T19:00:00+00:00",
+      "ExportWhTotal": 20537600000,
+      "ExportVarhTotal": 963800000,
+      "ImportWhTotal": 69100000,
+      "ImportVarhTotal": 92200000,
+      "ActivePowerTotal": 1752104,
+      "ApparentEnergyDelivered": 20623900672,
+      "ApparentEnergyReceived": 74300000,
+      "CurrentPhaseA": 46.06999969482422,
+      "CurrentPhaseB": 47.709999084472656,
+      "CurrentPhaseC": 45.529998779296875,
+      "FrequencyTotal": 50.08000183105469,
+      "PowerFactorTotal": -1,
+      "VoltagePhaseA": 12935.8203125,
+      "VoltagePhaseB": 13022.740234375,
+      "VoltagePhaseC": 12916.919921875
+    },
+    {
+      "Timestamp": "2025-08-13T18:00:00+00:00",
+      "ExportWhTotal": 20535799808,
+      "ExportVarhTotal": 963699968,
+      "ImportWhTotal": 69100000,
+      "ImportVarhTotal": 92200000,
+      "ActivePowerTotal": 1886881.125,
+      "ApparentEnergyDelivered": 20622100480,
+      "ApparentEnergyReceived": 74300000,
+      "CurrentPhaseA": 48.70000076293945,
+      "CurrentPhaseB": 50.70000076293945,
+      "CurrentPhaseC": 48.70000076293945,
+      "FrequencyTotal": 50.0099983215332,
+      "PowerFactorTotal": -1,
+      "VoltagePhaseA": 13030.2998046875,
+      "VoltagePhaseB": 13121,
+      "VoltagePhaseC": 13011.400390625
+    },
+    {
+      "Timestamp": "2025-08-13T17:00:00+00:00",
+      "ExportWhTotal": 20533899264,
+      "ExportVarhTotal": 963699968,
+      "ImportWhTotal": 69100000,
+      "ImportVarhTotal": 92200000,
+      "ActivePowerTotal": 2021658.375,
+      "ApparentEnergyDelivered": 20620199936,
+      "ApparentEnergyReceived": 74300000,
+      "CurrentPhaseA": 52.880001068115234,
+      "CurrentPhaseB": 54.779998779296875,
+      "CurrentPhaseC": 52.70000076293945,
+      "FrequencyTotal": 50.08000183105469,
+      "PowerFactorTotal": -1,
+      "VoltagePhaseA": 13000.0595703125,
+      "VoltagePhaseB": 13094.5400390625,
+      "VoltagePhaseC": 12988.73046875
     }
-  ]
+  ],
+  "Default": null
 }
 
 // Read Device by Id  Billing Reading

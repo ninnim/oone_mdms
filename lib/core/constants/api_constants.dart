@@ -23,7 +23,7 @@ class ApiConstants {
   static const String devices = '/api/rest/Device';
   static const String deviceGroups = '/api/rest/v1/DeviceGroup';
   static const String deviceFilter = '/api/rest/v1/Device/Filter';
-  static const String deviceMetrics = '/api/rest/v1/Device/{id}/MatricsV2';
+  static const String deviceMetrics = '/core/api/rest/v1/Device/Metric';
   static const String deviceBilling = '/api/rest/v1/Device/{id}/Billing';
   static const String deviceBillingReadings =
       '/api/rest/v1/Device/{id}/BillingReadings';

@@ -77,7 +77,7 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
         widget.device.id!,
         startDate: startDate,
         endDate: endDate,
-        limit: 100,
+        pageSize: 100,
       );
 
       if (mounted) {

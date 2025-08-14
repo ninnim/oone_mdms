@@ -601,6 +601,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen> {
             _selectedTimeOfUse = selectedItems;
           });
         },
+        onRowTap: _viewTimeOfUseDetails,
         onSort: (String sortBy, bool ascending) => _handleSort(sortBy),
         sortBy: _sortBy,
         sortAscending: _sortAscending,

@@ -680,6 +680,36 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     );
   }
 
+  Widget _buildFooter() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          AppButton(
+            text: 'Cancel',
+            type: AppButtonType.outline,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(width: AppSizes.spacing12),
+          if (widget.isReadOnly && !_isEditMode)
+            // Show "Edit" button in view mode
+            AppButton(text: 'Edit', onPressed: _toggleEditMode)
+          else if (_isEditMode || widget.timeOfUse == null)
+            // Show "Update" or "Create" button in edit mode
+            AppButton(
+              text: _actionButtonText,
+              onPressed: _save,
+              isLoading: _isLoading,
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader() {
     final title = widget.timeOfUse == null
         ? 'Create Time of Use'
@@ -709,23 +739,6 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
             ),
           ),
           const Spacer(),
-          // if (widget.isReadOnly &&
-          //     widget.timeOfUse != null &&
-          //     !_isEditMode) ...[
-          //   IconButton(
-          //     onPressed: _toggleEditMode,
-          //     icon: const Icon(Icons.edit, size: 18),
-          //     style: IconButton.styleFrom(
-          //       backgroundColor: AppColors.warning.withOpacity(0.1),
-          //       foregroundColor: AppColors.warning,
-          //       shape: RoundedRectangleBorder(
-          //         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-          //       ),
-          //     ),
-          //     tooltip: 'Edit Time of Use',
-          //   ),
-          //   const SizedBox(width: AppSizes.spacing8),
-          // ],
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.close, size: 18),
@@ -849,7 +862,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
             const Spacer(),
             if (_isEditMode)
               AppButton(
-                text: 'Add Detail',
+                text: 'Add',
                 type: AppButtonType.outline,
                 onPressed: _addDetail,
               ),
@@ -886,7 +899,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                         if (_isEditMode) ...[
                           const SizedBox(height: AppSizes.spacing12),
                           AppButton(
-                            text: 'Add First Detail',
+                            text: 'Add First',
                             type: AppButtonType.outline,
                             onPressed: _addDetail,
                           ),
@@ -1150,34 +1163,6 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     } else {
       return itemContent;
     }
-  }
-
-  Widget _buildFooter() {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          AppButton(
-            text: 'Cancel',
-            type: AppButtonType.outline,
-            onPressed: _cancel,
-          ),
-          const SizedBox(width: AppSizes.spacing12),
-          if (widget.isReadOnly && !_isEditMode)
-            AppButton(text: 'Edit', onPressed: _toggleEditMode)
-          else
-            AppButton(
-              text: _actionButtonText,
-              isLoading: _isLoading,
-              onPressed: _save,
-            ),
-        ],
-      ),
-    );
   }
 
   /// Builds enhanced channel dropdown with code and name display

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:mdms_clone/core/constants/app_colors.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
@@ -1391,10 +1392,22 @@ class _DeviceBillingReadingsScreenState
         flex: 2,
         sortable: false,
         builder: (reading) => Container(
+          height: AppSizes.spacing40,
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            reading['TimeOfUse']?['Name'] ?? 'N/A',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              reading['TimeOfUse']?['Code'] ?? 'N/A',
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary,
+              ),
+            ),
           ),
         ),
       ),

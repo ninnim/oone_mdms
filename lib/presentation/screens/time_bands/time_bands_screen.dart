@@ -608,6 +608,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen> {
             _selectedTimeBands = selectedItems;
           });
         },
+        onRowTap: _viewTimeBandDetails, // Add row click functionality
         onSort: (String sortBy, bool ascending) => _handleSort(sortBy),
         sortBy: _sortBy,
         sortAscending: _sortAscending,

@@ -172,7 +172,8 @@ class BillingReadingsTableColumns {
         sortable: true,
         builder: (reading) => Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Container(
+          child:
+           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),

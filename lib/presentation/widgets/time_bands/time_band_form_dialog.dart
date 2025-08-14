@@ -77,8 +77,16 @@ class _TimeBandFormDialogState extends State<TimeBandFormDialog> {
   @override
   void initState() {
     super.initState();
+    _isEditMode = !widget.isViewMode; // Start in edit mode if not view mode
     _initializeForm();
     _loadDropdownData();
+  }
+
+  /// Toggle between view and edit modes
+  void _toggleEditMode() {
+    setState(() {
+      _isEditMode = !_isEditMode;
+    });
   }
 
   void _initializeForm() {
