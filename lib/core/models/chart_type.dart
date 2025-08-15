@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum ChartType { line, bar, area, scatter }
+enum ChartType { line, bar, area }
 
 extension ChartTypeExtension on ChartType {
   String get displayName {
@@ -11,8 +11,6 @@ extension ChartTypeExtension on ChartType {
         return 'Bar Chart';
       case ChartType.area:
         return 'Area Chart';
-      case ChartType.scatter:
-        return 'Scatter Plot';
     }
   }
 
@@ -24,8 +22,6 @@ extension ChartTypeExtension on ChartType {
         return Icons.bar_chart;
       case ChartType.area:
         return Icons.area_chart;
-      case ChartType.scatter:
-        return Icons.scatter_plot;
     }
   }
 }

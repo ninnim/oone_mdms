@@ -485,7 +485,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
                       text: _isSaving ? 'Saving...' : 'Save',
                       type: AppButtonType.primary,
                       onPressed: _isSaving ? null : _saveLocation,
-                      icon: const Icon(Icons.save, size: 18),
+                      icon:  Icon(Icons.save, size: AppSizes.iconSmall),
                     ),
                   ),
                 ],

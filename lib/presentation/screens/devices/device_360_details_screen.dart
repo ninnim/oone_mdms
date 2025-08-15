@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_tabs.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_enums.dart';
@@ -30,11 +29,12 @@ import '../../widgets/devices/device_location_viewer.dart';
 import '../../widgets/devices/interactive_map_dialog.dart';
 import '../../widgets/devices/dynamic_metrics_table_columns.dart';
 import '../../widgets/devices/billing_table_columns.dart';
+import '../../widgets/devices/modern_metrics_chart.dart';
 import '../../widgets/schedules/schedule_form_dialog.dart';
 import '../../widgets/schedules/schedule_table_columns.dart';
 import '../../widgets/schedules/schedule_filters_and_actions_v2.dart';
 import '../../widgets/schedules/schedule_summary_card.dart';
-import '../../widgets/devices/grouped_metrics_charts.dart';
+import '../../widgets/schedules/schedule_kanban_view.dart';
 import 'widgets/device_channel_table_columns.dart';
 import '../../widgets/common/custom_date_range_picker.dart';
 import '../../routes/app_router.dart';
@@ -125,6 +125,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   Set<Map<String, dynamic>> _selectedMetrics = {};
   List<String> _hiddenMetricsColumns = [];
 
+  // Metrics table scroll controller for drag-to-scroll
+  final ScrollController _metricsTableScrollController = ScrollController();
+
   // Advanced analytics data
   List<LoadProfileMetric> _analyticsMetrics = [];
   bool _isLoadingAnalytics = false;
@@ -138,15 +141,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     'L1': true,
     'L2': true,
     'L3': true,
-  };
-
-  // Grouped chart types for each metric group
-  final Map<String, ChartType> _groupChartTypes = {
-    'Export': ChartType.line,
-    'Import': ChartType.line,
-    'Voltage': ChartType.line,
-    'Current': ChartType.line,
-    'Other': ChartType.line,
   };
 
   // Overview edit mode state
@@ -274,23 +268,23 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       case 0: // Overview
         if (!_overviewLoaded) _loadOverviewData();
         break;
-      case 1: // Channels
+      case 1: // Schedules
+        if (!_schedulesLoaded) _loadSchedulesData();
+        break;
+      case 2: // Channels
         if (!_channelsLoaded) _loadChannelsData();
         break;
-      case 2: // Metrics
+      case 3: // Metrics
         if (!_metricsLoaded) {
           _loadMetricsData();
           _loadAnalyticsData(); // Load analytics data when metrics tab is opened
         }
         break;
-      case 3: // Billing
+      case 4: // Billing
         if (!_billingLoaded) _loadBillingData();
         break;
-      case 4: // Location
+      case 5: // Location
         if (!_locationLoaded) _loadLocationData();
-        break;
-      case 5: // Schedules
-        if (!_schedulesLoaded) _loadSchedulesData();
         break;
     }
   }
@@ -300,6 +294,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     _serialNumberEditController.dispose();
     _modelEditController.dispose();
     _addressEditController.dispose();
+    _metricsTableScrollController.dispose();
     // Dispose channel controllers
     for (final controller in _channelControllers.values) {
       controller.dispose();
@@ -980,6 +975,91 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     }
   }
 
+  // Load metrics data specifically for graphs with PageSize=0 to get all data
+  Future<void> _loadMetricsDataForGraphs() async {
+    if (_loadingMetrics) return;
+
+    setState(() {
+      _loadingMetrics = true;
+    });
+
+    try {
+      print(
+        'Loading metrics data for graphs (PageSize=0) for device: ${widget.device.id}',
+      );
+      print(
+        'Date range: ${_metricsStartDate.toIso8601String()} to ${_metricsEndDate.toIso8601String()}',
+      );
+
+      final metricsResponse = await _deviceService.getDeviceMetrics(
+        widget.device.id ?? '',
+        startDate: _metricsStartDate.toIso8601String(),
+        endDate: _metricsEndDate.toIso8601String(),
+        pageSize: 0, // PageSize=0 to get all data for graphs
+        currentPage: 1,
+      );
+
+      print('Metrics response for graphs: ${metricsResponse.success}');
+
+      if (metricsResponse.success) {
+        final responseData = metricsResponse.data;
+
+        // Parse the new API structure
+        if (responseData != null && responseData['Result'] != null) {
+          final List<dynamic> resultList =
+              responseData['Result'] as List<dynamic>;
+          _dynamicMetrics = resultList.cast<Map<String, dynamic>>();
+
+          // Get pagination info
+          final queryParam = responseData['QueryParam'];
+          if (queryParam != null) {
+            _totalMetricsCount = queryParam['RowCount'] ?? 0;
+          } else {
+            _totalMetricsCount = _dynamicMetrics.length;
+          }
+
+          print(
+            'Dynamic metrics loaded for graphs: ${_dynamicMetrics.length} items',
+          );
+          print('Total metrics count: $_totalMetricsCount');
+        } else {
+          _dynamicMetrics = [];
+          _totalMetricsCount = 0;
+        }
+
+        // Keep the old structure for compatibility with existing graph code
+        _deviceMetrics = {
+          'DeviceMetrics': {'Metrics': _dynamicMetrics, 'Status': 'Success'},
+        };
+      } else {
+        print('Metrics error for graphs: ${metricsResponse.message}');
+        _dynamicMetrics = [];
+        _totalMetricsCount = 0;
+        _deviceMetrics = {
+          'DeviceMetrics': {
+            'Metrics': [],
+            'Status': 'Error: ${metricsResponse.message}',
+          },
+        };
+      }
+
+      setState(() {
+        _metricsLoaded = true;
+        _loadingMetrics = false;
+      });
+    } catch (e) {
+      print('Error loading metrics data for graphs: $e');
+      setState(() {
+        _loadingMetrics = false;
+        _dynamicMetrics = [];
+        _totalMetricsCount = 0;
+        _deviceMetrics = {
+          'DeviceMetrics': {'Metrics': [], 'Status': 'Error: $e'},
+        };
+      });
+    }
+  }
+
   // Load analytics data for advanced charts
   Future<void> _loadAnalyticsData() async {
     if (_isLoadingAnalytics) return;
@@ -1192,7 +1272,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       _deviceMetrics = null;
       _metricsCurrentPage = 1;
     });
-    _loadMetricsData();
+
+    // Use appropriate loader based on current view
+    if (_isTableView) {
+      _loadMetricsData(); // Table view - uses pagination
+    } else {
+      _loadMetricsDataForGraphs(); // Graph view - always PageSize=0
+    }
   }
 
   // Refresh current tab data
@@ -1208,35 +1294,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         });
         await _loadOverviewData();
         break;
-      case 1: // Channels
-        setState(() {
-          _channelsLoaded = false;
-          _deviceChannels = null;
-        });
-        await _loadChannelsData();
-        break;
-      case 2: // Metrics
-        setState(() {
-          _metricsLoaded = false;
-          _deviceMetrics = null;
-          _metricsCurrentPage = 1;
-        });
-        await _loadMetricsData();
-        break;
-      case 3: // Billing
-        setState(() {
-          _billingLoaded = false;
-          _deviceBilling = null;
-        });
-        await _loadBillingData();
-        break;
-      case 4: // Location
-        setState(() {
-          _locationLoaded = false;
-        });
-        await _loadLocationData();
-        break;
-      case 5: // Schedules
+      case 1: // Schedules
         setState(() {
           _schedulesLoaded = false;
           _deviceSchedules.clear();
@@ -1246,6 +1304,34 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           _schedulesError = null;
         });
         await _loadSchedulesData();
+        break;
+      case 2: // Channels
+        setState(() {
+          _channelsLoaded = false;
+          _deviceChannels = null;
+        });
+        await _loadChannelsData();
+        break;
+      case 3: // Metrics
+        setState(() {
+          _metricsLoaded = false;
+          _deviceMetrics = null;
+          _metricsCurrentPage = 1;
+        });
+        await _loadMetricsData();
+        break;
+      case 4: // Billing
+        setState(() {
+          _billingLoaded = false;
+          _deviceBilling = null;
+        });
+        await _loadBillingData();
+        break;
+      case 5: // Location
+        setState(() {
+          _locationLoaded = false;
+        });
+        await _loadLocationData();
         break;
     }
   }
@@ -1380,35 +1466,42 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                           // Retry loading current tab data
                           final int tabIndex = _currentTabIndex;
                           switch (tabIndex) {
-                            case 0:
+                            case 0: // Overview
                               setState(() {
                                 _overviewLoaded = false;
                                 _error = null;
                               });
                               _loadOverviewData();
                               break;
-                            case 1:
+                            case 1: // Schedules
+                              setState(() {
+                                _schedulesLoaded = false;
+                                _error = null;
+                              });
+                              _loadSchedulesData();
+                              break;
+                            case 2: // Channels
                               setState(() {
                                 _channelsLoaded = false;
                                 _error = null;
                               });
                               _loadChannelsData();
                               break;
-                            case 2:
+                            case 3: // Metrics
                               setState(() {
                                 _metricsLoaded = false;
                                 _error = null;
                               });
                               _loadMetricsData();
                               break;
-                            case 3:
+                            case 4: // Billing
                               setState(() {
                                 _billingLoaded = false;
                                 _error = null;
                               });
                               _loadBillingData();
                               break;
-                            case 4:
+                            case 5: // Location
                               setState(() {
                                 _locationLoaded = false;
                                 _error = null;
@@ -1433,6 +1526,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       content: _buildOverviewTab(),
                     ),
                     AppTab(
+                      label: 'Schedules',
+                      icon: Icon(Icons.schedule, size: AppSizes.iconSmall),
+                      content: _buildSchedulesTab(),
+                    ),
+                    AppTab(
                       label: 'Channels',
                       icon: Icon(Icons.device_hub, size: AppSizes.iconSmall),
                       content: _buildChannelsTab(),
@@ -1451,11 +1549,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       label: 'Location',
                       icon: Icon(Icons.location_on, size: AppSizes.iconSmall),
                       content: _buildLocationTab(),
-                    ),
-                    AppTab(
-                      label: 'Schedules',
-                      icon: Icon(Icons.schedule, size: AppSizes.iconSmall),
-                      content: _buildSchedulesTab(),
                     ),
                   ],
                   // selectedColor:
@@ -3161,6 +3254,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                           onTap: () {
                             print('Switching to GRAPH view');
                             setState(() => _isTableView = false);
+                            // Trigger metrics API loading with PageSize=0 when switching to graph view
+                            _loadMetricsDataForGraphs();
                           },
                         ),
                       ],
@@ -3299,984 +3394,125 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   Widget _buildDynamicMetricsChart() {
-    return GroupedMetricsCharts(
-      dynamicMetrics: _dynamicMetrics,
-      onRefresh: () => _loadMetricsData(),
+    return ModernMetricsChart(
+      data: _dynamicMetrics,
+      isLoading: _isLoadingMetrics,
+      onRefresh:
+          _loadMetricsDataForGraphs, // Use graph-specific loader with PageSize=0
+      onExport: _exportMetricsChart,
+      onPageSizeChanged: _handlePageSizeChanged,
     );
+  }
+
+  void _handlePageSizeChanged(int pageSize) async {
+    print('PageSize changed to: $pageSize');
+
+    // Update the page size for the API call
+    if (pageSize == 0) {
+      // Load all data (PageSize = 0)
+      await _loadMetricsDataForGraphs();
+    } else {
+      // Load with specific page size - we need to create a new method for this
+      await _loadMetricsDataWithPageSize(pageSize);
+    }
+  }
+
+  Future<void> _loadMetricsDataWithPageSize(int pageSize) async {
+    if (_loadingMetrics) return;
+
+    setState(() {
+      _loadingMetrics = true;
+    });
+
+    try {
+      print(
+        'Loading metrics data with PageSize=$pageSize for device: ${widget.device.id}',
+      );
+
+      final metricsResponse = await _deviceService.getDeviceMetrics(
+        widget.device.id ?? '',
+        startDate: _metricsStartDate.toIso8601String(),
+        endDate: _metricsEndDate.toIso8601String(),
+        pageSize: pageSize,
+        currentPage: 1,
+      );
+
+      print(
+        'Metrics response with PageSize=$pageSize: ${metricsResponse.success}',
+      );
+
+      if (metricsResponse.success) {
+        final responseData = metricsResponse.data;
+
+        // Parse the new API structure
+        if (responseData != null && responseData['Result'] != null) {
+          final List<dynamic> resultList =
+              responseData['Result'] as List<dynamic>;
+          _dynamicMetrics = resultList.cast<Map<String, dynamic>>();
+
+          // Get pagination info
+          final queryParam = responseData['QueryParam'];
+          if (queryParam != null) {
+            _totalMetricsCount = queryParam['RowCount'] ?? 0;
+          } else {
+            _totalMetricsCount = _dynamicMetrics.length;
+          }
+
+          print(
+            'Dynamic metrics loaded with PageSize=$pageSize: ${_dynamicMetrics.length} items',
+          );
+          print('Total metrics count: $_totalMetricsCount');
+        } else {
+          _dynamicMetrics = [];
+          _totalMetricsCount = 0;
+        }
+
+        setState(() {
+          _loadingMetrics = false;
+        });
+      } else {
+        setState(() {
+          _loadingMetrics = false;
+        });
+        print(
+          'Failed to load metrics with PageSize=$pageSize: ${metricsResponse.message}',
+        );
+      }
+    } catch (e, stackTrace) {
+      setState(() {
+        _loadingMetrics = false;
+      });
+      print('Error loading metrics with PageSize=$pageSize: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  void _exportMetricsChart() {
+    // TODO: Implement chart export functionality
+    AppToast.showSuccess(context, message: 'Chart export feature coming soon');
+  }
+
+  String _formatFieldName(String fieldName) {
+    // Convert camelCase or PascalCase to readable format
+    return fieldName
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)}')
+        .trim()
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+              : '',
+        )
+        .join(' ');
   }
 
   Widget _buildMetricsSummaryCards() {
-    if (_deviceMetrics == null || _deviceMetrics!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Metrics Summary',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSizes.spacing16),
-            Text(
-              'Total Metrics: ${_deviceMetrics!.length}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _exportChart() {
-    if (_selectedChartFields.isEmpty || _dynamicMetrics.isEmpty) {
-      AppToast.showWarning(
-        context,
-        title: 'Export Failed',
-        message: 'No chart data to export. Please select fields and ensure data is loaded.',
-      );
-      return;
-    }
-
-    try {
-      // Prepare export data
-      final exportData = _prepareDynamicChartData();
-      
-      if (exportData.isEmpty) {
-        AppToast.showWarning(
-          context,
-          title: 'Export Failed',
-          message: 'No valid chart data found for export.',
-        );
-        return;
-      }
-
-      // Simulate chart export
-      AppToast.showSuccess(
-        context,
-        title: 'Export Successful',
-        message: 'Chart data exported successfully.',
-      );
-    } catch (e) {
-      AppToast.showError(
-        context,
-        title: 'Export Failed',
-        error: 'Failed to export chart data: ${e.toString()}',
-      );
-    }
-  }
-
-  Widget _buildMetricsChartFilters() {
-    // Get all numeric fields from the dynamic metrics for charting
-    Set<String> availableFields = {};
-    if (_dynamicMetrics.isNotEmpty) {
-      final firstRecord = _dynamicMetrics.first;
-      firstRecord.forEach((key, value) {
-        // Include numeric fields (exclude Timestamp)
-        if (key != 'Timestamp' && value is num) {
-          availableFields.add(key);
-        }
-      });
-    }
-
-    if (availableFields.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Chart Fields',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppSizes.spacing8),
-        Wrap(
-          spacing: AppSizes.spacing8,
-          runSpacing: AppSizes.spacing8,
-          children: availableFields.map((field) {
-            final isSelected = _selectedChartFields.contains(field);
-            return FilterChip(
-              label: Text(_formatFieldName(field)),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedChartFields.add(field);
-                  } else {
-                    _selectedChartFields.remove(field);
-                  }
-                });
-              },
-              selectedColor: AppColors.primary.withOpacity(0.2),
-              checkmarkColor: AppColors.primary,
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricsChartContent() {
-    if (_selectedChartFields.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.show_chart, size: 48, color: AppColors.textSecondary),
-            SizedBox(height: AppSizes.spacing12),
-            Text(
-              'Select fields to display in chart',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: _buildDynamicLineChart(),
-    );
-  }
-
-  Widget _buildDynamicLineChart() {
-    // Convert dynamic metrics to chart data
-    final chartData = _prepareDynamicChartData();
-
-    if (chartData.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.show_chart, size: 48, color: AppColors.textSecondary),
-            SizedBox(height: AppSizes.spacing12),
-            Text(
-              'No chart data available',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Render chart based on selected type
-    switch (_selectedChartType) {
-      case ChartType.line:
-        return _buildModernLineChart(chartData);
-      case ChartType.bar:
-        return _buildModernBarChart(chartData);
-      case ChartType.area:
-        return _buildModernAreaChart(chartData);
-      case ChartType.scatter:
-        return _buildModernScatterChart(chartData);
-    }
-  }
-
-  Widget _buildModernLineChart(List<Map<String, dynamic>> chartData) {
-    if (chartData.isEmpty || _selectedChartFields.isEmpty) {
-      return const Center(child: Text('No data available'));
-    }
-
-    // Create line data for each selected field
-    List<LineChartBarData> lineBarsData = [];
-    List<Color> fieldColors = _generateFieldColors(_selectedChartFields.length);
-    int colorIndex = 0;
-
-    for (String field in _selectedChartFields) {
-      List<FlSpot> spots = [];
-      
-      for (int i = 0; i < chartData.length; i++) {
-        final value = chartData[i][field];
-        if (value != null && value is num) {
-          spots.add(FlSpot(i.toDouble(), value.toDouble()));
-        }
-      }
-
-      if (spots.isNotEmpty) {
-        lineBarsData.add(
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: fieldColors[colorIndex],
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: chartData.length <= 20, // Show dots only for smaller datasets
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 4,
-                  color: fieldColors[colorIndex],
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-            belowBarData: BarAreaData(
-              show: false,
-            ),
-            shadow: Shadow(
-              color: fieldColors[colorIndex].withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ),
-        );
-        colorIndex++;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Chart legend
-          _buildChartLegend(_selectedChartFields.toList(), fieldColors),
-          const SizedBox(height: 16),
-          
-          // Chart
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                lineBarsData: lineBarsData,
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      interval: _getXAxisInterval(chartData.length),
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildXAxisLabel(value, chartData);
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 60,
-                      interval: _getYAxisInterval(chartData),
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildYAxisLabel(value);
-                      },
-                    ),
-                  ),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  drawHorizontalLine: true,
-                  horizontalInterval: _getYAxisInterval(chartData),
-                  verticalInterval: _getXAxisInterval(chartData.length),
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: AppColors.border.withOpacity(0.3),
-                      strokeWidth: 1,
-                    );
-                  },
-                  getDrawingVerticalLine: (value) {
-                    return FlLine(
-                      color: AppColors.border.withOpacity(0.2),
-                      strokeWidth: 1,
-                    );
-                  },
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(
-                    color: AppColors.border.withOpacity(0.5),
-                    width: 1,
-                  ),
-                ),
-                lineTouchData: LineTouchData(
-                  enabled: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                      return touchedBarSpots.map((barSpot) {
-                        final fieldName = _selectedChartFields.elementAt(barSpot.barIndex);
-                        final dataPoint = chartData[barSpot.x.toInt()];
-                        final timestamp = dataPoint['Timestamp'] ?? 'Unknown';
-                        
-                        return LineTooltipItem(
-                          '$fieldName\n${barSpot.y.toStringAsFixed(2)}\n$timestamp',
-                          TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModernBarChart(List<Map<String, dynamic>> chartData) {
-    if (chartData.isEmpty || _selectedChartFields.isEmpty) {
-      return const Center(child: Text('No data available'));
-    }
-
-    List<BarChartGroupData> barGroups = [];
-    List<Color> fieldColors = _generateFieldColors(_selectedChartFields.length);
-
-    for (int i = 0; i < chartData.length; i++) {
-      List<BarChartRodData> rods = [];
-      int colorIndex = 0;
-
-      for (String field in _selectedChartFields) {
-        final value = chartData[i][field];
-        if (value != null && value is num) {
-          rods.add(
-            BarChartRodData(
-              toY: value.toDouble(),
-              color: fieldColors[colorIndex],
-              width: 16,
-              borderRadius: BorderRadius.circular(4),
-              backDrawRodData: BackgroundBarChartRodData(
-                show: true,
-                toY: _getMaxValueForField(field, chartData),
-                color: fieldColors[colorIndex].withOpacity(0.1),
-              ),
-            ),
-          );
-        }
-        colorIndex++;
-      }
-
-      barGroups.add(
-        BarChartGroupData(
-          x: i,
-          barRods: rods,
-          barsSpace: 4,
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartLegend(_selectedChartFields.toList(), fieldColors),
-          const SizedBox(height: 16),
-          Expanded(
-            child: BarChart(
-              BarChartData(
-                barGroups: barGroups,
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildXAxisLabel(value, chartData);
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 60,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildYAxisLabel(value);
-                      },
-                    ),
-                  ),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  drawHorizontalLine: true,
-                  horizontalInterval: _getYAxisInterval(chartData),
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: AppColors.border.withOpacity(0.3),
-                      strokeWidth: 1,
-                    );
-                  },
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(
-                    color: AppColors.border.withOpacity(0.5),
-                    width: 1,
-                  ),
-                ),
-                barTouchData: BarTouchData(
-                  enabled: true,
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final fieldName = _selectedChartFields.elementAt(rodIndex);
-                      final dataPoint = chartData[group.x.toInt()];
-                      final timestamp = dataPoint['Timestamp'] ?? 'Unknown';
-                      
-                      return BarTooltipItem(
-                        '$fieldName\n${rod.toY.toStringAsFixed(2)}\n$timestamp',
-                        const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModernAreaChart(List<Map<String, dynamic>> chartData) {
-    if (chartData.isEmpty || _selectedChartFields.isEmpty) {
-      return const Center(child: Text('No data available'));
-    }
-
-    List<LineChartBarData> lineBarsData = [];
-    List<Color> fieldColors = _generateFieldColors(_selectedChartFields.length);
-    int colorIndex = 0;
-
-    for (String field in _selectedChartFields) {
-      List<FlSpot> spots = [];
-      
-      for (int i = 0; i < chartData.length; i++) {
-        final value = chartData[i][field];
-        if (value != null && value is num) {
-          spots.add(FlSpot(i.toDouble(), value.toDouble()));
-        }
-      }
-
-      if (spots.isNotEmpty) {
-        lineBarsData.add(
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: fieldColors[colorIndex],
-            barWidth: 2,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: fieldColors[colorIndex].withOpacity(0.3),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  fieldColors[colorIndex].withOpacity(0.4),
-                  fieldColors[colorIndex].withOpacity(0.1),
-                ],
-              ),
-            ),
-          ),
-        );
-        colorIndex++;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartLegend(_selectedChartFields.toList(), fieldColors),
-          const SizedBox(height: 16),
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                lineBarsData: lineBarsData,
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      interval: _getXAxisInterval(chartData.length),
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildXAxisLabel(value, chartData);
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 60,
-                      interval: _getYAxisInterval(chartData),
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildYAxisLabel(value);
-                      },
-                    ),
-                  ),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  drawHorizontalLine: true,
-                  horizontalInterval: _getYAxisInterval(chartData),
-                  verticalInterval: _getXAxisInterval(chartData.length),
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: AppColors.border.withOpacity(0.3),
-                      strokeWidth: 1,
-                    );
-                  },
-                  getDrawingVerticalLine: (value) {
-                    return FlLine(
-                      color: AppColors.border.withOpacity(0.2),
-                      strokeWidth: 1,
-                    );
-                  },
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(
-                    color: AppColors.border.withOpacity(0.5),
-                    width: 1,
-                  ),
-                ),
-                lineTouchData: LineTouchData(
-                  enabled: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                      return touchedBarSpots.map((barSpot) {
-                        final fieldName = _selectedChartFields.elementAt(barSpot.barIndex);
-                        final dataPoint = chartData[barSpot.x.toInt()];
-                        final timestamp = dataPoint['Timestamp'] ?? 'Unknown';
-                        
-                        return LineTooltipItem(
-                          '$fieldName\n${barSpot.y.toStringAsFixed(2)}\n$timestamp',
-                          TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModernScatterChart(List<Map<String, dynamic>> chartData) {
-    if (chartData.isEmpty || _selectedChartFields.length < 2) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.scatter_plot, size: 48, color: AppColors.textSecondary),
-            SizedBox(height: 12),
-            Text(
-              'Select at least 2 fields for scatter plot',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Use first field for X-axis, second for Y-axis
-    final xField = _selectedChartFields.first;
-    final yField = _selectedChartFields.elementAt(1);
-    
-    List<ScatterSpot> spots = [];
-    List<Color> fieldColors = _generateFieldColors(1);
-
-    for (int i = 0; i < chartData.length; i++) {
-      final xValue = chartData[i][xField];
-      final yValue = chartData[i][yField];
-      
-      if (xValue != null && yValue != null && xValue is num && yValue is num) {
-        spots.add(ScatterSpot(xValue.toDouble(), yValue.toDouble()));
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Axis labels
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: fieldColors[0].withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: fieldColors[0]),
-                ),
-                child: Text(
-                  'X: $xField',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: fieldColors[0],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.success),
-                ),
-                child: Text(
-                  'Y: $yField',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.success,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ScatterChart(
-              ScatterChartData(
-                scatterSpots: spots,
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    axisNameWidget: Text(
-                      xField,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildYAxisLabel(value);
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    axisNameWidget: RotatedBox(
-                      quarterTurns: 3,
-                      child: Text(
-                        yField,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 60,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return _buildYAxisLabel(value);
-                      },
-                    ),
-                  ),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  drawHorizontalLine: true,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: AppColors.border.withOpacity(0.3),
-                      strokeWidth: 1,
-                    );
-                  },
-                  getDrawingVerticalLine: (value) {
-                    return FlLine(
-                      color: AppColors.border.withOpacity(0.2),
-                      strokeWidth: 1,
-                    );
-                  },
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(
-                    color: AppColors.border.withOpacity(0.5),
-                    width: 1,
-                  ),
-                ),
-                scatterTouchData: ScatterTouchData(
-                  enabled: true,
-                  touchTooltipData: ScatterTouchTooltipData(
-                    getTooltipItems: (ScatterSpot touchedBarSpot) {
-                      return ScatterTooltipItem(
-                        '$xField: ${touchedBarSpot.x.toStringAsFixed(2)}\n$yField: ${touchedBarSpot.y.toStringAsFixed(2)}',
-                        textStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Map<String, dynamic>> _prepareDynamicChartData() {
-    return _dynamicMetrics
-        .map((record) {
-          Map<String, dynamic> chartPoint = {};
-
-          // Add timestamp
-          if (record['Timestamp'] != null) {
-            chartPoint['Timestamp'] = record['Timestamp'];
-          }
-
-          // Add selected chart fields
-          for (String field in _selectedChartFields) {
-            if (record[field] != null && record[field] is num) {
-              chartPoint[field] = record[field];
-            }
-          }
-
-          return chartPoint;
-        })
-        .where((point) => point.isNotEmpty)
-        .toList();
-  }
-
-  // Helper methods for modern charts
-  List<Color> _generateFieldColors(int count) {
-    const List<Color> baseColors = [
-      AppColors.primary,
-      AppColors.success,
-      AppColors.warning,
-      AppColors.error,
-      Color(0xFF9C27B0), // Purple
-      Color(0xFF00BCD4), // Cyan
-      Color(0xFFFF5722), // Deep Orange
-      Color(0xFF607D8B), // Blue Grey
-      Color(0xFFE91E63), // Pink
-      Color(0xFF8BC34A), // Light Green
-    ];
-    
-    List<Color> colors = [];
-    for (int i = 0; i < count; i++) {
-      colors.add(baseColors[i % baseColors.length]);
-    }
-    return colors;
-  }
-
-  Widget _buildChartLegend(List<String> fields, List<Color> colors) {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      children: fields.asMap().entries.map((entry) {
-        final index = entry.key;
-        final field = entry.value;
-        final color = colors[index];
-        
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                field,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: color.withOpacity(0.8),
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  double _getXAxisInterval(int dataLength) {
-    if (dataLength <= 5) return 1;
-    if (dataLength <= 20) return 2;
-    if (dataLength <= 50) return 5;
-    return (dataLength / 10).ceil().toDouble();
-  }
-
-  double _getYAxisInterval(List<Map<String, dynamic>> chartData) {
-    if (chartData.isEmpty || _selectedChartFields.isEmpty) return 1;
-    
-    double maxValue = 0;
-    for (String field in _selectedChartFields) {
-      for (var point in chartData) {
-        final value = point[field];
-        if (value != null && value is num) {
-          maxValue = math.max(maxValue, value.toDouble());
-        }
-      }
-    }
-    
-    if (maxValue <= 10) return 1;
-    if (maxValue <= 100) return 10;
-    if (maxValue <= 1000) return 100;
-    return (maxValue / 10).ceil().toDouble();
-  }
-
-  double _getMaxValueForField(String field, List<Map<String, dynamic>> chartData) {
-    double maxValue = 0;
-    for (var point in chartData) {
-      final value = point[field];
-      if (value != null && value is num) {
-        maxValue = math.max(maxValue, value.toDouble());
-      }
-    }
-    return maxValue;
-  }
-
-  Widget _buildXAxisLabel(double value, List<Map<String, dynamic>> chartData) {
-    if (value < 0 || value >= chartData.length) {
-      return const SizedBox.shrink();
-    }
-    
-    final dataPoint = chartData[value.toInt()];
-    final timestamp = dataPoint['Timestamp'];
-    
-    if (timestamp != null) {
-      // Format timestamp for display
-      try {
-        final date = DateTime.parse(timestamp.toString());
-        final formattedTime = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-        return Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            formattedTime,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        );
-      } catch (e) {
-        return Text(
-          value.toInt().toString(),
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.textSecondary,
-          ),
-        );
-      }
-    }
-    
-    return Text(
-      value.toInt().toString(),
-      style: const TextStyle(
-        fontSize: 10,
-        color: AppColors.textSecondary,
-      ),
-    );
-  }
-
-  Widget _buildYAxisLabel(double value) {
-    String formattedValue;
-    
-    if (value >= 1000000) {
-      formattedValue = '${(value / 1000000).toStringAsFixed(1)}M';
-    } else if (value >= 1000) {
-      formattedValue = '${(value / 1000).toStringAsFixed(1)}K';
-    } else if (value >= 1) {
-      formattedValue = value.toStringAsFixed(0);
-    } else {
-      formattedValue = value.toStringAsFixed(1);
-    }
-    
-    return Text(
-      formattedValue,
-      style: const TextStyle(
-        fontSize: 10,
-        color: AppColors.textSecondary,
-      ),
-    );
-  }
-
-  Widget _buildEnergySummaryCards() {
-    if (_dynamicMetrics.isEmpty || _selectedChartFields.isEmpty) {
+    if (_dynamicMetrics.isEmpty) {
       return const SizedBox.shrink();
     }
 
     // Calculate summary statistics for selected chart fields
     Map<String, Map<String, double>> summaries = {};
-    List<Color> fieldColors = _generateFieldColors(_selectedChartFields.length);
-    int colorIndex = 0;
 
     for (String field in _selectedChartFields) {
       List<double> values = [];
@@ -4288,16 +3524,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
       if (values.isNotEmpty) {
         values.sort();
-        final sum = values.reduce((a, b) => a + b);
         summaries[field] = {
           'min': values.first,
           'max': values.last,
-          'avg': sum / values.length,
-          'sum': sum,
+          'avg': values.reduce((a, b) => a + b) / values.length,
           'count': values.length.toDouble(),
-          'colorIndex': colorIndex.toDouble(),
         };
-        colorIndex++;
       }
     }
 
@@ -4317,178 +3549,60 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
         ),
         const SizedBox(height: AppSizes.spacing16),
-        
-        // Summary cards in a grid
-        LayoutBuilder(
-          builder: (context, constraints) {
-            int crossAxisCount = 1;
-            if (constraints.maxWidth > 600) crossAxisCount = 2;
-            if (constraints.maxWidth > 900) crossAxisCount = 3;
-            if (constraints.maxWidth > 1200) crossAxisCount = 4;
-            
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: 1.8,
-                crossAxisSpacing: AppSizes.spacing16,
-                mainAxisSpacing: AppSizes.spacing16,
-              ),
-              itemCount: summaries.length,
-              itemBuilder: (context, index) {
-                final entry = summaries.entries.elementAt(index);
-                final color = fieldColors[entry.value['colorIndex']!.toInt()];
-                return _buildModernSummaryCard(entry.key, entry.value, color);
-              },
-            );
-          },
+        Wrap(
+          spacing: AppSizes.spacing16,
+          runSpacing: AppSizes.spacing16,
+          children: summaries.entries.map((entry) {
+            return _buildSummaryCard(entry.key, entry.value);
+          }).toList(),
         ),
       ],
     );
   }
 
-  Widget _buildModernSummaryCard(String fieldName, Map<String, double> stats, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-        border: Border.all(color: color.withOpacity(0.2), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
+  Widget _buildSummaryCard(String fieldName, Map<String, double> stats) {
+    return AppCard(
+      child: Container(
+        width: 200,
         padding: const EdgeInsets.all(AppSizes.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with field name and icon
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    _getFieldIcon(fieldName),
-                    size: 20,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _formatFieldName(fieldName),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Statistics
-            Expanded(
-              child: Column(
-                children: [
-                  // Primary value (Average)
-                  _buildPrimaryStatRow('Average', stats['avg']!, color),
-                  const SizedBox(height: 8),
-                  
-                  // Secondary stats
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSecondaryStatColumn('Min', stats['min']!, AppColors.info),
-                      ),
-                      Expanded(
-                        child: _buildSecondaryStatColumn('Max', stats['max']!, AppColors.warning),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Count badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.textSecondary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${stats['count']!.toInt()} points',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+            Text(
+              _formatFieldName(fieldName),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
             ),
+            const SizedBox(height: AppSizes.spacing12),
+            _buildStatRow('Min', stats['min']!, AppColors.info),
+            const SizedBox(height: AppSizes.spacing8),
+            _buildStatRow('Max', stats['max']!, AppColors.error),
+            const SizedBox(height: AppSizes.spacing8),
+            _buildStatRow('Avg', stats['avg']!, AppColors.success),
+            const SizedBox(height: AppSizes.spacing8),
+            _buildStatRow('Count', stats['count']!, AppColors.textSecondary),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPrimaryStatRow(String label, double value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildStatRow(String label, double value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
+          '$label:',
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 2),
-        Text(
-          _formatMetricValue(value),
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSecondaryStatColumn(String label, double value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 2),
         Text(
           _formatMetricValue(value),
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             color: color,
           ),
         ),
@@ -4496,705 +3610,75 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     );
   }
 
-  IconData _getFieldIcon(String fieldName) {
-    final lowerFieldName = fieldName.toLowerCase();
-    
-    if (lowerFieldName.contains('power') || lowerFieldName.contains('watt')) {
-      return Icons.bolt;
-    } else if (lowerFieldName.contains('voltage')) {
-      return Icons.electrical_services;
-    } else if (lowerFieldName.contains('current')) {
-      return Icons.flash_on;
-    } else if (lowerFieldName.contains('energy') || lowerFieldName.contains('wh')) {
-      return Icons.battery_charging_full;
-    } else if (lowerFieldName.contains('frequency')) {
-      return Icons.waves;
-    } else if (lowerFieldName.contains('temperature')) {
-      return Icons.thermostat;
-    } else if (lowerFieldName.contains('pressure')) {
-      return Icons.compress;
-    } else if (lowerFieldName.contains('flow')) {
-      return Icons.water_drop;
+  String _formatMetricValue(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(2)}M';
+    } else if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(2)}K';
     } else {
-      return Icons.analytics;
+      return value.toStringAsFixed(2);
     }
   }
 
-  String _formatFieldName(String fieldName) {
-    // Convert CamelCase to readable format
-    return fieldName
-        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)}')
-        .trim()
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((word) => word.isNotEmpty 
-            ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
-            : word)
-        .join(' ');
-  }
-
-  // Grouped chart helper methods
-  Color _getGroupColor(String groupType) {
-    switch (groupType) {
-      case 'Export':
-        return Colors.green;
-      case 'Import':
-        return Colors.blue;
-      case 'Voltage':
-        return Colors.orange;
-      case 'Current':
-        return Colors.purple;
-      case 'Other':
-        return Colors.grey;
-      default:
-        return AppColors.primary;
-    }
-  }
-
-  IconData _getGroupIcon(String groupType) {
-    switch (groupType) {
-      case 'Export':
-        return Icons.upload;
-      case 'Import':
-        return Icons.download;
-      case 'Voltage':
-        return Icons.electric_bolt;
-      case 'Current':
-        return Icons.electrical_services;
-      case 'Other':
-        return Icons.analytics;
-      default:
-        return Icons.show_chart;
-    }
-  }
-
-  ChartType _getGroupChartType(String groupType) {
-    return _groupChartTypes[groupType] ?? ChartType.line;
-  }
-
-  void _setGroupChartType(String groupType, ChartType chartType) {
-    _groupChartTypes[groupType] = chartType;
-  }
-
-  IconData _getChartTypeIcon(ChartType type) {
-    switch (type) {
-      case ChartType.line:
-        return Icons.show_chart;
-      case ChartType.bar:
-        return Icons.bar_chart;
-      case ChartType.area:
-        return Icons.area_chart;
-      case ChartType.scatter:
-        return Icons.scatter_plot;
-      default:
-        return Icons.show_chart;
-    }
-  }
-
-  String _formatChartTypeName(ChartType type) {
-    return type.toString().split('.').last.toUpperCase();
-  }
-
-  void _toggleGroupFields(List<String> fields) {
-    setState(() {
-      final selectedFieldsInGroup = fields.where((field) => 
-        _selectedChartFields.contains(field)).toList();
-      
-      if (selectedFieldsInGroup.length == fields.length) {
-        // All fields selected, deselect all
-        for (final field in fields) {
-          _selectedChartFields.remove(field);
-        }
-      } else {
-        // Not all fields selected, select all
-        for (final field in fields) {
-          _selectedChartFields.add(field);
-        }
-      }
-    });
-  }
-
-  void _exportAllCharts() {
-    AppToast.showSuccess(
-      context,
-      message: 'Exporting all chart data...',
-    );
-    // TODO: Implement actual export functionality
-  }
-
-  void _exportGroupChart(String groupType, List<String> fields) {
-    AppToast.showSuccess(
-      context,
-      message: 'Exporting $groupType chart data...',
-    );
-    // TODO: Implement actual export functionality for specific group
-  }
-
-  Widget _buildGroupFieldFilters(String groupType, List<String> fields) {
-    if (fields.isEmpty) {
+  Widget _buildEnergySummaryCards() {
+    if (_analyticsMetrics.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Calculate energy summary from metrics
+    final powerMetrics = _analyticsMetrics
+        .where((m) => m.metricType == 'Power')
+        .toList();
+    final totalConsumption = powerMetrics.fold<double>(
+      0,
+      (sum, metric) => sum + metric.value,
+    );
+    final avgConsumption = powerMetrics.isNotEmpty
+        ? totalConsumption / powerMetrics.length
+        : 0;
+    final peakConsumption = powerMetrics.isNotEmpty
+        ? powerMetrics.map((m) => m.value).reduce((a, b) => a > b ? a : b)
+        : 0;
+
+    return Row(
       children: [
-        Text(
-          '$groupType Fields',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+        Expanded(
+          child: _buildEnergySummaryCard(
+            'Total Consumption',
+            '${totalConsumption.toStringAsFixed(2)} kWh',
+            Icons.bolt,
+            AppColors.primary,
           ),
         ),
-        const SizedBox(height: AppSizes.spacing8),
-        Wrap(
-          spacing: AppSizes.spacing8,
-          runSpacing: AppSizes.spacing8,
-          children: fields.map((field) {
-            final isSelected = _selectedChartFields.contains(field);
-            final fieldColor = _getGroupColor(groupType);
-            
-            return FilterChip(
-              label: Text(
-                _formatFieldName(field),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isSelected ? fieldColor : AppColors.textPrimary,
-                ),
-              ),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedChartFields.add(field);
-                  } else {
-                    _selectedChartFields.remove(field);
-                  }
-                });
-              },
-              selectedColor: fieldColor.withOpacity(0.2),
-              checkmarkColor: fieldColor,
-              side: BorderSide(color: fieldColor.withOpacity(0.5)),
-            );
-          }).toList(),
+        const SizedBox(width: AppSizes.spacing16),
+        Expanded(
+          child: _buildEnergySummaryCard(
+            'Average Power',
+            '${avgConsumption.toStringAsFixed(2)} kW',
+            Icons.trending_up,
+            AppColors.success,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing16),
+        Expanded(
+          child: _buildEnergySummaryCard(
+            'Peak Demand',
+            '${peakConsumption.toStringAsFixed(2)} kW',
+            Icons.flash_on,
+            AppColors.warning,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing16),
+        Expanded(
+          child: _buildEnergySummaryCard(
+            'Data Points',
+            '${_analyticsMetrics.length}',
+            Icons.data_usage,
+            AppColors.info,
+          ),
         ),
       ],
     );
-  }
-
-  Widget _buildGroupChartContent(String groupType, List<String> fields) {
-    final selectedFields = fields.where((field) => 
-      _selectedChartFields.contains(field)).toList();
-    
-    if (selectedFields.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _getGroupIcon(groupType),
-              size: 48,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: AppSizes.spacing12),
-            Text(
-              'Select ${groupType.toLowerCase()} fields to display chart',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final chartType = _getGroupChartType(groupType);
-    
-    switch (chartType) {
-      case ChartType.line:
-        return _buildGroupLineChart(groupType, selectedFields);
-      case ChartType.bar:
-        return _buildGroupBarChart(groupType, selectedFields);
-      case ChartType.area:
-        return _buildGroupAreaChart(groupType, selectedFields);
-      case ChartType.scatter:
-        return _buildGroupScatterChart(groupType, selectedFields);
-      default:
-        return _buildGroupLineChart(groupType, selectedFields);
-    }
-  }
-
-  Widget _buildGroupSummaryStats(String groupType, List<String> fields) {
-    final selectedFields = fields.where((field) => 
-      _selectedChartFields.contains(field)).toList();
-    
-    if (selectedFields.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing12),
-      decoration: BoxDecoration(
-        color: _getGroupColor(groupType).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        border: Border.all(
-          color: _getGroupColor(groupType).withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$groupType Summary',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: _getGroupColor(groupType),
-            ),
-          ),
-          const SizedBox(height: AppSizes.spacing8),
-          Wrap(
-            spacing: AppSizes.spacing16,
-            runSpacing: AppSizes.spacing8,
-            children: selectedFields.map((field) {
-              final values = _getFieldValues(field);
-              final stats = _calculateFieldStats(values);
-              
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing12,
-                  vertical: AppSizes.spacing8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _formatFieldName(field),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Avg: ${_formatNumber(stats['avg'] ?? 0)}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      'Max: ${_formatNumber(stats['max'] ?? 0)}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Group chart building methods
-  Widget _buildGroupLineChart(String groupType, List<String> fields) {
-    final chartData = _prepareGroupChartData(fields);
-    if (chartData.isEmpty) return const SizedBox.shrink();
-
-    final fieldColors = _generateGroupFieldColors(groupType, fields.length);
-    final maxY = _getMaxYValue(fields);
-    final minY = _getMinYValue(fields);
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: true,
-            horizontalInterval: _getYAxisInterval(chartData),
-            verticalInterval: _getXAxisInterval(chartData.length),
-            getDrawingHorizontalLine: (value) => FlLine(
-              color: AppColors.border,
-              strokeWidth: 0.5,
-            ),
-            getDrawingVerticalLine: (value) => FlLine(
-              color: AppColors.border,
-              strokeWidth: 0.5,
-            ),
-          ),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: _getXAxisInterval(chartData.length),
-                getTitlesWidget: (value, meta) => _buildXAxisLabel(value, chartData),
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: _getYAxisInterval(chartData),
-                reservedSize: 60,
-                getTitlesWidget: (value, meta) => _buildYAxisLabel(value),
-              ),
-            ),
-          ),
-          borderData: FlBorderData(
-            show: true,
-            border: Border.all(color: AppColors.border),
-          ),
-          minX: 0,
-          maxX: chartData.length.toDouble() - 1,
-          minY: minY,
-          maxY: maxY,
-          lineBarsData: fields.asMap().entries.map((entry) {
-            final index = entry.key;
-            final fieldName = entry.value;
-            final color = fieldColors[index % fieldColors.length];
-
-            return LineChartBarData(
-              spots: chartData.asMap().entries.map((dataEntry) {
-                final xIndex = dataEntry.key;
-                final dataPoint = dataEntry.value;
-                final yValue = (dataPoint[fieldName] as num?)?.toDouble() ?? 0.0;
-                return FlSpot(xIndex.toDouble(), yValue);
-              }).toList(),
-              isCurved: true,
-              gradient: LinearGradient(colors: [color, color]),
-              barWidth: 2,
-              isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(
-                show: false,
-                gradient: LinearGradient(
-                  colors: [color.withOpacity(0.3), color.withOpacity(0.0)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            );
-          }).toList(),
-          lineTouchData: LineTouchData(
-            enabled: true,
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (touchedSpot) => AppColors.surface,
-              tooltipRoundedRadius: 8,
-              getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                return touchedBarSpots.map((barSpot) {
-                  final fieldName = fields[barSpot.barIndex];
-                  final dataPoint = chartData[barSpot.x.toInt()];
-                  final timestamp = dataPoint['Timestamp']?.toString() ?? '';
-                  final value = barSpot.y;
-
-                  return LineTooltipItem(
-                    '${_formatFieldName(fieldName)}\n$timestamp\n${_formatNumber(value)}',
-                    TextStyle(
-                      color: fieldColors[barSpot.barIndex % fieldColors.length],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  );
-                }).toList();
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGroupBarChart(String groupType, List<String> fields) {
-    final chartData = _prepareGroupChartData(fields);
-    if (chartData.isEmpty) return const SizedBox.shrink();
-
-    final fieldColors = _generateGroupFieldColors(groupType, fields.length);
-    final maxY = _getMaxYValue(fields);
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: maxY,
-          barTouchData: BarTouchData(
-            enabled: true,
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (group) => AppColors.surface,
-              tooltipRoundedRadius: 8,
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                final fieldName = fields[rodIndex];
-                final dataPoint = chartData[group.x.toInt()];
-                final timestamp = dataPoint['Timestamp']?.toString() ?? '';
-                final value = rod.toY;
-
-                return BarTooltipItem(
-                  '${_formatFieldName(fieldName)}\n$timestamp\n${_formatNumber(value)}',
-                  TextStyle(
-                    color: fieldColors[rodIndex % fieldColors.length],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                );
-              },
-            ),
-          ),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                getTitlesWidget: (value, meta) => _buildXAxisLabel(value, chartData),
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 60,
-                getTitlesWidget: (value, meta) => _buildYAxisLabel(value),
-              ),
-            ),
-          ),
-          borderData: FlBorderData(
-            show: true,
-            border: Border.all(color: AppColors.border),
-          ),
-          barGroups: chartData.asMap().entries.map((entry) {
-            final index = entry.key;
-            final dataPoint = entry.value;
-
-            return BarChartGroupData(
-              x: index,
-              barRods: fields.asMap().entries.map((fieldEntry) {
-                final fieldIndex = fieldEntry.key;
-                final fieldName = fieldEntry.value;
-                final value = (dataPoint[fieldName] as num?)?.toDouble() ?? 0.0;
-                final color = fieldColors[fieldIndex % fieldColors.length];
-
-                return BarChartRodData(
-                  toY: value,
-                  color: color,
-                  width: 12,
-                  borderRadius: BorderRadius.circular(2),
-                );
-              }).toList(),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGroupAreaChart(String groupType, List<String> fields) {
-    // Area chart is similar to line chart but with filled areas
-    return _buildGroupLineChart(groupType, fields);
-  }
-
-  Widget _buildGroupScatterChart(String groupType, List<String> fields) {
-    final chartData = _prepareGroupChartData(fields);
-    if (chartData.isEmpty || fields.length < 2) {
-      return const Center(
-        child: Text(
-          'Scatter chart requires at least 2 fields',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-    }
-
-    final xField = fields[0];
-    final yField = fields[1];
-    final fieldColors = _generateGroupFieldColors(groupType, 1);
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: ScatterChart(
-        ScatterChartData(
-          scatterSpots: chartData.map((dataPoint) {
-            final xValue = (dataPoint[xField] as num?)?.toDouble() ?? 0.0;
-            final yValue = (dataPoint[yField] as num?)?.toDouble() ?? 0.0;
-            return ScatterSpot(xValue, yValue);
-          }).toList(),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              axisNameWidget: Text(
-                _formatFieldName(xField),
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                getTitlesWidget: (value, meta) => _buildYAxisLabel(value),
-              ),
-            ),
-            leftTitles: AxisTitles(
-              axisNameWidget: Text(
-                _formatFieldName(yField),
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 60,
-                getTitlesWidget: (value, meta) => _buildYAxisLabel(value),
-              ),
-            ),
-          ),
-          borderData: FlBorderData(
-            show: true,
-            border: Border.all(color: AppColors.border),
-          ),
-          gridData: FlGridData(
-            show: true,
-            drawHorizontalLine: true,
-            drawVerticalLine: true,
-            getDrawingHorizontalLine: (value) => FlLine(
-              color: AppColors.border,
-              strokeWidth: 0.5,
-            ),
-            getDrawingVerticalLine: (value) => FlLine(
-              color: AppColors.border,
-              strokeWidth: 0.5,
-            ),
-          ),
-          scatterTouchData: ScatterTouchData(
-            enabled: true,
-            touchTooltipData: ScatterTouchTooltipData(
-              getTooltipColor: (touchedSpot) => AppColors.surface,
-              getTooltipItems: (ScatterSpot touchedBarSpot) {
-                return ScatterTooltipItem(
-                  '${_formatFieldName(xField)}: ${_formatNumber(touchedBarSpot.x)}\n${_formatFieldName(yField)}: ${_formatNumber(touchedBarSpot.y)}',
-                  textStyle: TextStyle(
-                    color: fieldColors.first,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Helper methods for grouped charts
-  List<Map<String, dynamic>> _prepareGroupChartData(List<String> fields) {
-    return _dynamicMetrics.where((data) {
-      return fields.any((field) => data.containsKey(field) && data[field] is num);
-    }).toList();
-  }
-
-  List<Color> _generateGroupFieldColors(String groupType, int count) {
-    final baseColor = _getGroupColor(groupType);
-    final colors = <Color>[];
-    
-    for (int i = 0; i < count; i++) {
-      final hue = (baseColor.computeLuminance() * 360 + i * 30) % 360;
-      colors.add(HSVColor.fromAHSV(1.0, hue, 0.7, 0.8).toColor());
-    }
-    
-    return colors;
-  }
-
-  double _getMaxYValue(List<String> fields) {
-    double maxValue = 0;
-    for (final data in _dynamicMetrics) {
-      for (final field in fields) {
-        final value = (data[field] as num?)?.toDouble() ?? 0.0;
-        if (value > maxValue) maxValue = value;
-      }
-    }
-    return maxValue * 1.1; // Add 10% padding
-  }
-
-  double _getMinYValue(List<String> fields) {
-    double minValue = double.infinity;
-    for (final data in _dynamicMetrics) {
-      for (final field in fields) {
-        final value = (data[field] as num?)?.toDouble() ?? 0.0;
-        if (value < minValue) minValue = value;
-      }
-    }
-    return minValue < 0 ? minValue * 1.1 : 0; // Add padding if negative
-  }
-
-  List<double> _getFieldValues(String field) {
-    return _dynamicMetrics
-        .map((data) => (data[field] as num?)?.toDouble() ?? 0.0)
-        .toList();
-  }
-
-  Map<String, double> _calculateFieldStats(List<double> values) {
-    if (values.isEmpty) {
-      return {'avg': 0.0, 'max': 0.0, 'min': 0.0};
-    }
-
-    final sum = values.fold<double>(0, (prev, val) => prev + val);
-    final avg = sum / values.length;
-    final max = values.reduce((a, b) => a > b ? a : b);
-    final min = values.reduce((a, b) => a < b ? a : b);
-
-    return {
-      'avg': avg,
-      'max': max,
-      'min': min,
-    };
-  }
-
-  String _formatNumber(double value) {
-    if (value.abs() >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(2)}M';
-    } else if (value.abs() >= 1000) {
-      return '${(value / 1000).toStringAsFixed(2)}K';
-    } else if (value.abs() >= 1) {
-      return value.toStringAsFixed(2);
-    } else {
-      return value.toStringAsFixed(4);
-    }
-  }
-
-  String _formatMetricValue(double value) {
-    if (value.abs() >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}M';
-    } else if (value.abs() >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}K';
-    } else if (value.abs() >= 1) {
-      return value.toStringAsFixed(1);
-    } else {
-      return value.toStringAsFixed(3);
-    }
   }
 
   Widget _buildEnergySummaryCard(
@@ -6129,43 +4613,52 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
         // Dynamic table with standard styling (consistent with other tables)
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: MediaQuery.of(context).size.width,
-                maxWidth: MediaQuery.of(context).size.width * 2.0,
-              ),
-              child: BluNestDataTable<Map<String, dynamic>>(
-                data: _dynamicMetrics,
-                columns: DynamicMetricsTableColumns.generateColumns(
-                  metrics: _dynamicMetrics,
-                  currentPage: _metricsCurrentPage,
-                  itemsPerPage: _metricsItemsPerPage,
-                  hiddenColumns: _hiddenMetricsColumns,
+          child: GestureDetector(
+            onPanUpdate: (details) {
+              // Enable drag-to-scroll horizontally
+              _metricsTableScrollController.position.moveTo(
+                _metricsTableScrollController.offset - details.delta.dx,
+              );
+            },
+            child: SingleChildScrollView(
+              controller: _metricsTableScrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: MediaQuery.of(context).size.width,
+                  maxWidth: MediaQuery.of(context).size.width * 2.0,
                 ),
-                selectedItems: _selectedMetrics,
-                onSelectionChanged: (selected) {
-                  setState(() {
-                    _selectedMetrics = selected;
-                  });
-                },
-                sortBy: _metricsSortBy,
-                sortAscending: _metricsSortAscending,
-                onSort: _handleMetricsSort,
-                enableMultiSelect:
-                    true, // Enable multi-select like other tables
-                hiddenColumns: _hiddenMetricsColumns,
-                onColumnVisibilityChanged: (hiddenColumns) {
-                  setState(() {
-                    _hiddenMetricsColumns = hiddenColumns;
-                  });
-                },
-              ),
-            ),
-          ),
-        ),
-
+                child: BluNestDataTable<Map<String, dynamic>>(
+                  data: _dynamicMetrics,
+                  columns: DynamicMetricsTableColumns.generateColumns(
+                    metrics: _dynamicMetrics,
+                    currentPage: _metricsCurrentPage,
+                    itemsPerPage: _metricsItemsPerPage,
+                    hiddenColumns: _hiddenMetricsColumns,
+                  ),
+                  selectedItems: _selectedMetrics,
+                  onSelectionChanged: (selected) {
+                    setState(() {
+                      _selectedMetrics = selected;
+                    });
+                  },
+                  sortBy: _metricsSortBy,
+                  sortAscending: _metricsSortAscending,
+                  onSort: _handleMetricsSort,
+                  enableMultiSelect:
+                      true, // Enable multi-select like other tables
+                  hiddenColumns: _hiddenMetricsColumns,
+                  onColumnVisibilityChanged: (hiddenColumns) {
+                    setState(() {
+                      _hiddenMetricsColumns = hiddenColumns;
+                    });
+                  },
+                ), // BluNestDataTable
+              ), // ConstrainedBox
+            ), // SingleChildScrollView
+          ), // GestureDetector
+        ), // Expanded
         // Pagination controls
         Container(
           padding: const EdgeInsets.only(top: 16),
@@ -6631,34 +5124,19 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   Widget _buildScheduleKanbanView() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.dashboard,
-              size: 64,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Kanban View',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Kanban view is coming soon!',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
+      child: ScheduleKanbanView(
+        schedules: _filteredSchedules,
+        onScheduleSelected: _showViewScheduleDialog,
+        onScheduleView: _showViewScheduleDialog,
+        onScheduleEdit: (schedule) => _canEditSchedule(schedule)
+            ? _showEditScheduleDialog(schedule)
+            : null,
+        onScheduleDelete: (schedule) => _canEditSchedule(schedule)
+            ? _showDeleteScheduleDialog(schedule)
+            : null,
+        isLoading: false,
+        enablePagination: false,
+        itemsPerPage: _filteredSchedules.length,
       ),
     );
   }
