@@ -38,6 +38,7 @@ import '../../widgets/schedules/schedule_kanban_view.dart';
 import 'widgets/device_channel_table_columns.dart';
 import '../../widgets/common/custom_date_range_picker.dart';
 import '../../routes/app_router.dart';
+import 'create_edit_device_screen.dart';
 
 class Device360DetailsScreen extends StatefulWidget {
   final Device device;
@@ -304,14 +305,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
   // Helper method to get device group name
   // Start editing overview
-  void _startEditingOverview() {
-    setState(() {
-      _isEditingOverview = true;
-    });
-    _loadDropdownDataForEdit();
-    _populateEditFields();
-  }
-
   // Cancel editing overview
   void _cancelEditingOverview() {
     setState(() {
@@ -817,6 +810,66 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         },
       ),
     );
+  }
+
+  // Open edit device dialog
+  void _openEditDeviceDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => CreateEditDeviceDialog(
+        device: _currentDevice,
+        presetDeviceGroupId: _currentDevice.deviceGroupId != 0
+            ? _currentDevice.deviceGroupId
+            : null,
+        onSaved: () {
+          // Refresh device data after edit
+          _refreshOverviewData();
+        },
+      ),
+    );
+  }
+
+  // Refresh overview data after device edit
+  Future<void> _refreshOverviewData() async {
+    setState(() {
+      _overviewLoaded = false;
+      _deviceDetails = null;
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Reload the device from API to get fresh data
+      final deviceResponse = await _deviceService.getDeviceById(
+        widget.device.id ?? '',
+      );
+
+      if (deviceResponse.success && deviceResponse.data != null) {
+        // Update the device details
+        _deviceDetails = deviceResponse.data;
+
+        // Update the widget's device object with fresh data
+        // Note: Since widget.device is final, we update _deviceDetails and use it for display
+        setState(() {
+          _overviewLoaded = true;
+          _isLoading = false;
+        });
+
+        print('Device data refreshed successfully');
+      } else {
+        setState(() {
+          _error = 'Failed to refresh device data: ${deviceResponse.message}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Error refreshing device data: $e';
+        _isLoading = false;
+      });
+      print('Error refreshing device data: $e');
+    }
   }
 
   // Overview tab - Load basic device info and groups
@@ -1545,11 +1598,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       icon: Icon(Icons.receipt, size: AppSizes.iconSmall),
                       content: _buildBillingTab(),
                     ),
-                    AppTab(
-                      label: 'Location',
-                      icon: Icon(Icons.location_on, size: AppSizes.iconSmall),
-                      content: _buildLocationTab(),
-                    ),
+                    // AppTab(
+                    //   label: 'Location',
+                    //   icon: Icon(Icons.location_on, size: AppSizes.iconSmall),
+                    //   content: _buildLocationTab(),
+                    // ),
                   ],
                   // selectedColor:
                   //     Colors.blue, // Background color for selected tab
@@ -1859,7 +1912,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                   text: 'Edit Device',
                   type: AppButtonType.outline,
                   size: AppButtonSize.small,
-                  onPressed: _startEditingOverview,
+                  onPressed: _openEditDeviceDialog,
                   icon: const Icon(Icons.edit, size: AppSizes.iconSmall),
                 ),
             ],
@@ -1875,10 +1928,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     );
   }
 
+  // Helper method to get current device data (refreshed or original)
+  Device get _currentDevice => _deviceDetails ?? widget.device;
+
   Widget _buildOverviewViewMode() {
     if (kDebugMode) {
       print(
-        'Building overview view mode for device: ${widget.device.deviceGroup?.toJson()}',
+        'Building overview view mode for device: ${_currentDevice.deviceGroup?.toJson()}',
       );
     }
     return SingleChildScrollView(
@@ -1912,38 +1968,38 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                 const SizedBox(height: AppSizes.spacing16),
                 _buildInfoRow(
                   'Serial Number',
-                  widget.device.serialNumber,
+                  _currentDevice.serialNumber,
                   icon: Icons.qr_code,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   'Device Type',
-                  widget.device.deviceType.isEmpty
+                  _currentDevice.deviceType.isEmpty
                       ? 'Not specified'
-                      : widget.device.deviceType,
+                      : _currentDevice.deviceType,
                   icon: Icons.category,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   'Model',
-                  widget.device.model.isEmpty
+                  _currentDevice.model.isEmpty
                       ? 'Not specified'
-                      : widget.device.model,
+                      : _currentDevice.model,
                   icon: Icons.memory,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   'Manufacturer',
-                  widget.device.manufacturer.isEmpty
+                  _currentDevice.manufacturer.isEmpty
                       ? 'Not specified'
-                      : widget.device.manufacturer,
+                      : _currentDevice.manufacturer,
                   icon: Icons.business,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   'Device Group',
-                  widget.device.deviceGroup?.name ?? 'None',
-                  // widget.device.deviceGroupId.toString() == '0'
+                  _currentDevice.deviceGroup?.name ?? 'None',
+                  // _currentDevice.deviceGroupId.toString() == '0'
                   //     ? 'None'
                   //     : _getDeviceGroupName(),
                   icon: Icons.group_work,
@@ -2013,9 +2069,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           // ),
           // const SizedBox(height: 24),
 
-          // Location Information Card
-          if (widget.device.address != null ||
-              widget.device.addressText.isNotEmpty)
+          // Location Information Card with Map View
+          if (_currentDevice.address != null ||
+              _currentDevice.addressText.isNotEmpty)
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2039,18 +2095,42 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: AppSizes.spacing16),
-                  if (widget.device.addressText.isNotEmpty)
+
+                  // Map View Section
+                  Container(
+                    height: 250,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        AppSizes.radiusMedium,
+                      ),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        AppSizes.radiusMedium,
+                      ),
+                      child: DeviceLocationViewer(
+                        address: _currentDevice.address,
+                        addressText: _currentDevice.addressText,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSizes.spacing16),
+
+                  // Location Details
+                  if (_currentDevice.addressText.isNotEmpty)
                     _buildInfoRow(
                       'Address',
-                      widget.device.addressText,
+                      _currentDevice.addressText,
                       icon: Icons.home,
                     ),
-                  if (widget.device.address != null) ...[
-                    if (widget.device.addressText.isNotEmpty)
+                  if (_currentDevice.address != null) ...[
+                    if (_currentDevice.addressText.isNotEmpty)
                       const SizedBox(height: 12),
                     _buildInfoRow(
                       'Street',
-                      widget.device.address!.street ?? 'Not specified',
+                      _currentDevice.address!.street ?? 'Not specified',
                       icon: Icons.place,
                     ),
                     const SizedBox(height: 12),
@@ -2059,7 +2139,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                         Expanded(
                           child: _buildInfoRow(
                             'City',
-                            widget.device.address!.city ?? 'Not specified',
+                            _currentDevice.address!.city ?? 'Not specified',
                             icon: Icons.location_city,
                           ),
                         ),
@@ -2067,7 +2147,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                         Expanded(
                           child: _buildInfoRow(
                             'State',
-                            widget.device.address!.state ?? 'Not specified',
+                            _currentDevice.address!.state ?? 'Not specified',
                             icon: Icons.map,
                           ),
                         ),
@@ -2079,7 +2159,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                         Expanded(
                           child: _buildInfoRow(
                             'Postal Code',
-                            widget.device.address!.postalCode ??
+                            _currentDevice.address!.postalCode ??
                                 'Not specified',
                             icon: Icons.local_post_office,
                           ),
@@ -2088,18 +2168,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                         Expanded(
                           child: _buildInfoRow(
                             'Country',
-                            widget.device.address!.country ?? 'Not specified',
+                            _currentDevice.address!.country ?? 'Not specified',
                             icon: Icons.flag,
                           ),
                         ),
                       ],
                     ),
-                    if (widget.device.address!.latitude != null &&
-                        widget.device.address!.longitude != null) ...[
+                    if (_currentDevice.address!.latitude != null &&
+                        _currentDevice.address!.longitude != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         'Coordinates',
-                        '${widget.device.address!.latitude?.toStringAsFixed(6)}, ${widget.device.address!.longitude?.toStringAsFixed(6)}',
+                        '${_currentDevice.address!.latitude?.toStringAsFixed(6)}, ${_currentDevice.address!.longitude?.toStringAsFixed(6)}',
                         icon: Icons.gps_fixed,
                       ),
                     ],
@@ -4947,50 +5027,32 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     _loadBillingData();
   }
 
-  Widget _buildLocationTab() {
-    if (_loadingLocation && !_locationLoaded) {
-      return const Center(
-        child: AppLottieStateWidget.loading(
-          lottieSize: 80,
-          titleColor: AppColors.primary,
-        ),
-      );
-    }
+  // Widget _buildLocationTab() {
+  //   if (_loadingLocation && !_locationLoaded) {
+  //     return const Center(
+  //       child: AppLottieStateWidget.loading(
+  //         lottieSize: 80,
+  //         titleColor: AppColors.primary,
+  //       ),
+  //     );
+  //   }
 
-    return Column(
-      children: [
-        // Sticky header
-        Container(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.all(AppSizes.spacing16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(
-              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-            ),
-          ),
-          child: const Text(
-            'Device Location',
-            style: TextStyle(
-              fontSize: AppSizes.fontSizeLarge,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
-            ),
-          ),
-        ),
-        // Scrollable content
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-            child: DeviceLocationViewer(
-              address: widget.device.address,
-              addressText: widget.device.addressText,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  //   return Column(
+  //     children: [
+
+  //       // Scrollable content
+  //       Expanded(
+  //         child: SingleChildScrollView(
+  //           padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+  //           child: DeviceLocationViewer(
+  //             address: widget.device.address,
+  //             addressText: widget.device.addressText,
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildSchedulesTab() {
     // Show loading state for schedules tab

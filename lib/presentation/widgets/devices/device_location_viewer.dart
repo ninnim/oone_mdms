@@ -92,256 +92,61 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Location Information Header
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    color: AppColors.primary,
-                    size: AppSizes.iconMedium,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Device Location',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeMedium,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Address Information
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.place,
-                          size: AppSizes.iconMedium,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Address:',
-                          style: TextStyle(
-                            fontSize: AppSizes.fontSizeMedium,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748b),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _locationText,
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeMedium,
-                        color: _hasValidLocation
-                            ? const Color(0xFF374151)
-                            : const Color(0xFF9CA3AF),
-                        fontStyle: _hasValidLocation
-                            ? FontStyle.normal
-                            : FontStyle.italic,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.my_location,
-                          size: AppSizes.iconMedium,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Coordinates:',
-                          style: TextStyle(
-                            fontSize: AppSizes.fontSizeMedium,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748b),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _coordinatesText,
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeMedium,
-                        color: _hasValidLocation
-                            ? const Color(0xFF374151)
-                            : const Color(0xFF9CA3AF),
-                        fontStyle: _hasValidLocation
-                            ? FontStyle.normal
-                            : FontStyle.italic,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
+    return AppCard(
+      child: _hasValidLocation
+          ? FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _deviceLocation,
+                initialZoom: 15.0,
+                interactionOptions: const InteractionOptions(
+                  flags:
+                      InteractiveFlag.pinchZoom |
+                      InteractiveFlag.drag |
+                      InteractiveFlag.doubleTapZoom,
                 ),
               ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Map View
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.map,
-                    color: AppColors.primary,
-                    size: AppSizes.iconMedium,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Map View',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeMedium,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Map Container
-              Container(
-                height: 300,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.mdms_clone',
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: _hasValidLocation
-                      ? FlutterMap(
-                          mapController: _mapController,
-                          options: MapOptions(
-                            initialCenter: _deviceLocation,
-                            initialZoom: 15.0,
-                            interactionOptions: const InteractionOptions(
-                              flags:
-                                  InteractiveFlag.pinchZoom |
-                                  InteractiveFlag.drag |
-                                  InteractiveFlag.doubleTapZoom,
-                            ),
-                          ),
-                          children: [
-                            TileLayer(
-                              urlTemplate:
-                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                              userAgentPackageName: 'com.example.mdms_clone',
-                            ),
-                            MarkerLayer(markers: _markers),
-                          ],
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.location_off,
-                                  size: 64,
-                                  color: const Color(0xFF9CA3AF),
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Location Not Available',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'No GPS coordinates are set for this device',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF9CA3AF),
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                ),
-              ),
-
-              // Map Controls/Info
-              if (_hasValidLocation) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'You can zoom and pan to explore the area around the device location.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748b),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                MarkerLayer(markers: _markers),
               ],
-            ],
-          ),
-        ),
-      ],
+            )
+          : Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.location_off,
+                      size: 64,
+                      color: const Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Location Not Available',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No GPS coordinates are set for this device',
+                      style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }

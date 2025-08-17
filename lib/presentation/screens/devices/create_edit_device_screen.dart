@@ -716,25 +716,14 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
       value: _getSafeDeviceGroupValue(),
       height: AppSizes.inputHeight,
       items: [
-        // const DropdownMenuItem<int>(
-        //   value: null,
-        //   child: Text(
-        //     'None',
-        //     style: TextStyle(fontSize: AppSizes.fontSizeSmall),
-        //   ),
-        // ),
-        DropdownMenuItem<int>(
-          value: widget.device?.deviceGroup?.id,
+        const DropdownMenuItem<int>(
+          value: null,
           child: Text(
-            widget.device?.deviceGroup?.name ?? 'None',
+            'None',
             style: TextStyle(fontSize: AppSizes.fontSizeSmall),
           ),
         ),
-
         ..._getUniqueDeviceGroups().map((group) {
-          // if (kDebugMode) {
-          //   print('Device Group: ID=${group.id}, Name=${group.name}');
-          // }
           return DropdownMenuItem<int>(
             value: group.id,
             child: Text(
@@ -955,18 +944,32 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
   // Get unique device groups to prevent dropdown duplicates
   List<DeviceGroup> _getUniqueDeviceGroups() {
     final seen = <int>{};
-    return _deviceGroups.where((group) {
-      if (seen.contains(group.id)) {
+    final allGroups = <DeviceGroup>[];
+
+    // First, add the current device's group if it exists and is not already in the list
+    if (widget.device?.deviceGroup != null) {
+      final currentGroup = widget.device!.deviceGroup!;
+      if (currentGroup.id != null && !seen.contains(currentGroup.id)) {
+        allGroups.add(currentGroup);
+        seen.add(currentGroup.id!);
+      }
+    }
+
+    // Then add the loaded groups, skipping duplicates
+    for (final group in _deviceGroups) {
+      if (group.id != null && !seen.contains(group.id)) {
+        allGroups.add(group);
+        seen.add(group.id!);
+      } else if (seen.contains(group.id)) {
         if (kDebugMode) {
           print(
             'Duplicate device group found with ID: ${group.id}, Name: ${group.name}',
           );
         }
-        return false;
       }
-      seen.add(group.id ?? 0);
-      return true;
-    }).toList();
+    }
+
+    return allGroups;
   }
 
   // Validate and get a safe device group value for the dropdown
