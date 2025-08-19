@@ -73,7 +73,7 @@ class SeasonService {
     try {
       print('🔄 SeasonService: Fetching season by ID: $id');
 
-      final response = await _apiService.get('/api/rest/v2/Season/$id');
+      final response = await _apiService.get('/api/rest/Season/$id');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -127,7 +127,7 @@ class SeasonService {
       print('📤 SeasonService: Request data: $requestData');
 
       final response = await _apiService.post(
-        '/api/rest/v2/Season',
+        '/api/rest/Season',
         data: requestData,
       );
 
@@ -184,7 +184,7 @@ class SeasonService {
       print('📤 SeasonService: Request data: $requestData');
 
       final response = await _apiService.post(
-        '/api/rest/v2/Season/${season.id}',
+        '/api/rest/Season/${season.id}',
         data: requestData,
       );
 

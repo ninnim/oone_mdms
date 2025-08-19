@@ -6,11 +6,13 @@ import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/kanban_view.dart';
 import '../../widgets/sites/site_filters_and_actions_v2.dart';
 import '../../widgets/sites/site_summary_card.dart';
 import '../../widgets/sites/site_form_dialog.dart';
 import '../../widgets/sites/site_table_columns.dart';
 import '../../widgets/sites/subsite_table_columns.dart';
+import '../../widgets/sites/site_kanban_adapter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
@@ -590,397 +592,21 @@ class _SitesScreenState extends State<SitesScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final groupedSites = _groupSitesByType();
+    final kanbanItems = _paginatedSites
+        .map((site) => SiteKanbanItem(site))
+        .toList();
 
-    return Container(
+    return KanbanView<SiteKanbanItem>(
+      items: kanbanItems,
+      columns: SiteKanbanConfig.columns,
+      actions: SiteKanbanConfig.getActions(
+        onView: _viewSite,
+        onEdit: _editSite,
+        onDelete: _deleteSite,
+      ),
+      onItemTap: (item) => _viewSite(item.site),
+      isLoading: _isLoading,
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groupedSites.entries.map((entry) {
-            return _buildSiteStatusColumn(entry.key, entry.value);
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Map<String, List<Site>> _groupSitesByType() {
-    final Map<String, List<Site>> grouped = {'Main Sites': [], 'Sub Sites': []};
-
-    for (final site in _paginatedSites) {
-      if (site.parentId == 0) {
-        grouped['Main Sites']!.add(site);
-      } else {
-        grouped['Sub Sites']!.add(site);
-      }
-    }
-
-    return grouped;
-  }
-
-  Widget _buildSiteStatusColumn(String type, List<Site> sites) {
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (type.toLowerCase()) {
-      case 'main sites':
-        statusColor = AppColors.primary;
-        statusIcon = Icons.location_city_outlined;
-        break;
-      case 'sub sites':
-        statusColor = AppColors.info;
-        statusIcon = Icons.place_outlined;
-        break;
-      default:
-        statusColor = AppColors.textSecondary;
-        statusIcon = Icons.help_outline;
-    }
-
-    return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column header
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSizes.radiusMedium),
-                topRight: Radius.circular(AppSizes.radiusMedium),
-              ),
-              border: Border(
-                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(statusIcon, color: statusColor, size: 20),
-                const SizedBox(width: AppSizes.spacing8),
-                Text(
-                  type,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                    fontSize: AppSizes.fontSizeMedium,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  ),
-                  child: Text(
-                    '${sites.length}',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Site cards
-          Expanded(
-            child: sites.isEmpty
-                ? _buildSiteEmptyState(type)
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSizes.spacing8),
-                    itemCount: sites.length,
-                    itemBuilder: (context, index) {
-                      return _buildSiteKanbanCard(sites[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSiteEmptyState(String type) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.location_city_outlined,
-            size: 48,
-            color: AppColors.textSecondary.withOpacity(0.5),
-          ),
-          const SizedBox(height: AppSizes.spacing12),
-          Text(
-            'No ${type.toLowerCase()}',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppSizes.fontSizeSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSiteKanbanCard(Site site) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _viewSite(site),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with name, status, and actions
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    site.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      fontSize: AppSizes.fontSizeMedium,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                _buildSiteStatusChip(site.active),
-                const SizedBox(width: AppSizes.spacing4),
-                _buildSiteActionsDropdown(site),
-              ],
-            ),
-            const SizedBox(height: AppSizes.spacing12),
-
-            // Site details
-            _buildDetailRow(Icons.numbers, 'ID', site.id.toString()),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(
-              Icons.account_tree,
-              'Type',
-              site.parentId == 0 ? 'Main Site' : 'Sub Site',
-            ),
-            const SizedBox(height: AppSizes.spacing8),
-            if (site.description.isNotEmpty) ...[
-              _buildDetailRow(
-                Icons.description,
-                'Description',
-                site.description,
-              ),
-              const SizedBox(height: AppSizes.spacing8),
-            ],
-            if (site.parentId == 0 &&
-                site.subSites != null &&
-                site.subSites!.isNotEmpty) ...[
-              _buildDetailRow(
-                Icons.location_city,
-                'Sub-sites',
-                '${site.subSites!.length} sites',
-              ),
-            ],
-
-            // Active indicator footer
-            if (site.active) ...[
-              const SizedBox(height: AppSizes.spacing12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing8,
-                  vertical: AppSizes.spacing4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF059669).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(
-                    color: const Color(0xFF059669).withOpacity(0.2),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      size: 14,
-                      color: const Color(0xFF059669),
-                    ),
-                    const SizedBox(width: AppSizes.spacing4),
-                    Text(
-                      'Active Site',
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeExtraSmall,
-                        color: const Color(0xFF059669),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSiteStatusChip(bool isActive) {
-    Color backgroundColor;
-    Color borderColor;
-    Color textColor;
-
-    if (isActive) {
-      // Active - Green
-      backgroundColor = const Color(0xFF059669).withOpacity(0.1);
-      borderColor = const Color(0xFF059669).withOpacity(0.3);
-      textColor = const Color(0xFF059669);
-    } else {
-      // Inactive - Red
-      backgroundColor = const Color(0xFFDC2626).withOpacity(0.1);
-      borderColor = const Color(0xFFDC2626).withOpacity(0.3);
-      textColor = const Color(0xFFDC2626);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing8,
-        vertical: AppSizes.spacing4,
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: borderColor, width: 1),
-      ),
-      child: Text(
-        isActive ? 'Active' : 'Inactive',
-        style: TextStyle(
-          color: textColor,
-          fontSize: AppSizes.fontSizeSmall,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
-        const SizedBox(width: AppSizes.spacing8),
-        Text(
-          '$label:',
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing4),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSiteActionsDropdown(Site site) {
-    return PopupMenuButton<String>(
-      icon: const Icon(
-        Icons.more_vert,
-        color: AppColors.textSecondary,
-        size: 16,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-      ),
-      itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'view',
-          child: Row(
-            children: [
-              Icon(Icons.visibility, size: 16, color: AppColors.primary),
-              SizedBox(width: AppSizes.spacing8),
-              Text('View Details'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 16, color: AppColors.warning),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Edit'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 16, color: AppColors.error),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Delete', style: TextStyle(color: AppColors.error)),
-            ],
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        switch (value) {
-          case 'view':
-            _viewSite(site);
-            break;
-          case 'edit':
-            _editSite(site);
-            break;
-          case 'delete':
-            _deleteSite(site);
-            break;
-        }
-      },
     );
   }
 
@@ -1010,7 +636,7 @@ class _SitesScreenState extends State<SitesScreen> {
       totalPages: _totalPages,
       itemsPerPage: _itemsPerPage,
       totalItems: _filteredSites.length,
-      itemsPerPageOptions: const [5, 10, 20, 25, 50],
+     // itemsPerPageOptions: const [5, 10, 20, 25, 50],
       startItem: startItem,
       endItem: endItem,
       onPageChanged: _onPageChanged,
@@ -1025,15 +651,7 @@ class _SitesScreenState extends State<SitesScreen> {
         // Sidebar header
         Container(
           padding: const EdgeInsets.all(AppSizes.spacing16),
-          // decoration: BoxDecoration(
-          //   color: Theme.of(context).colorScheme.surface,
-          //   border: Border(
-          //     bottom: BorderSide(
-          //       color: Theme.of(context).dividerColor,
-          //       width: 1,
-          //     ),
-          //   ),
-          // ),
+         
           child: Row(
             children: [
               Expanded(

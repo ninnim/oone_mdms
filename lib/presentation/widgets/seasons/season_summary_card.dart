@@ -54,7 +54,7 @@ class SeasonSummaryCard extends StatelessWidget {
                   'Inactive',
                   stats.inactiveSeasons.toString(),
                   Icons.pause_circle_outline,
-                  AppColors.textSecondary,
+                  AppColors.error,
                 ),
               ),
             ],

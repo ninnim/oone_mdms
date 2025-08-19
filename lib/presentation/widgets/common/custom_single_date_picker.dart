@@ -14,6 +14,8 @@ class CustomSingleDatePicker extends StatefulWidget {
   final DateTime? firstDate;
   final DateTime? lastDate;
   final bool isRequired;
+  final String? errorText; // Add error text parameter
+  final bool hasError; // Add error state parameter
 
   const CustomSingleDatePicker({
     super.key,
@@ -25,6 +27,8 @@ class CustomSingleDatePicker extends StatefulWidget {
     this.firstDate,
     this.lastDate,
     this.isRequired = false,
+    this.errorText,
+    this.hasError = false,
   });
 
   @override
@@ -70,85 +74,111 @@ class _CustomSingleDatePickerState extends State<CustomSingleDatePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null) ...[
-          Row(
-            children: [
-              Text(
-                widget.label!,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
+          RichText(
+            text: TextSpan(
+              text: widget.label!,
+              style: TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
               ),
-              if (widget.isRequired)
-                const Text(
-                  ' *',
-                  style: TextStyle(color: Colors.red, fontSize: 14),
-                ),
-            ],
+              children: [
+                if (widget.isRequired)
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: colorScheme.error),
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSizes.spacing8),
         ],
         GestureDetector(
           onTap: widget.enabled ? _showDatePickerDialog : null,
           child: Container(
             height: AppSizes.inputHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing16,
+              vertical: 0, // Remove vertical padding for better centering
+            ),
             decoration: BoxDecoration(
               border: Border.all(
-                color: widget.enabled
-                    ? (isDark ? const Color(0xFF4a5568) : AppColors.border)
-                    : (isDark
-                          ? const Color(0xFF2d3748)
-                          : AppColors.borderLight),
+                color: widget.hasError
+                    ? colorScheme.error
+                    : AppColors.border, // Use consistent border color
+                width: 1, // Correct error border width
               ),
-              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               color: widget.enabled
-                  ? (isDark ? const Color(0xFF2d3748) : AppColors.surface)
-                  : (isDark
-                        ? const Color(0xFF1e293b)
-                        : AppColors.surfaceVariant),
+                  ? colorScheme.surface
+                  : colorScheme.surfaceContainerHighest,
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: AppSizes.iconSmall,
-                  color: widget.enabled
-                      ? (isDark ? Colors.white70 : AppColors.textSecondary)
-                      : (isDark ? Colors.white30 : AppColors.textTertiary),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    _selectedDate != null
-                        ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
-                        : widget.hintText ?? 'Select date',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: AppSizes.fontSizeSmall,
-                      color: _selectedDate != null
-                          ? (isDark ? Colors.white : AppColors.textPrimary)
-                          : (isDark ? Colors.white54 : AppColors.textSecondary),
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: AppSizes.iconSmall,
+                        color: widget.enabled
+                            ? colorScheme.onSurfaceVariant
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.5,
+                              ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedDate != null
+                              ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
+                              : widget.hintText ?? 'Select date',
+                          style: TextStyle(
+                            fontSize: AppSizes
+                                .fontSizeMedium, // Match AppInputField font size
+                            height: 1.4, // Match AppInputField line height
+                            color: _selectedDate != null
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Icon(
                   Icons.arrow_drop_down,
                   size: AppSizes.iconSmall,
                   color: widget.enabled
-                      ? (isDark ? Colors.white70 : AppColors.textSecondary)
-                      : (isDark ? Colors.white30 : AppColors.textTertiary),
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
               ],
             ),
           ),
         ),
+        if (widget.hasError && widget.errorText != null) ...[
+          const SizedBox(height: AppSizes.spacing4),
+          Text(
+            widget.errorText!,
+            style: TextStyle(
+              color: colorScheme.error,
+              fontSize: AppSizes.fontSizeSmall,
+            ),
+          ),
+        ],
+        const SizedBox(
+          height: AppSizes.spacing4,
+        ), // Error space for consistency
       ],
     );
   }

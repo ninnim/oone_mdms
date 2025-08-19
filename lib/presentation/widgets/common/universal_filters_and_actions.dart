@@ -157,7 +157,7 @@ class _UniversalFiltersAndActionsState<T extends Enum>
           // Search field
           Expanded(
             flex: 1,
-            child: AppInputField(
+            child: AppInputField.search(
               controller: _searchController,
               hintText: widget.searchHint,
               onChanged: widget.onSearchChanged,

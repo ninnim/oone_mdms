@@ -109,7 +109,7 @@
   }
 }
 
-// Update Device Group
+// Update / remove Device Group
 // Method POST https://mdms.oone.bz/api/rest/v1/DeviceGroup
 // Request Update Device Group
 {

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
-class ResultsPagination extends StatefulWidget {
+class ResponsiveMapPagination extends StatefulWidget {
   final int currentPage;
   final int totalPages;
   final int totalItems;
@@ -15,7 +16,7 @@ class ResultsPagination extends StatefulWidget {
   final String itemLabel;
   final bool isLoading;
 
-  const ResultsPagination({
+  const ResponsiveMapPagination({
     super.key,
     required this.currentPage,
     required this.totalPages,
@@ -23,19 +24,20 @@ class ResultsPagination extends StatefulWidget {
     required this.startItem,
     required this.endItem,
     required this.onPageChanged,
-    this.itemsPerPage = 10,
-    this.itemsPerPageOptions = const [5, 10, 20, 50, 100, 200],
+    this.itemsPerPage = 8,
+    this.itemsPerPageOptions = const [4, 8, 16, 32],
     this.onItemsPerPageChanged,
     this.showItemsPerPageSelector = true,
-    this.itemLabel = 'items',
+    this.itemLabel = 'devices',
     this.isLoading = false,
   });
 
   @override
-  State<ResultsPagination> createState() => _ResultsPaginationState();
+  State<ResponsiveMapPagination> createState() =>
+      _ResponsiveMapPaginationState();
 }
 
-class _ResultsPaginationState extends State<ResultsPagination> {
+class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
   late TextEditingController _pageController;
 
   @override
@@ -47,7 +49,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
   }
 
   @override
-  void didUpdateWidget(ResultsPagination oldWidget) {
+  void didUpdateWidget(ResponsiveMapPagination oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentPage != widget.currentPage) {
       _pageController.text = widget.currentPage.toString();
@@ -70,8 +72,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
         final isSmallScreen = constraints.maxWidth < 600;
         final isMediumScreen =
             constraints.maxWidth >= 600 && constraints.maxWidth < 900;
-
-        final theme = Theme.of(context);
+        final isLargeScreen = constraints.maxWidth >= 900;
 
         return Container(
           width: double.infinity,
@@ -80,32 +81,32 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             vertical: isSmallScreen ? AppSizes.spacing8 : AppSizes.spacing12,
           ),
           decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
+            color: Colors.white,
             border: Border(
               top: BorderSide(
-                color: theme.dividerColor.withValues(alpha: 0.2),
+                color: AppColors.border.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 2,
-                offset: const Offset(0, -1),
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, -2),
               ),
             ],
           ),
           child: isSmallScreen
-              ? _buildCompactLayout(theme)
+              ? _buildCompactLayout()
               : isMediumScreen
-              ? _buildMediumLayout(theme)
-              : _buildFullLayout(theme),
+              ? _buildMediumLayout()
+              : _buildFullLayout(),
         );
       },
     );
   }
 
-  Widget _buildCompactLayout(ThemeData theme) {
+  Widget _buildCompactLayout() {
     // For small screens: Essential navigation + items per page selector
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -113,10 +114,10 @@ class _ResultsPaginationState extends State<ResultsPagination> {
         // Results info and items per page selector
         Row(
           children: [
-            Expanded(child: _buildResultsInfo(theme, isCompact: true)),
+            Expanded(child: _buildResultsInfo(isCompact: true)),
             if (widget.showItemsPerPageSelector &&
                 widget.onItemsPerPageChanged != null)
-              _buildItemsPerPageSelector(theme),
+              _buildItemsPerPageSelector(),
           ],
         ),
 
@@ -132,7 +133,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(1)
                   : null,
               isEnabled: widget.currentPage > 1,
-              theme: theme,
               size: 28,
             ),
 
@@ -144,7 +144,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(widget.currentPage - 1)
                   : null,
               isEnabled: widget.currentPage > 1,
-              theme: theme,
               size: 28,
             ),
 
@@ -157,18 +156,18 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                 vertical: AppSizes.spacing4,
               ),
               decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 border: Border.all(
-                  color: theme.primaryColor.withValues(alpha: 0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                 ),
               ),
               child: Text(
                 '${widget.currentPage} / ${widget.totalPages}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   fontWeight: FontWeight.w600,
-                  color: theme.primaryColor,
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -181,7 +180,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(widget.currentPage + 1)
                   : null,
               isEnabled: widget.currentPage < widget.totalPages,
-              theme: theme,
               size: 28,
             ),
 
@@ -193,7 +191,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(widget.totalPages)
                   : null,
               isEnabled: widget.currentPage < widget.totalPages,
-              theme: theme,
               size: 28,
             ),
           ],
@@ -202,12 +199,12 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     );
   }
 
-  Widget _buildMediumLayout(ThemeData theme) {
+  Widget _buildMediumLayout() {
     // For medium screens: Navigation + page numbers + items per page selector
     return Row(
       children: [
         // Results info
-        Expanded(flex: 2, child: _buildResultsInfo(theme)),
+        Expanded(flex: 2, child: _buildResultsInfo()),
 
         // Spacer
         const SizedBox(width: AppSizes.spacing16),
@@ -224,13 +221,12 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                     ? () => widget.onPageChanged(widget.currentPage - 1)
                     : null,
                 isEnabled: widget.currentPage > 1,
-                theme: theme,
               ),
 
               const SizedBox(width: AppSizes.spacing8),
 
               // Limited page numbers for medium screens
-              ..._buildLimitedPageButtons(theme),
+              ..._buildLimitedPageButtons(),
 
               const SizedBox(width: AppSizes.spacing8),
 
@@ -240,7 +236,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                     ? () => widget.onPageChanged(widget.currentPage + 1)
                     : null,
                 isEnabled: widget.currentPage < widget.totalPages,
-                theme: theme,
               ),
             ],
           ),
@@ -253,26 +248,26 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             flex: 1,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [_buildItemsPerPageSelector(theme)],
+              children: [_buildItemsPerPageSelector()],
             ),
           ),
       ],
     );
   }
 
-  Widget _buildFullLayout(ThemeData theme) {
+  Widget _buildFullLayout() {
     // For large screens: Full pagination with all features
     return Row(
       children: [
         // Results info
-        _buildResultsInfo(theme),
+        _buildResultsInfo(),
 
         const Spacer(),
 
         // Items per page selector (always show if enabled)
         if (widget.showItemsPerPageSelector &&
             widget.onItemsPerPageChanged != null) ...[
-          _buildItemsPerPageSelector(theme),
+          _buildItemsPerPageSelector(),
           const SizedBox(width: AppSizes.spacing24),
         ],
 
@@ -286,7 +281,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(1)
                   : null,
               isEnabled: widget.currentPage > 1,
-              theme: theme,
             ),
 
             const SizedBox(width: AppSizes.spacing4),
@@ -297,18 +291,17 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(widget.currentPage - 1)
                   : null,
               isEnabled: widget.currentPage > 1,
-              theme: theme,
             ),
 
             const SizedBox(width: AppSizes.spacing8),
 
             // Page input field
-            _buildPageInput(theme),
+            _buildPageInput(),
 
             const SizedBox(width: AppSizes.spacing8),
 
             // Page numbers with smart ellipsis
-            ..._buildSmartPageButtons(theme),
+            ..._buildSmartPageButtons(),
 
             const SizedBox(width: AppSizes.spacing8),
 
@@ -318,7 +311,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(widget.currentPage + 1)
                   : null,
               isEnabled: widget.currentPage < widget.totalPages,
-              theme: theme,
             ),
 
             const SizedBox(width: AppSizes.spacing4),
@@ -329,7 +321,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                   ? () => widget.onPageChanged(widget.totalPages)
                   : null,
               isEnabled: widget.currentPage < widget.totalPages,
-              theme: theme,
             ),
           ],
         ),
@@ -337,19 +328,22 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     );
   }
 
-  Widget _buildResultsInfo(ThemeData theme, {bool isCompact = false}) {
+  Widget _buildResultsInfo({bool isCompact = false}) {
     return Row(
       mainAxisSize: isCompact ? MainAxisSize.min : MainAxisSize.max,
       children: [
+        Icon(Icons.location_on, size: 16, color: AppColors.primary),
+        const SizedBox(width: AppSizes.spacing4),
+
         Text(
           isCompact
               ? '${widget.totalItems} ${widget.itemLabel}'
-              : '${widget.startItem} to ${widget.endItem} of ${widget.totalItems} ${widget.itemLabel}',
+              : '${widget.startItem}-${widget.endItem} of ${widget.totalItems} ${widget.itemLabel}',
           style: TextStyle(
             fontSize: isCompact
                 ? AppSizes.fontSizeSmall
                 : AppSizes.fontSizeSmall,
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+            color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -361,7 +355,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             height: 12,
             child: CircularProgressIndicator(
               strokeWidth: 1.5,
-              valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
         ],
@@ -369,9 +363,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     );
   }
 
-  Widget _buildItemsPerPageSelector(ThemeData theme) {
-    // Ensure the current itemsPerPage value is in the options list
-    // If not, add it or use the closest value
+  Widget _buildItemsPerPageSelector() {
     List<int> safeOptions = List.from(widget.itemsPerPageOptions);
     if (!safeOptions.contains(widget.itemsPerPage)) {
       safeOptions.add(widget.itemsPerPage);
@@ -382,23 +374,23 @@ class _ResultsPaginationState extends State<ResultsPagination> {
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
       decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        color: theme.cardColor,
+        color: Colors.white,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: widget.itemsPerPage,
           isDense: true,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: theme.textTheme.bodyMedium?.color,
-            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
           ),
           icon: Icon(
             Icons.keyboard_arrow_down,
             size: AppSizes.iconSmall,
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: AppColors.textSecondary,
           ),
           items: safeOptions.map((int value) {
             return DropdownMenuItem<int>(
@@ -416,23 +408,23 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     );
   }
 
-  Widget _buildPageInput(ThemeData theme) {
+  Widget _buildPageInput() {
     return Container(
       width: 40,
       height: 32,
       decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        color: theme.cardColor,
+        color: Colors.white,
       ),
       child: Center(
         child: TextField(
           controller: _pageController,
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: theme.textTheme.bodyMedium?.color,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
           ),
           decoration: const InputDecoration(
@@ -458,7 +450,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     required IconData icon,
     required VoidCallback? onPressed,
     required bool isEnabled,
-    required ThemeData theme,
     double size = 32,
   }) {
     return Material(
@@ -472,18 +463,16 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           decoration: BoxDecoration(
             border: Border.all(
               color: isEnabled
-                  ? theme.dividerColor.withValues(alpha: 0.3)
-                  : theme.dividerColor.withValues(alpha: 0.1),
+                  ? AppColors.border.withValues(alpha: 0.3)
+                  : AppColors.border.withValues(alpha: 0.1),
             ),
             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-            color: theme.cardColor,
+            color: Colors.white,
           ),
           child: Icon(
             icon,
             size: size * 0.5,
-            color: isEnabled
-                ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8)
-                : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
+            color: isEnabled ? AppColors.textPrimary : AppColors.textSecondary,
           ),
         ),
       ),
@@ -494,7 +483,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     required int pageNumber,
     required bool isActive,
     required VoidCallback onTap,
-    required ThemeData theme,
     double size = 32,
   }) {
     return GestureDetector(
@@ -503,11 +491,11 @@ class _ResultsPaginationState extends State<ResultsPagination> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: isActive ? theme.primaryColor : theme.cardColor,
+          color: isActive ? AppColors.primary : Colors.white,
           border: Border.all(
             color: isActive
-                ? theme.primaryColor
-                : theme.dividerColor.withValues(alpha: 0.3),
+                ? AppColors.primary
+                : AppColors.border.withValues(alpha: 0.3),
           ),
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         ),
@@ -516,9 +504,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           pageNumber.toString(),
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: isActive
-                ? theme.colorScheme.onPrimary
-                : theme.textTheme.bodyMedium?.color,
+            color: isActive ? Colors.white : AppColors.textPrimary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -526,7 +512,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     );
   }
 
-  List<Widget> _buildLimitedPageButtons(ThemeData theme) {
+  List<Widget> _buildLimitedPageButtons() {
     // For medium screens - show only 3-5 page numbers around current page
     final buttons = <Widget>[];
     final maxButtons = 5;
@@ -545,7 +531,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           pageNumber: i,
           isActive: i == widget.currentPage,
           onTap: () => widget.onPageChanged(i),
-          theme: theme,
         ),
       );
 
@@ -557,7 +542,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     return buttons;
   }
 
-  List<Widget> _buildSmartPageButtons(ThemeData theme) {
+  List<Widget> _buildSmartPageButtons() {
     // For large screens - full smart pagination
     final pages = _generateSmartPageNumbers();
     final buttons = <Widget>[];
@@ -576,9 +561,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
               '⋯',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: theme.textTheme.bodyMedium?.color?.withValues(
-                  alpha: 0.5,
-                ),
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
             ),
@@ -591,7 +574,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             pageNumber: page,
             isActive: page == widget.currentPage,
             onTap: () => widget.onPageChanged(page),
-            theme: theme,
           ),
         );
       }

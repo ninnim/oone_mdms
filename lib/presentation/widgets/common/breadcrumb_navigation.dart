@@ -31,7 +31,7 @@ class BreadcrumbNavigation extends StatelessWidget {
 
         // Build correct navigation path based on route structure
         // Use the original path segments and index, not the filtered breadcrumbs
-        String navigationPath = _buildNavigationPath(pathSegments, i);
+        String navigationPath = _buildNavigationPath(context, pathSegments, i);
 
         breadcrumbs.add(
           BreadcrumbItem(title: title, path: navigationPath, isLast: false),
@@ -93,6 +93,19 @@ class BreadcrumbNavigation extends StatelessWidget {
       case 'settings':
         return 'Settings';
       case 'details':
+        // Check if we came from device group details by looking at query parameters
+        try {
+          final routeState = GoRouterState.of(context);
+          final backParam = routeState.uri.queryParameters['back'];
+
+          // If back parameter contains device-groups/details, show "Device Group Details"
+          if (backParam != null &&
+              backParam.contains('device-groups/details')) {
+            return 'Device Group Details';
+          }
+        } catch (e) {
+          // If can't access router state, fall back to default
+        }
         return 'Details';
       case 'billing':
         return 'Billing';
@@ -151,7 +164,11 @@ class BreadcrumbNavigation extends StatelessWidget {
     }
   }
 
-  String _buildNavigationPath(List<String> pathSegments, int currentIndex) {
+  String _buildNavigationPath(
+    BuildContext context,
+    List<String> pathSegments,
+    int currentIndex,
+  ) {
     // Special handling for device-related routes
     if (pathSegments.isNotEmpty && pathSegments[0] == 'devices') {
       // If clicking on "Devices" (index 0), always go to devices list
@@ -163,8 +180,20 @@ class BreadcrumbNavigation extends StatelessWidget {
       if (pathSegments.length >= 3 && pathSegments[1] == 'details') {
         final deviceId = pathSegments[2];
 
-        // If clicking on "Details" (index 1), go to device details
+        // If clicking on "Details" (index 1), check if it should go back to device group
         if (currentIndex == 1) {
+          try {
+            final routeState = GoRouterState.of(context);
+            final backParam = routeState.uri.queryParameters['back'];
+
+            // If back parameter exists and contains device-groups/details, use the back route
+            if (backParam != null &&
+                backParam.contains('device-groups/details')) {
+              return Uri.decodeComponent(backParam);
+            }
+          } catch (e) {
+            // If can't access router state, fall back to default
+          }
           return '/devices/details/$deviceId';
         }
 
@@ -203,7 +232,7 @@ class BreadcrumbNavigation extends StatelessWidget {
           fontSize: AppSizes.fontSizeMedium,
           fontWeight: FontWeight.w500,
           color: item.isLast ? AppColors.textPrimary : AppColors.primary,
-          decoration: item.isLast ? null : TextDecoration.underline,
+          //  decoration: item.isLast ? null : TextDecoration.underline,
         ),
       ),
     );

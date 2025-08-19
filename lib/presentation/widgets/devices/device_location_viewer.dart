@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../../../core/models/address.dart';
 import '../../../core/constants/app_colors.dart';
 import '../common/app_card.dart';

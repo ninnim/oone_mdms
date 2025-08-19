@@ -21,6 +21,7 @@ import '../../widgets/common/results_pagination.dart';
 import '../../widgets/devices/device_filters_and_actions_v2.dart';
 import '../../widgets/devices/device_summary_card.dart';
 import '../../widgets/devices/device_table_columns.dart';
+import '../../widgets/devices/device_kanban_view.dart';
 import '../../widgets/devices/group_device_map_view.dart';
 import '../../widgets/schedules/schedule_form_dialog.dart';
 import '../../widgets/schedules/schedule_filters_and_actions_v2.dart';
@@ -111,26 +112,13 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
     _deviceService = DeviceService(apiService);
     _scheduleService = ScheduleService(apiService);
 
-    // Load data for initial tab
-    _loadInitialData();
-  }
-
-  Future<void> _loadInitialData() async {
-    // Load data based on the initial tab (Overview by default)
-    switch (_currentTabIndex) {
-      case 0: // Overview tab
-        _loadOverviewData();
-        break;
-      case 1: // Devices tab
-        _loadDevicesData();
-        break;
-      case 2: // Schedules tab
-        _loadSchedulesData();
-        break;
-      default:
-        // Default to overview
-        _loadOverviewData();
-        break;
+    // Don't load data immediately - this prevents unnecessary API calls when just viewing device group details
+    // Only load data when user explicitly switches to tabs that need it
+    // Initialize devices from device group if available to show basic statistics
+    if (widget.deviceGroup.devices != null && widget.deviceGroup.devices!.isNotEmpty) {
+      setState(() {
+        _selectedDevices = List.from(widget.deviceGroup.devices!);
+      });
     }
   }
 
@@ -139,16 +127,23 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
       _currentTabIndex = index;
     });
 
-    // Trigger API based on selected tab
+    // Only trigger API calls when user switches to specific tabs
     switch (index) {
       case 0: // Overview tab
-        _loadOverviewData();
+        // Only load data if we haven't loaded it yet and need more details
+        if (_allDevices.isEmpty) {
+          _loadOverviewData();
+        }
         break;
       case 1: // Devices tab
-        _loadDevicesData();
+        if (_allDevices.isEmpty) {
+          _loadDevicesData();
+        }
         break;
       case 2: // Schedules tab
-        _loadSchedulesData();
+        if (_schedules.isEmpty) {
+          _loadSchedulesData();
+        }
         break;
     }
   }
@@ -392,67 +387,6 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
     return schedules;
   }
 
-  // Future<void> _saveChanges() async {
-  //   setState(() => _isLoading = true);
-
-  //   try {
-  //     // Update devices to belong to this group
-  //     final updateFutures = <Future>[];
-
-  //     // Remove devices that are no longer selected
-  //     final currentGroupDevices = _allDevices
-  //         .where((device) => device.deviceGroupId == widget.deviceGroup.id)
-  //         .toList();
-
-  //     for (final device in currentGroupDevices) {
-  //       if (!_selectedDevices.any((d) => d.id == device.id)) {
-  //         updateFutures.add(
-  //           _deviceService.updateDevice(
-  //             device.copyWith(deviceGroupId: 0), // 0 means no group
-  //           ),
-  //         );
-  //       }
-  //     }
-
-  //     // Add newly selected devices to this group
-  //     for (final device in _selectedDevices) {
-  //       if (device.deviceGroupId != widget.deviceGroup.id) {
-  //         updateFutures.add(
-  //           _deviceService.updateDevice(
-  //             device.copyWith(deviceGroupId: widget.deviceGroup.id),
-  //           ),
-  //         );
-  //       }
-  //     }
-
-  //     await Future.wait(updateFutures);
-
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(
-  //           content: Text('Device group updated successfully'),
-  //           backgroundColor: AppColors.success,
-  //         ),
-  //       );
-  //       // Navigate back to device groups list
-  //       context.go('/device-groups');
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Failed to update device group: $e'),
-  //           backgroundColor: AppColors.error,
-  //         ),
-  //       );
-  //     }
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() => _isLoading = false);
-  //     }
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -472,24 +406,23 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
             children: [
               Row(
                 children: [
-                  // Back button
-                  IconButton(
-                    onPressed: () => context.go('/device-groups'),
-                    icon: const Icon(Icons.arrow_back),
-                    color: AppColors.textSecondary,
-                    tooltip: 'Back to Device Groups',
-                  ),
-                  const SizedBox(width: AppSizes.spacing8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.deviceGroup.name ?? 'Device Groups!',
-                          style: const TextStyle(
-                            fontSize: AppSizes.fontSizeLarge,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                        MouseRegion(
+                          cursor: SystemMouseCursors
+                              .click, // cursor: MouseCursor.clickable,
+                          child: GestureDetector(
+                            onTap: () => context.go('/device-groups'),
+                            child: Text(
+                              widget.deviceGroup.name ?? 'Device Groups!',
+                              style: TextStyle(
+                                fontSize: AppSizes.fontSizeLarge,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                         ),
                         if (widget.deviceGroup.description?.isNotEmpty ==
@@ -582,6 +515,23 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
       );
     }
 
+    // Get devices data - prefer loaded data, fallback to device group's devices
+    List<Device> deviceGroupDevices = [];
+    if (_allDevices.isNotEmpty) {
+      // Use loaded devices filtered by group
+      deviceGroupDevices = _allDevices
+          .where((device) => device.deviceGroupId == widget.deviceGroup.id)
+          .toList();
+    } else if (widget.deviceGroup.devices != null) {
+      // Use devices from device group object
+      deviceGroupDevices = widget.deviceGroup.devices!;
+    }
+
+    final totalDevices = deviceGroupDevices.length;
+    final activeDevices = deviceGroupDevices
+        .where((device) => device.status == 'Commissioned')
+        .length;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       child: Column(
@@ -621,13 +571,27 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Statistics',
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeLarge,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Statistics',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeLarge,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (_allDevices.isEmpty && widget.deviceGroup.devices == null)
+                      TextButton.icon(
+                        onPressed: _loadOverviewData,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Load Details'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: AppSizes.spacing16),
                 Row(
@@ -635,7 +599,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
                     Expanded(
                       child: _buildStatCard(
                         'Total Devices',
-                        _selectedDevices.length.toString(),
+                        totalDevices.toString(),
                         Icons.devices,
                       ),
                     ),
@@ -643,15 +607,24 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
                     Expanded(
                       child: _buildStatCard(
                         'Active Devices',
-                        _selectedDevices
-                            .where((d) => d.status == 'Commissioned')
-                            .length
-                            .toString(),
+                        activeDevices.toString(),
                         Icons.check_circle,
                       ),
                     ),
                   ],
                 ),
+                if (_allDevices.isEmpty && widget.deviceGroup.devices == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSizes.spacing12),
+                    child: Text(
+                      'Click "Load Details" to see comprehensive device statistics',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -688,11 +661,11 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
       padding: const EdgeInsets.all(AppSizes.spacing12),
       child: Column(
         children: [
-           SizedBox(height: AppSizes.spacing12),
+          SizedBox(height: AppSizes.spacing12),
 
           // Summary card (same style as devices screen)
           DeviceSummaryCard(devices: filteredDevices),
-             const SizedBox(height: AppSizes.spacing8),
+          const SizedBox(height: AppSizes.spacing8),
           // Filters and actions (same style as devices screen)
           DeviceFiltersAndActionsV2(
             onSearchChanged: _onDeviceSearchChanged,
@@ -708,10 +681,6 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
             selectedLinkStatus:
                 null, // Group devices don't have link status filter
           ),
-
-         
-
-       
 
           // Content based on view mode
           Expanded(child: _buildDeviceContent()),
@@ -804,436 +773,20 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen> {
       child: Column(
         children: [
           if (_selectedDevicesForActions.isNotEmpty) _buildMultiSelectToolbar(),
-          Expanded(child: _buildEnhancedDeviceKanbanView(paginatedDevices)),
+          Expanded(
+            child: DeviceKanbanView(
+              devices: paginatedDevices,
+              onDeviceSelected: _viewDevice,
+              onDeviceEdit: _editDevice,
+              onDeviceDelete: _removeDeviceFromGroup,
+              onDeviceView: _viewDevice,
+              isLoading: _isDevicesLoading,
+            ),
+          ),
           _buildDevicePagination(),
         ],
       ),
     );
-  }
-
-  Widget _buildEnhancedDeviceKanbanView(List<Device> devices) {
-    if (devices.isEmpty && !_isLoading) {
-      return const Center(
-        child: Text(
-          'No devices in this group',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: AppSizes.fontSizeMedium,
-          ),
-        ),
-      );
-    }
-
-    final groupedDevices = _groupDevicesByStatus(devices);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groupedDevices.entries.map((entry) {
-            return _buildDeviceStatusColumn(entry.key, entry.value);
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Map<String, List<Device>> _groupDevicesByStatus(List<Device> devices) {
-    final Map<String, List<Device>> grouped = {
-      'Commissioned': [],
-      'Decommissioned': [],
-      'Unknown': [],
-    };
-
-    for (final device in devices) {
-      if (device.status.toLowerCase() == 'commissioned') {
-        grouped['Commissioned']!.add(device);
-      } else if (device.status.toLowerCase() == 'decommissioned') {
-        grouped['Decommissioned']!.add(device);
-      } else {
-        grouped['Unknown']!.add(device);
-      }
-    }
-
-    return grouped;
-  }
-
-  Widget _buildDeviceStatusColumn(String status, List<Device> devices) {
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (status.toLowerCase()) {
-      case 'commissioned':
-        statusColor = AppColors.success;
-        statusIcon = Icons.check_circle_outline;
-        break;
-      case 'decommissioned':
-        statusColor = AppColors.error;
-        statusIcon = Icons.cancel_outlined;
-        break;
-      case 'unknown':
-      default:
-        statusColor = AppColors.textSecondary;
-        statusIcon = Icons.help_outline;
-    }
-
-    return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column header
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSizes.radiusMedium),
-                topRight: Radius.circular(AppSizes.radiusMedium),
-              ),
-              border: Border(
-                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(statusIcon, color: statusColor, size: 20),
-                const SizedBox(width: AppSizes.spacing8),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                    fontSize: AppSizes.fontSizeMedium,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  ),
-                  child: Text(
-                    '${devices.length}',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Device cards
-          Expanded(
-            child: devices.isEmpty
-                ? _buildDeviceEmptyState(status)
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSizes.spacing8),
-                    itemCount: devices.length,
-                    itemBuilder: (context, index) {
-                      return _buildDeviceKanbanCard(devices[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeviceEmptyState(String status) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.device_hub_outlined,
-            size: 48,
-            color: AppColors.textSecondary.withOpacity(0.5),
-          ),
-          const SizedBox(height: AppSizes.spacing12),
-          Text(
-            'No ${status.toLowerCase()} devices',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppSizes.fontSizeSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeviceKanbanCard(Device device) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _viewDevice(device),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with name, status, and actions
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    device.name.isNotEmpty ? device.name : device.serialNumber,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      fontSize: AppSizes.fontSizeMedium,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                _buildDeviceStatusChip(device.status, device.active),
-                const SizedBox(width: AppSizes.spacing4),
-                _buildDeviceActionsDropdown(device),
-              ],
-            ),
-            const SizedBox(height: AppSizes.spacing12),
-
-            // Device details
-            _buildDetailRow(Icons.tag, 'Serial', device.serialNumber),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(Icons.memory, 'Type', device.deviceType),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(Icons.settings, 'Model', device.model),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(
-              Icons.business,
-              'Manufacturer',
-              device.manufacturer,
-            ),
-
-            // Link status indicator
-            if (device.linkStatus.isNotEmpty) ...[
-              const SizedBox(height: AppSizes.spacing12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing8,
-                  vertical: AppSizes.spacing4,
-                ),
-                decoration: BoxDecoration(
-                  color: _getDeviceLinkStatusColor(
-                    device.linkStatus,
-                  ).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(
-                    color: _getDeviceLinkStatusColor(
-                      device.linkStatus,
-                    ).withOpacity(0.2),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      device.linkStatus.toLowerCase() == 'connected'
-                          ? Icons.link
-                          : Icons.link_off,
-                      size: 14,
-                      color: _getDeviceLinkStatusColor(device.linkStatus),
-                    ),
-                    const SizedBox(width: AppSizes.spacing4),
-                    Text(
-                      'Link: ${device.linkStatus}',
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeExtraSmall,
-                        color: _getDeviceLinkStatusColor(device.linkStatus),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeviceStatusChip(String status, bool isActive) {
-    Color backgroundColor;
-    Color borderColor;
-    Color textColor;
-
-    if (status.toLowerCase().contains('active') || isActive) {
-      // Active - Green
-      backgroundColor = const Color(0xFF059669).withOpacity(0.1);
-      borderColor = const Color(0xFF059669).withOpacity(0.3);
-      textColor = const Color(0xFF059669);
-    } else {
-      // Inactive - Red
-      backgroundColor = const Color(0xFFDC2626).withOpacity(0.1);
-      borderColor = const Color(0xFFDC2626).withOpacity(0.3);
-      textColor = const Color(0xFFDC2626);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing8,
-        vertical: AppSizes.spacing4,
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: borderColor, width: 1),
-      ),
-      child: Text(
-        isActive ? 'Active' : 'Inactive',
-        style: TextStyle(
-          color: textColor,
-          fontSize: AppSizes.fontSizeSmall,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
-        const SizedBox(width: AppSizes.spacing8),
-        Text(
-          '$label:',
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing4),
-        Expanded(
-          child: Text(
-            value.isNotEmpty ? value : 'Not specified',
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDeviceActionsDropdown(Device device) {
-    return PopupMenuButton<String>(
-      icon: const Icon(
-        Icons.more_vert,
-        color: AppColors.textSecondary,
-        size: 16,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-      ),
-      itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'view',
-          child: Row(
-            children: [
-              Icon(Icons.visibility, size: 16, color: AppColors.primary),
-              SizedBox(width: AppSizes.spacing8),
-              Text('View Details'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 16, color: AppColors.warning),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Edit'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'remove',
-          child: Row(
-            children: [
-              Icon(Icons.remove_circle, size: 16, color: AppColors.error),
-              SizedBox(width: AppSizes.spacing8),
-              Text(
-                'Remove from Group',
-                style: TextStyle(color: AppColors.error),
-              ),
-            ],
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        switch (value) {
-          case 'view':
-            _viewDevice(device);
-            break;
-          case 'edit':
-            _editDevice(device);
-            break;
-          case 'remove':
-            _removeDeviceFromGroup(device);
-            break;
-        }
-      },
-    );
-  }
-
-  Color _getDeviceLinkStatusColor(String linkStatus) {
-    switch (linkStatus.toLowerCase()) {
-      case 'connected':
-      case 'online':
-      case 'multidrive':
-        return AppColors.success;
-      case 'disconnected':
-      case 'offline':
-        return AppColors.error;
-      case 'pending':
-        return AppColors.warning;
-      default:
-        return AppColors.textSecondary;
-    }
   }
 
   Widget _buildDeviceMapView() {

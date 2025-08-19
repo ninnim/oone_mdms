@@ -177,6 +177,7 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
                               label: 'Site Name',
                               hintText: 'Enter site name',
                               required: true,
+                              showErrorSpace: false,
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Site name is required';

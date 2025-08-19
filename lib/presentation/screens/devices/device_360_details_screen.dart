@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_tabs.dart';
+import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -11,8 +11,6 @@ import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
 import '../../../core/models/schedule.dart';
-import '../../../core/models/load_profile_metric.dart';
-import '../../../core/models/chart_type.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -129,20 +127,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   // Metrics table scroll controller for drag-to-scroll
   final ScrollController _metricsTableScrollController = ScrollController();
 
-  // Advanced analytics data
-  List<LoadProfileMetric> _analyticsMetrics = [];
-  bool _isLoadingAnalytics = false;
-  String? _analyticsError;
-  DateTimeRange? _selectedDateRange;
-  final List<String> _selectedPhases = ['L1', 'L2', 'L3'];
-  final List<String> _selectedMetricTypes = ['Voltage', 'Current', 'Power'];
-  ChartType _selectedChartType = ChartType.line;
-  bool _showHover = true;
-  final Map<String, bool> _phaseVisibility = {
-    'L1': true,
-    'L2': true,
-    'L3': true,
-  };
+
 
   // Overview edit mode state
   bool _isEditingOverview = false;
@@ -278,7 +263,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       case 3: // Metrics
         if (!_metricsLoaded) {
           _loadMetricsData();
-          _loadAnalyticsData(); // Load analytics data when metrics tab is opened
+          // _loadAnalyticsData(); // Load analytics data when metrics tab is opened
         }
         break;
       case 4: // Billing
@@ -314,28 +299,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     _clearEditFields();
   }
 
-  // Populate edit fields with current device data
-  void _populateEditFields() {
-    _serialNumberEditController.text = widget.device.serialNumber;
-    _modelEditController.text = widget.device.model;
-    _addressEditController.text = widget.device.addressText;
-    _selectedDeviceTypeEdit = widget.device.deviceType.isNotEmpty
-        ? widget.device.deviceType
-        : 'None';
-    _selectedLinkStatusEdit = widget.device.linkStatus.isNotEmpty
-        ? widget.device.linkStatus
-        : 'None';
-    _selectedStatusEdit = widget.device.status.isNotEmpty
-        ? widget.device.status
-        : 'None';
-    _selectedDeviceGroupIdEdit = widget.device.deviceGroupId != 0
-        ? widget.device.deviceGroupId
-        : null;
-    _selectedAddressEdit = widget.device.address;
-    // For now, initialize schedule to null - will be set when Device model includes scheduleId
-    _selectedScheduleIdEdit = null;
-  }
-
   // Clear edit fields
   void _clearEditFields() {
     _serialNumberEditController.clear();
@@ -347,34 +310,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     _selectedDeviceGroupIdEdit = null;
     _selectedAddressEdit = null;
     _selectedScheduleIdEdit = null;
-  }
-
-  // Load dropdown data for edit mode
-  Future<void> _loadDropdownDataForEdit() async {
-    setState(() {
-      _isLoadingDeviceGroups = true;
-      _isLoadingSchedules = true;
-    });
-
-    try {
-      // Clear search queries and load initial data
-      _deviceGroupSearchQuery = '';
-      _schedulesSearchQuery = '';
-
-      // Load device groups and schedules in parallel
-      await Future.wait([
-        _loadDeviceGroups(reset: true),
-        _loadSchedules(reset: true),
-      ]);
-    } catch (e) {
-      // Error loading dropdown data
-      print('Error loading dropdown data: $e');
-    } finally {
-      setState(() {
-        _isLoadingDeviceGroups = false;
-        _isLoadingSchedules = false;
-      });
-    }
   }
 
   // Load device groups with search and pagination
@@ -1114,47 +1049,47 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   // Load analytics data for advanced charts
-  Future<void> _loadAnalyticsData() async {
-    if (_isLoadingAnalytics) return;
+  // Future<void> _loadAnalyticsData() async {
+  //   if (_isLoadingAnalytics) return;
 
-    setState(() {
-      _isLoadingAnalytics = true;
-      _analyticsError = null;
-    });
+  //   setState(() {
+  //     _isLoadingAnalytics = true;
+  //     _analyticsError = null;
+  //   });
 
-    try {
-      final startDate =
-          _selectedDateRange?.start ??
-          DateTime.now().subtract(const Duration(days: 7));
-      final endDate = _selectedDateRange?.end ?? DateTime.now();
+  //   try {
+  //     final startDate =
+  //         _selectedDateRange?.start ??
+  //         DateTime.now().subtract(const Duration(days: 7));
+  //     final endDate = _selectedDateRange?.end ?? DateTime.now();
 
-      final response = await _deviceService.getDeviceLoadProfile(
-        deviceId: widget.device.id ?? '',
-        startDate: startDate,
-        endDate: endDate,
-        phases: _selectedPhases,
-        metricTypes: _selectedMetricTypes,
-        limit: 1000,
-      );
+  //     final response = await _deviceService.getDeviceLoadProfile(
+  //       deviceId: widget.device.id ?? '',
+  //       startDate: startDate,
+  //       endDate: endDate,
+  //       phases: _selectedPhases,
+  //       metricTypes: _selectedMetricTypes,
+  //       limit: 1000,
+  //     );
 
-      if (response.success && response.data != null) {
-        setState(() {
-          _analyticsMetrics = response.data!;
-          _isLoadingAnalytics = false;
-        });
-      } else {
-        setState(() {
-          _analyticsError = response.message ?? 'Failed to load analytics data';
-          _isLoadingAnalytics = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _analyticsError = 'Error loading analytics data: $e';
-        _isLoadingAnalytics = false;
-      });
-    }
-  }
+  //     if (response.success && response.data != null) {
+  //       setState(() {
+  //         _analyticsMetrics = response.data!;
+  //         _isLoadingAnalytics = false;
+  //       });
+  //     } else {
+  //       setState(() {
+  //         _analyticsError = response.message ?? 'Failed to load analytics data';
+  //         _isLoadingAnalytics = false;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _analyticsError = 'Error loading analytics data: $e';
+  //       _isLoadingAnalytics = false;
+  //     });
+  //   }
+  // }
 
   // Billing tab - Load device billing data
   Future<void> _loadBillingData() async {
@@ -1411,7 +1346,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
               //   IconButton(
               //     icon: const Icon(Icons.arrow_back),
               //     onPressed: widget.onBack,
-              //     tooltip: 'Back to Devices',
+              //     tooltip: 'Back',
               //   ),
               //   const SizedBox(width: 16),
               // ],
@@ -1419,15 +1354,34 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Device 360°',
-                      style: const TextStyle(
-                        fontSize: AppSizes.fontSizeXLarge,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1e293b),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: widget.onBack,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // if (widget.onBack != null) ...[
+                            //   Icon(
+                            //     Icons.arrow_back,
+                            //     size: AppSizes.iconMedium,
+                            //     color: const Color(0xFF1e293b),
+                            //   ),
+                            //   const SizedBox(width: AppSizes.spacing8),
+                            // ស],
+                            Text(
+                              'Device 360°',
+                              style: TextStyle(
+                                fontSize: AppSizes.fontSizeXLarge,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    // const SizedBox(height: 4),
                     // Text(
                     //   'Serial: ${widget.device.serialNumber}',
                     //   style: const TextStyle(
@@ -1439,39 +1393,29 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       // crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // StatusChip.fromDeviceStatus(
-                        //   widget.device.status,
-                        //   compact: true,
-                        // ),
-
-                        // const SizedBox(width: 16),
-                        Expanded(
-                          flex: 0,
-                          child: _buildInfoRow(
-                            '',
-                            widget.device.status,
-                            icon: Icons.power_settings_new,
-                            showStatusChip: true,
-                            showLabel: false,
-                          ),
+                        StatusChip(
+                          text: widget.device.status,
+                          type: widget.device.status == 'Commissioned'
+                              ? StatusChipType.success
+                              : widget.device.status == 'Discommissioned'
+                              ? StatusChipType.construction
+                              : widget.device.status == 'None'
+                              ? StatusChipType.none
+                              : StatusChipType.none,
+                          compact: true,
                         ),
-                        SizedBox(width: AppSizes.spacing4),
-                        Expanded(
-                          flex: 0,
-                          child: _buildInfoRow(
-                            '',
-                            widget.device.linkStatus,
-                            icon: Icons.link,
-                            showStatusChip: true,
-                            showLabel: false,
-                          ),
+                        const SizedBox(width: AppSizes.spacing4),
+                        StatusChip(
+                          text: widget.device.linkStatus,
+                          compact: true,
+                          type: widget.device.linkStatus == 'MULTIDRIVE'
+                              ? StatusChipType.commissioned
+                              : widget.device.linkStatus == 'E-POWER'
+                              ? StatusChipType.warning
+                              : widget.device.linkStatus == 'None'
+                              ? StatusChipType.none
+                              : StatusChipType.none,
                         ),
-                        // Expanded(flex: 4, child: Container()),
-                        // StatusChip(
-                        //   text: 'Link: ${widget.device.linkStatus}',
-                        //   compact: true,
-                        //   type: StatusChipType.info,
-                        // ),
                       ],
                     ),
                   ],
@@ -1598,21 +1542,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       icon: Icon(Icons.receipt, size: AppSizes.iconSmall),
                       content: _buildBillingTab(),
                     ),
-                    // AppTab(
-                    //   label: 'Location',
-                    //   icon: Icon(Icons.location_on, size: AppSizes.iconSmall),
-                    //   content: _buildLocationTab(),
-                    // ),
+                   
                   ],
-                  // selectedColor:
-                  //     Colors.blue, // Background color for selected tab
-                  // unselectedColor: Colors.grey.withOpacity(
-                  //   0.2,
-                  // ), // Background for unselected
-                  // selectedTextColor:
-                  //     Colors.white, // Text and icon color when selected
-                  // unselectedTextColor:
-                  //     Colors.grey, // Text and icon color when unselected
+                  
                 ),
         ),
       ],
@@ -2009,65 +1941,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           ),
           const SizedBox(height: AppSizes.spacing16),
 
-          // Integration Information Card
-          // AppCard(
-          //   child: Column(
-          //     crossAxisAlignment: CrossAxisAlignment.start,
-          //     children: [
-          //       Row(
-          //         children: [
-          //           Icon(
-          //             Icons.integration_instructions,
-          //             size: 20,
-          //             color: AppColors.primary,
-          //           ),
-          //           const SizedBox(width: 8),
-          //           const Text(
-          //             'Integration Information',
-          //             style: TextStyle(
-          //               fontSize: 18,
-          //               fontWeight: FontWeight.w600,
-          //               color: Color(0xFF1e293b),
-          //             ),
-          //           ),
-          //         ],
-          //       ),
-          //       const SizedBox(height: 20),
-          //       Row(
-          //         children: [
-          //           Expanded(
-          //             child: Column(
-          //               crossAxisAlignment: CrossAxisAlignment.start,
-          //               children: [
-          //                 _buildInfoRow(
-          //                   'Status',
-          //                   widget.device.status,
-          //                   icon: Icons.power_settings_new,
-          //                   showStatusChip: true,
-          //                 ),
-          //               ],
-          //             ),
-          //           ),
-          //           const SizedBox(width: 24),
-          //           Expanded(
-          //             child: Column(
-          //               crossAxisAlignment: CrossAxisAlignment.start,
-          //               children: [
-          //                 _buildInfoRow(
-          //                   'Link Status',
-          //                   widget.device.linkStatus,
-          //                   icon: Icons.link,
-          //                   showStatusChip: true,
-          //                 ),
-          //               ],
-          //             ),
-          //           ),
-          //         ],
-          //       ),
-          //     ],
-          //   ),
-          // ),
-          // const SizedBox(height: 24),
+         
 
           // Location Information Card with Map View
           if (_currentDevice.address != null ||
@@ -2573,306 +2447,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     );
   }
 
-  // Widget _buildOverviewEditMode() {
-  //   return Scaffold(
-  //     body: SingleChildScrollView(
-  //       padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
-  //       child: Form(
-  //         key: _overviewFormKey,
-  //         child: Column(
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           children: [
-  //             // Header
-  //             const Text(
-  //               'Edit Device Information',
-  //               style: TextStyle(
-  //                 fontSize: 20,
-  //                 fontWeight: FontWeight.w600,
-  //                 color: Color(0xFF1e293b),
-  //               ),
-  //             ),
-  //             const SizedBox(height: 24),
-
-  //             // General Information Card
-  //             AppCard(
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   const Text(
-  //                     'General Information',
-  //                     style: TextStyle(
-  //                       fontSize: 18,
-  //                       fontWeight: FontWeight.w600,
-  //                       color: Color(0xFF1e293b),
-  //                     ),
-  //                   ),
-
-  //                   const SizedBox(height: 24),
-  //                   AppInputField(
-  //                     controller: _serialNumberEditController,
-  //                     label: 'Serial Number *',
-  //                     hintText: 'Enter device serial number',
-  //                     validator: (value) {
-  //                       if (value == null || value.trim().isEmpty) {
-  //                         return 'Serial number is required';
-  //                       }
-  //                       return null;
-  //                     },
-  //                   ),
-
-  //                   const SizedBox(height: 16),
-  //                   AppInputField(
-  //                     controller: _modelEditController,
-  //                     label: 'Model',
-  //                     hintText: 'Enter device model (optional)',
-  //                   ),
-
-  //                   _buildEditDropdownField(
-  //                     label: 'Device Type',
-  //                     value: _selectedDeviceTypeEdit,
-  //                     items: _deviceTypes,
-  //                     onChanged: (value) {
-  //                       if (value != null) {
-  //                         setState(() {
-  //                           _selectedDeviceTypeEdit = value;
-  //                         });
-  //                       }
-  //                     },
-  //                   ),
-  //                   const SizedBox(height: 16),
-
-  //                   _buildDeviceGroupEditDropdown(),
-  //                 ],
-  //               ),
-  //             ),
-  //             const SizedBox(height: 24),
-
-  //             // Integration Information Card
-  //             AppCard(
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   const Text(
-  //                     'Integration Information',
-  //                     style: TextStyle(
-  //                       fontSize: 18,
-  //                       fontWeight: FontWeight.w600,
-  //                       color: Color(0xFF1e293b),
-  //                     ),
-  //                   ),
-  //                   const SizedBox(height: 24),
-
-  //                   Row(
-  //                     children: [
-  //                       Expanded(
-  //                         child: _buildEditDropdownField(
-  //                           label: 'Status',
-  //                           value: _selectedStatusEdit,
-  //                           items: _statusOptions,
-  //                           onChanged: (value) {
-  //                             if (value != null) {
-  //                               setState(() {
-  //                                 _selectedStatusEdit = value;
-  //                               });
-  //                             }
-  //                           },
-  //                         ),
-  //                       ),
-  //                       const SizedBox(width: 16),
-  //                       Expanded(
-  //                         child: _buildEditDropdownField(
-  //                           label: 'Link Status',
-  //                           value: _selectedLinkStatusEdit,
-  //                           items: _linkStatusOptions,
-  //                           onChanged: (value) {
-  //                             if (value != null) {
-  //                               setState(() {
-  //                                 _selectedLinkStatusEdit = value;
-  //                               });
-  //                             }
-  //                           },
-  //                           helpText: _selectedLinkStatusEdit != 'None'
-  //                               ? 'Device will be linked to HES when saved'
-  //                               : null,
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //             const SizedBox(height: 24),
-
-  //             // Location Information Card
-  //             AppCard(
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   const Text(
-  //                     'Location Information',
-  //                     style: TextStyle(
-  //                       fontSize: 18,
-  //                       fontWeight: FontWeight.w600,
-  //                       color: Color(0xFF1e293b),
-  //                     ),
-  //                   ),
-  //                   const SizedBox(height: 24),
-
-  //                   AppInputField(
-  //                     controller: _addressEditController,
-  //                     label: 'Address',
-  //                     hintText: 'Enter device address',
-  //                     maxLines: 2,
-  //                   ),
-  //                   const SizedBox(height: 16),
-
-  //                   // Map Location Picker
-  //                   Container(
-  //                     height: 300,
-  //                     decoration: BoxDecoration(
-  //                       borderRadius: BorderRadius.circular(8),
-  //                       border: Border.all(color: const Color(0xFFE2E8F0)),
-  //                     ),
-  //                     child: FlutterMapLocationPicker(
-  //                       initialAddress: _selectedAddressEdit,
-  //                       onLocationChanged: (lat, lng, address) {
-  //                         // Use post-frame callback to avoid setState during build
-  //                         WidgetsBinding.instance.addPostFrameCallback((_) {
-  //                           if (mounted) {
-  //                             setState(() {
-  //                               _selectedAddressEdit = Address(
-  //                                 id: _selectedAddressEdit?.id ?? '',
-  //                                 street: address,
-  //                                 city: '',
-  //                                 state: '',
-  //                                 postalCode: '',
-  //                                 country: '',
-  //                                 latitude: lat,
-  //                                 longitude: lng,
-  //                               );
-  //                             });
-  //                           }
-  //                         });
-  //                       },
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-
-  //             // Device Attributes Card (if exists)
-  //             if (_deviceDetails?.deviceAttributes != null &&
-  //                 _deviceDetails!.deviceAttributes.isNotEmpty) ...[
-  //               const SizedBox(height: 24),
-  //               AppCard(
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     const Text(
-  //                       'Device Attributes',
-  //                       style: TextStyle(
-  //                         fontSize: 18,
-  //                         fontWeight: FontWeight.w600,
-  //                         color: Color(0xFF1e293b),
-  //                       ),
-  //                     ),
-  //                     const SizedBox(height: 16),
-  //                     const Text(
-  //                       'Note: Device attributes are managed through the system configuration.',
-  //                       style: TextStyle(
-  //                         fontSize: 14,
-  //                         color: Color(0xFF64748b),
-  //                         fontStyle: FontStyle.italic,
-  //                       ),
-  //                     ),
-  //                     const SizedBox(height: 12),
-  //                     ..._deviceDetails!.deviceAttributes.map(
-  //                       (attribute) => Container(
-  //                         margin: const EdgeInsets.only(bottom: 8),
-  //                         padding: const EdgeInsets.all(12),
-  //                         decoration: BoxDecoration(
-  //                           color: const Color(0xFFF8FAFC),
-  //                           borderRadius: BorderRadius.circular(8),
-  //                           border: Border.all(color: const Color(0xFFE2E8F0)),
-  //                         ),
-  //                         child: Row(
-  //                           children: [
-  //                             Expanded(
-  //                               child: Text(
-  //                                 attribute.name
-  //                                     .replaceAll('_', ' ')
-  //                                     .toUpperCase(),
-  //                                 style: const TextStyle(
-  //                                   fontWeight: FontWeight.w500,
-  //                                   color: Color(0xFF475569),
-  //                                 ),
-  //                               ),
-  //                             ),
-  //                             const SizedBox(width: 16),
-  //                             Expanded(
-  //                               child: Text(
-  //                                 attribute.value,
-  //                                 style: const TextStyle(
-  //                                   color: Color(0xFF64748b),
-  //                                 ),
-  //                               ),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ],
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //     bottomNavigationBar: Container(
-  //       padding: const EdgeInsets.all(24),
-  //       decoration: const BoxDecoration(
-  //         color: Colors.white,
-  //         border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
-  //         boxShadow: [
-  //           BoxShadow(
-  //             color: Color(0x1A000000),
-  //             blurRadius: 8,
-  //             offset: Offset(0, -2),
-  //           ),
-  //         ],
-  //       ),
-  //       child: SafeArea(
-  //         child: Row(
-  //           children: [
-  //             Expanded(
-  //               child: AppButton(
-  //                 text: 'Cancel',
-  //                 type: AppButtonType.secondary,
-  //                 onPressed: _cancelEditingOverview,
-  //                 fullWidth: true,
-  //               ),
-  //             ),
-  //             const SizedBox(width: 16),
-  //             Expanded(
-  //               child: AppButton(
-  //                 text: _savingOverview ? 'Saving...' : 'Save Changes',
-  //                 type: AppButtonType.primary,
-  //                 onPressed: _savingOverview ? null : _saveOverviewChanges,
-  //                 icon: _savingOverview
-  //                     ? null
-  //                     : const Icon(Icons.save, size: 18),
-  //                 fullWidth: true,
-  //                 isLoading: _savingOverview,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
+  
   Widget _buildChannelsTab() {
     if (_loadingChannels && !_channelsLoaded) {
       return Center(
@@ -3700,963 +3275,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     }
   }
 
-  Widget _buildEnergySummaryCards() {
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    // Calculate energy summary from metrics
-    final powerMetrics = _analyticsMetrics
-        .where((m) => m.metricType == 'Power')
-        .toList();
-    final totalConsumption = powerMetrics.fold<double>(
-      0,
-      (sum, metric) => sum + metric.value,
-    );
-    final avgConsumption = powerMetrics.isNotEmpty
-        ? totalConsumption / powerMetrics.length
-        : 0;
-    final peakConsumption = powerMetrics.isNotEmpty
-        ? powerMetrics.map((m) => m.value).reduce((a, b) => a > b ? a : b)
-        : 0;
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildEnergySummaryCard(
-            'Total Consumption',
-            '${totalConsumption.toStringAsFixed(2)} kWh',
-            Icons.bolt,
-            AppColors.primary,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing16),
-        Expanded(
-          child: _buildEnergySummaryCard(
-            'Average Power',
-            '${avgConsumption.toStringAsFixed(2)} kW',
-            Icons.trending_up,
-            AppColors.success,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing16),
-        Expanded(
-          child: _buildEnergySummaryCard(
-            'Peak Demand',
-            '${peakConsumption.toStringAsFixed(2)} kW',
-            Icons.flash_on,
-            AppColors.warning,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing16),
-        Expanded(
-          child: _buildEnergySummaryCard(
-            'Data Points',
-            '${_analyticsMetrics.length}',
-            Icons.data_usage,
-            AppColors.info,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEnergySummaryCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: AppSizes.spacing8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spacing8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMainAnalyticsChart() {
-    if (_isLoadingAnalytics) {
-      return const SizedBox(
-        height: 400,
-        child: Center(
-          child: AppLottieStateWidget.loading(
-            title: 'Loading Analytics',
-            message: 'Fetching real-time data...',
-          ),
-        ),
-      );
-    }
-
-    if (_analyticsError != null) {
-      return SizedBox(
-        height: 400,
-        child: Center(
-          child: AppLottieStateWidget.error(
-            title: 'Analytics Error',
-            message: _analyticsError!,
-          ),
-        ),
-      );
-    }
-
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox(
-        height: 400,
-        child: Center(
-          child: AppLottieStateWidget.noData(
-            title: 'No Analytics Data',
-            message: 'No data available for the selected period',
-          ),
-        ),
-      );
-    }
-
-    // Display charts as card grid for easier viewing
-    return _buildChartsCardGrid();
-  }
-
-  Widget _buildChartsCardGrid() {
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Grid Header with Controls
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Analytics Charts Grid',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Row(
-              children: [
-                // Date-Time Display
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing12,
-                    vertical: AppSizes.spacing6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: AppSizes.spacing4),
-                      Text(
-                        _getDateTimeRangeDisplay(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                // Hover Toggle
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _showHover,
-                      onChanged: (value) {
-                        setState(() {
-                          _showHover = value ?? true;
-                        });
-                      },
-                    ),
-                    const Text('Hover', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.spacing16),
-
-        // Grid of Charts
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppSizes.spacing16,
-            mainAxisSpacing: AppSizes.spacing16,
-            childAspectRatio: 1.3, // Adjusted for better chart visibility
-          ),
-          itemCount: _selectedMetricTypes.length,
-          itemBuilder: (context, index) {
-            final metricType = _selectedMetricTypes[index];
-            return _buildAnalyticsGridCard(metricType);
-          },
-        ),
-      ],
-    );
-  }
-
-  String _getDateTimeRangeDisplay() {
-    if (_selectedDateRange == null) {
-      return 'No date range selected';
-    }
-
-    final start = _selectedDateRange!.start;
-    final end = _selectedDateRange!.end;
-
-    // Format: "Jul 25, 10:30 - Jul 25, 14:30"
-    final startFormatted =
-        '${_getMonthAbbr(start.month)} ${start.day}, ${start.hour}:${start.minute.toString().padLeft(2, '0')}';
-    final endFormatted =
-        '${_getMonthAbbr(end.month)} ${end.day}, ${end.hour}:${end.minute.toString().padLeft(2, '0')}';
-
-    return '$startFormatted - $endFormatted';
-  }
-
-  String _getMonthAbbr(int month) {
-    const months = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month];
-  }
-
-  Widget _buildAnalyticsGrid() {
-    if (_analyticsMetrics.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Grid Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Advanced Analytics Grid',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Row(
-              children: [
-                // Hover Toggle
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _showHover,
-                      onChanged: (value) {
-                        setState(() {
-                          _showHover = value ?? true;
-                        });
-                      },
-                    ),
-                    const Text('Show Hover', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.spacing16),
-
-        // Grid of Charts
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppSizes.spacing16,
-            mainAxisSpacing: AppSizes.spacing16,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: _selectedMetricTypes.length,
-          itemBuilder: (context, index) {
-            final metricType = _selectedMetricTypes[index];
-            return _buildAnalyticsGridCard(metricType);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAnalyticsGridCard(String metricType) {
-    // Filter metrics by type
-    final metricsForType =
-        _analyticsMetrics.where((m) => m.metricType == metricType).toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    if (metricsForType.isEmpty) {
-      return AppCard(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.analytics_outlined,
-                size: 48,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(height: AppSizes.spacing8),
-              Text(
-                'No $metricType Data',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Group by phase
-    final phaseData = <String, List<FlSpot>>{};
-    final phaseColors = {
-      'L1': AppColors.primary,
-      'L2': AppColors.success,
-      'L3': AppColors.warning,
-    };
-
-    // Get unique timestamps
-    final uniqueTimestamps =
-        metricsForType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    for (int i = 0; i < uniqueTimestamps.length; i++) {
-      final timestamp = uniqueTimestamps[i];
-
-      for (final phase in _selectedPhases) {
-        if (!phaseData.containsKey(phase)) {
-          phaseData[phase] = [];
-        }
-
-        final metric = metricsForType
-            .where((m) => m.timestamp == timestamp && m.phase == phase)
-            .firstOrNull;
-
-        if (metric != null && _phaseVisibility[phase] == true) {
-          phaseData[phase]!.add(FlSpot(i.toDouble(), metric.value));
-        }
-      }
-    }
-
-    // Calculate stats
-    final allValues = metricsForType.map((m) => m.value).toList();
-    final avgValue = allValues.isNotEmpty
-        ? allValues.reduce((a, b) => a + b) / allValues.length
-        : 0;
-    final maxValue = allValues.isNotEmpty
-        ? allValues.reduce((a, b) => a > b ? a : b)
-        : 0;
-    final minValue = allValues.isNotEmpty
-        ? allValues.reduce((a, b) => a < b ? a : b)
-        : 0;
-
-    // Get unit
-    final unit = metricsForType.isNotEmpty ? metricsForType.first.unit : '';
-
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                metricType,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                unit,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spacing8),
-
-          // Stats Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStatItem(
-                'Avg',
-                avgValue.toStringAsFixed(1),
-                AppColors.info,
-              ),
-              _buildStatItem(
-                'Max',
-                maxValue.toStringAsFixed(1),
-                AppColors.success,
-              ),
-              _buildStatItem(
-                'Min',
-                minValue.toStringAsFixed(1),
-                AppColors.warning,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spacing12),
-
-          // Chart
-          Expanded(
-            child: _selectedChartType == ChartType.line
-                ? _buildGridLineChart(phaseData, phaseColors)
-                : _selectedChartType == ChartType.bar
-                ? _buildGridBarChart(phaseData, phaseColors)
-                : _buildGridAreaChart(phaseData, phaseColors),
-          ),
-
-          // Phase Legend
-          const SizedBox(height: AppSizes.spacing8),
-          _buildPhaseLegend(phaseColors),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12,
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGridLineChart(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    // Get time labels for X-axis
-    final metricsForCurrentType =
-        _analyticsMetrics
-            .where((m) => phaseData.keys.any((phase) => m.phase == phase))
-            .toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    final uniqueTimestamps =
-        metricsForCurrentType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.2),
-              strokeWidth: 1,
-            );
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 32,
-              interval: (uniqueTimestamps.length / 3).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < uniqueTimestamps.length) {
-                  final timestamp = uniqueTimestamps[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(
-            color: AppColors.border.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        lineBarsData: phaseData.entries.map((entry) {
-          final phase = entry.key;
-          final spots = entry.value;
-          final color = phaseColors[phase] ?? AppColors.primary;
-
-          return LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: color,
-            barWidth: 2,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: _showHover,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 2,
-                  color: color,
-                  strokeWidth: 0,
-                );
-              },
-            ),
-          );
-        }).toList(),
-        lineTouchData: LineTouchData(
-          enabled: _showHover,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-              return touchedBarSpots.map((barSpot) {
-                final index = barSpot.x.toInt();
-                final timestamp = index < uniqueTimestamps.length
-                    ? uniqueTimestamps[index]
-                    : DateTime.now();
-                return LineTooltipItem(
-                  '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}\n${barSpot.y.toStringAsFixed(2)}',
-                  const TextStyle(color: Colors.white, fontSize: 10),
-                );
-              }).toList();
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridBarChart(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    // Get time labels for X-axis
-    final metricsForCurrentType =
-        _analyticsMetrics
-            .where((m) => phaseData.keys.any((phase) => m.phase == phase))
-            .toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    final uniqueTimestamps =
-        metricsForCurrentType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    return BarChart(
-      BarChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.2),
-              strokeWidth: 1,
-            );
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 32,
-              interval: (uniqueTimestamps.length / 3).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < uniqueTimestamps.length) {
-                  final timestamp = uniqueTimestamps[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(
-            color: AppColors.border.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        barGroups: _buildBarGroups(phaseData, phaseColors),
-        barTouchData: BarTouchData(
-          enabled: _showHover,
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              final timestamp = groupIndex < uniqueTimestamps.length
-                  ? uniqueTimestamps[groupIndex]
-                  : DateTime.now();
-              return BarTooltipItem(
-                '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}\n${rod.toY.toStringAsFixed(2)}',
-                const TextStyle(color: Colors.white, fontSize: 10),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridAreaChart(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    // Get time labels for X-axis
-    final metricsForCurrentType =
-        _analyticsMetrics
-            .where((m) => phaseData.keys.any((phase) => m.phase == phase))
-            .toList()
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    final uniqueTimestamps =
-        metricsForCurrentType.map((m) => m.timestamp).toSet().toList()..sort();
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          drawHorizontalLine: true,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: AppColors.border.withOpacity(0.2),
-              strokeWidth: 1,
-            );
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 32,
-              interval: (uniqueTimestamps.length / 3).ceil().toDouble(),
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < uniqueTimestamps.length) {
-                  final timestamp = uniqueTimestamps[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                      ),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                return Text(
-                  value.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(
-            color: AppColors.border.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        lineBarsData: phaseData.entries.map((entry) {
-          final phase = entry.key;
-          final spots = entry.value;
-          final color = phaseColors[phase] ?? AppColors.primary;
-
-          return LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: color,
-            barWidth: 1,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [color.withOpacity(0.4), color.withOpacity(0.1)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          );
-        }).toList(),
-        lineTouchData: LineTouchData(
-          enabled: _showHover,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-              return touchedBarSpots.map((barSpot) {
-                final index = barSpot.x.toInt();
-                final timestamp = index < uniqueTimestamps.length
-                    ? uniqueTimestamps[index]
-                    : DateTime.now();
-                return LineTooltipItem(
-                  '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}\n${barSpot.y.toStringAsFixed(2)}',
-                  const TextStyle(color: Colors.white, fontSize: 10),
-                );
-              }).toList();
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<BarChartGroupData> _buildBarGroups(
-    Map<String, List<FlSpot>> phaseData,
-    Map<String, Color> phaseColors,
-  ) {
-    final groups = <BarChartGroupData>[];
-    final maxDataPoints = phaseData.values.isNotEmpty
-        ? phaseData.values
-              .map((spots) => spots.length)
-              .reduce((a, b) => a > b ? a : b)
-        : 0;
-
-    for (int i = 0; i < maxDataPoints; i++) {
-      final rods = <BarChartRodData>[];
-
-      for (final entry in phaseData.entries) {
-        final phase = entry.key;
-        final spots = entry.value;
-        final color = phaseColors[phase] ?? AppColors.primary;
-
-        if (i < spots.length) {
-          rods.add(
-            BarChartRodData(
-              toY: spots[i].y,
-              color: color,
-              width: 8,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(2),
-                topRight: Radius.circular(2),
-              ),
-            ),
-          );
-        }
-      }
-
-      if (rods.isNotEmpty) {
-        groups.add(BarChartGroupData(x: i, barRods: rods, barsSpace: 2));
-      }
-    }
-
-    return groups;
-  }
-
-  Widget _buildPhaseLegend(Map<String, Color> phaseColors) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: phaseColors.entries
-          .where(
-            (entry) =>
-                _selectedPhases.contains(entry.key) &&
-                _phaseVisibility[entry.key] == true,
-          )
-          .map((entry) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: entry.value,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    entry.key,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          })
-          .toList(),
-    );
-  }
-
   Widget _buildMetricsTableWithPagination() {
     if (_dynamicMetrics.isEmpty) {
       return AppLottieStateWidget.noData(
@@ -4673,24 +3291,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
     return Column(
       children: [
-        // Metrics controls and summary
-        // Container(
-        //   padding: const EdgeInsets.all(16),
-        //   margin: const EdgeInsets.only(bottom: 16),
-        //   decoration: BoxDecoration(
-        //     color: Colors.white,
-        //     borderRadius: BorderRadius.circular(12),
-        //     boxShadow: [
-        //       BoxShadow(
-        //         color: Colors.black.withOpacity(0.04),
-        //         blurRadius: 8,
-        //         offset: const Offset(0, 2),
-        //       ),
-        //     ],
-        //   ),
-
-        // ),
-
         // Dynamic table with standard styling (consistent with other tables)
         Expanded(
           child: GestureDetector(
@@ -4776,38 +3376,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       },
       itemLabel: 'metrics',
       showItemsPerPageSelector: true,
-      itemsPerPageOptions: const [5, 10, 25, 50],
-    );
-  }
-
-  Widget _buildMetricSummaryItem(String label, String value, IconData icon) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 20, color: const Color(0xFF2563eb)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF64748b),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1e293b),
-          ),
-        ),
-      ],
+      // itemsPerPageOptions: const [5, 10, 25, 50],
     );
   }
 
@@ -4897,17 +3466,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         titleColor: AppColors.primary,
         messageColor: AppColors.secondary,
       );
-      //  const AppCard(
-      //   child: Center(
-      //     child: Text(
-      //       'No billing records found',
-      //       style: TextStyle(
-      //         fontSize: AppSizes.fontSizeMedium,
-      //         color: Color(0xFF64748b),
-      //       ),
-      //     ),
-      //   ),
-      // );
     }
 
     // Convert to Map<String, dynamic> for compatibility
@@ -5026,33 +3584,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     });
     _loadBillingData();
   }
-
-  // Widget _buildLocationTab() {
-  //   if (_loadingLocation && !_locationLoaded) {
-  //     return const Center(
-  //       child: AppLottieStateWidget.loading(
-  //         lottieSize: 80,
-  //         titleColor: AppColors.primary,
-  //       ),
-  //     );
-  //   }
-
-  //   return Column(
-  //     children: [
-
-  //       // Scrollable content
-  //       Expanded(
-  //         child: SingleChildScrollView(
-  //           padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-  //           child: DeviceLocationViewer(
-  //             address: widget.device.address,
-  //             addressText: widget.device.addressText,
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   Widget _buildSchedulesTab() {
     // Show loading state for schedules tab
@@ -5485,17 +4016,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   Widget _buildStatusDisplay(String status) {
-    // if (status.isEmpty || status == 'None') {
-    //   return Container(
-    //     // 'None',
-    //     // style: TextStyle(
-    //     //   fontSize: 14,
-    //     //   color: Color(0xFF9CA3AF),
-    //     //   fontStyle: FontStyle.italic,
-    //     // ),
-    //   );
-    // }
-
     Color statusColor;
     IconData statusIcon;
 
@@ -5550,94 +4070,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       // For dynamic metrics, we might need to reload data with sorting
       // Or implement client-side sorting if all data is loaded
     });
-  }
-
-  // Helper methods for filter tooltips
-  Map<String, double> _getPhaseCurrentValue(String phase) {
-    final phaseMetrics = _analyticsMetrics
-        .where((m) => m.phase == phase)
-        .toList();
-
-    if (phaseMetrics.isEmpty) {
-      return {'voltage': 0.0, 'current': 0.0, 'power': 0.0};
-    }
-
-    // Get latest values for each metric type
-    final voltageMetrics = phaseMetrics
-        .where((m) => m.metricType == 'Voltage')
-        .toList();
-    final currentMetrics = phaseMetrics
-        .where((m) => m.metricType == 'Current')
-        .toList();
-    final powerMetrics = phaseMetrics
-        .where((m) => m.metricType == 'Power')
-        .toList();
-
-    voltageMetrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    currentMetrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    powerMetrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    return {
-      'voltage': voltageMetrics.isNotEmpty ? voltageMetrics.first.value : 0.0,
-      'current': currentMetrics.isNotEmpty ? currentMetrics.first.value : 0.0,
-      'power': powerMetrics.isNotEmpty ? powerMetrics.first.value : 0.0,
-    };
-  }
-
-  Map<String, double> _getMetricCurrentValue(String metricType) {
-    final typeMetrics = _analyticsMetrics
-        .where((m) => m.metricType == metricType)
-        .toList();
-
-    if (typeMetrics.isEmpty) {
-      return {'L1': 0.0, 'L2': 0.0, 'L3': 0.0};
-    }
-
-    // Get latest values for each phase
-    final l1Metrics = typeMetrics.where((m) => m.phase == 'L1').toList();
-    final l2Metrics = typeMetrics.where((m) => m.phase == 'L2').toList();
-    final l3Metrics = typeMetrics.where((m) => m.phase == 'L3').toList();
-
-    l1Metrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    l2Metrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    l3Metrics.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    return {
-      'L1': l1Metrics.isNotEmpty ? l1Metrics.first.value : 0.0,
-      'L2': l2Metrics.isNotEmpty ? l2Metrics.first.value : 0.0,
-      'L3': l3Metrics.isNotEmpty ? l3Metrics.first.value : 0.0,
-    };
-  }
-
-  String _buildPhaseTooltipMessage(String phase, Map<String, double> values) {
-    return '$phase Phase Current Values:\n'
-        'Voltage: ${values['voltage']?.toStringAsFixed(2) ?? 'N/A'} V\n'
-        'Current: ${values['current']?.toStringAsFixed(2) ?? 'N/A'} A\n'
-        'Power: ${values['power']?.toStringAsFixed(2) ?? 'N/A'} W';
-  }
-
-  String _buildMetricTooltipMessage(
-    String metricType,
-    Map<String, double> values,
-  ) {
-    final unit = _getMetricUnit(metricType);
-    return '$metricType Current Values:\n'
-        'L1: ${values['L1']?.toStringAsFixed(2) ?? 'N/A'} $unit\n'
-        'L2: ${values['L2']?.toStringAsFixed(2) ?? 'N/A'} $unit\n'
-        'L3: ${values['L3']?.toStringAsFixed(2) ?? 'N/A'} $unit';
-  }
-
-  String _getMetricUnit(String metricType) {
-    switch (metricType.toLowerCase()) {
-      case 'voltage':
-        return 'V';
-      case 'current':
-        return 'A';
-      case 'power':
-        return 'W';
-      default:
-        return '';
-    }
   }
 
   // Get unique device groups to prevent dropdown duplicates

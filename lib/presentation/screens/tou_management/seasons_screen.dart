@@ -8,9 +8,9 @@ import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/seasons/season_filters_and_actions_v2.dart';
 import '../../widgets/seasons/season_form_dialog.dart';
-import '../../widgets/seasons/season_smart_month_chips.dart';
 import '../../widgets/seasons/season_table_columns.dart';
 import '../../widgets/seasons/season_summary_card.dart';
+import '../../widgets/seasons/seasons_kanban_view.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
@@ -334,16 +334,18 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-            child: _buildHeader(),
-          ),
           // Summary Card
+          const SizedBox(height: AppSizes.spacing8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
             child: SeasonSummaryCard(seasons: _seasons),
           ),
-          const SizedBox(height: AppSizes.spacing8),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+            child: _buildHeader(),
+          ),
+
           Expanded(child: _buildContent()),
           // Always show pagination area, even if empty (no padding)
           ResultsPagination(
@@ -351,7 +353,8 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
             totalPages: _totalPages,
             totalItems: _totalItems,
             itemsPerPage: _itemsPerPage,
-            itemsPerPageOptions: const [5, 10, 20, 25, 50],
+
+            /// itemsPerPageOptions: const [5, 10, 20, 25, 50],
             startItem: (_currentPage - 1) * _itemsPerPage + 1,
             endItem: (_currentPage * _itemsPerPage) > _totalItems
                 ? _totalItems
@@ -370,7 +373,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       children: [
         // Breadcrumb
         // const BreadcrumbNavigation(),
-        const SizedBox(height: AppSizes.spacing16),
+        const SizedBox(height: AppSizes.spacing8),
 
         // Filters and Actions
         SeasonFiltersAndActionsV2(
@@ -465,369 +468,13 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
   }
 
   Widget _buildKanbanView() {
-    if (_isLoading && _seasons.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final groupedSeasons = _groupSeasonsByStatus();
-
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groupedSeasons.entries.map((entry) {
-            return _buildStatusColumn(entry.key, entry.value);
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Map<String, List<Season>> _groupSeasonsByStatus() {
-    final Map<String, List<Season>> grouped = {'Active': [], 'Inactive': []};
-
-    for (final season in _seasons) {
-      if (season.active) {
-        grouped['Active']!.add(season);
-      } else {
-        grouped['Inactive']!.add(season);
-      }
-    }
-
-    return grouped;
-  }
-
-  Widget _buildStatusColumn(String status, List<Season> seasons) {
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (status.toLowerCase()) {
-      case 'active':
-        statusColor = AppColors.success;
-        statusIcon = Icons.check_circle;
-        break;
-      case 'inactive':
-        statusColor = AppColors.textSecondary;
-        statusIcon = Icons.pause_circle;
-        break;
-      default:
-        statusColor = AppColors.textSecondary;
-        statusIcon = Icons.help_outline;
-    }
-
-    return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column header
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSizes.radiusMedium),
-                topRight: Radius.circular(AppSizes.radiusMedium),
-              ),
-              border: Border(
-                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(statusIcon, color: statusColor, size: 20),
-                const SizedBox(width: AppSizes.spacing8),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                    fontSize: AppSizes.fontSizeMedium,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  ),
-                  child: Text(
-                    '${seasons.length}',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Season cards
-          Expanded(
-            child: seasons.isEmpty
-                ? _buildEmptyState(status)
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSizes.spacing8),
-                    itemCount: seasons.length,
-                    itemBuilder: (context, index) {
-                      return _buildSeasonKanbanCard(seasons[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String status) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.calendar_month_outlined,
-            size: 48,
-            color: AppColors.textSecondary.withOpacity(0.5),
-          ),
-          const SizedBox(height: AppSizes.spacing12),
-          Text(
-            'No ${status.toLowerCase()} seasons',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppSizes.fontSizeSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSeasonKanbanCard(Season season) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _viewSeasonDetails(season),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with name, status, and actions
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    season.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      fontSize: AppSizes.fontSizeMedium,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                _buildSeasonStatusChip(season.active),
-                const SizedBox(width: AppSizes.spacing4),
-                _buildActionsDropdown(season),
-              ],
-            ),
-            const SizedBox(height: AppSizes.spacing12),
-
-            // Season details
-            _buildDetailRow(
-              Icons.description,
-              'Description',
-              season.description.isEmpty
-                  ? 'No description'
-                  : season.description,
-            ),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(
-              Icons.calendar_month,
-              'Months',
-              '${season.monthRange.length}',
-            ),
-
-            const SizedBox(height: AppSizes.spacing12),
-
-            // Month chips with enhanced display
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSizes.spacing8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-              ),
-              child: SeasonSmartMonthChips.buildSmartMonthChips(
-                season.monthRange,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSeasonStatusChip(bool isActive) {
-    Color backgroundColor;
-    Color borderColor;
-    Color textColor;
-    String text;
-
-    if (isActive) {
-      backgroundColor = AppColors.success.withOpacity(0.1);
-      borderColor = AppColors.success.withOpacity(0.3);
-      textColor = AppColors.success;
-      text = 'Active';
-    } else {
-      backgroundColor = AppColors.textSecondary.withOpacity(0.1);
-      borderColor = AppColors.textSecondary.withOpacity(0.3);
-      textColor = AppColors.textSecondary;
-      text = 'Inactive';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing8,
-        vertical: AppSizes.spacing4,
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: borderColor, width: 1),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: textColor,
-          fontSize: AppSizes.fontSizeSmall,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
-        const SizedBox(width: AppSizes.spacing8),
-        Text(
-          '$label:',
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing4),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionsDropdown(Season season) {
-    return PopupMenuButton<String>(
-      icon: const Icon(
-        Icons.more_vert,
-        color: AppColors.textSecondary,
-        size: 16,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-      ),
-      itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'view',
-          child: Row(
-            children: [
-              Icon(Icons.visibility, size: 16, color: AppColors.primary),
-              SizedBox(width: AppSizes.spacing8),
-              Text('View Details'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 16, color: AppColors.warning),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Edit'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 16, color: AppColors.error),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Delete', style: TextStyle(color: AppColors.error)),
-            ],
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        switch (value) {
-          case 'view':
-            _viewSeasonDetails(season);
-            break;
-          case 'edit':
-            _editSeason(season);
-            break;
-          case 'delete':
-            _handleDeleteSeason(season);
-            break;
-        }
-      },
+    return SeasonsKanbanView(
+      seasons: _seasons,
+      onItemTap: _viewSeasonDetails,
+      onItemEdit: _editSeason,
+      onItemDelete: _handleDeleteSeason,
+      isLoading: _isLoading,
+      searchQuery: _searchQuery,
     );
   }
 }

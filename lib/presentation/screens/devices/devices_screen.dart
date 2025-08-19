@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/devices/device_filters_and_actions_v2.dart';
+import '../../widgets/devices/device_kanban_view.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../../core/models/device.dart';
@@ -362,8 +363,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
             // Content based on view mode
             Expanded(child: _buildContent()),
-            // Always show pagination area, even if empty (no padding)
-            _buildPagination(),
+            // Show pagination only when not in map view
+            if (_currentViewMode != DeviceDisplayMode.map) _buildPagination(),
           ],
         ),
 
@@ -508,7 +509,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       totalPages: displayTotalPages,
       totalItems: displayTotalItems,
       itemsPerPage: _itemsPerPage,
-      itemsPerPageOptions: const [5, 10, 20, 25, 50],
+      // itemsPerPageOptions: const [5, 10, 20, 25, 50],
       startItem: startItem,
       endItem: endItem,
       onPageChanged: (page) {
@@ -830,429 +831,156 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildKanbanView() {
-    if (_isLoading && _devices.isEmpty) {
-      return const Center(child: AppLottieStateWidget.loading(lottieSize: 80));
-    }
-
-    final groupedDevices = _groupDevicesByStatus();
-
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groupedDevices.entries.map((entry) {
-            return _buildDeviceStatusColumn(entry.key, entry.value);
-          }).toList(),
-        ),
-      ),
+    return DeviceKanbanView(
+      devices: _filteredDevices,
+      onDeviceSelected: _viewDeviceDetails,
+      onDeviceEdit: _editDevice,
+      onDeviceDelete: _deleteDevice,
+      onDeviceView: _viewDeviceDetails,
+      isLoading: _isLoading,
     );
   }
 
-  Map<String, List<Device>> _groupDevicesByStatus() {
-    final Map<String, List<Device>> grouped = {
-      'Commissioned': [],
-      'Decommissioned': [],
-      'Unknown': [],
-    };
+  // Widget _buildDeviceStatusChip(String status, bool isActive) {
+  //   Color backgroundColor;
+  //   Color borderColor;
+  //   Color textColor;
 
-    for (final device in _filteredDevices) {
-      if (device.status.toLowerCase() == 'commissioned') {
-        grouped['Commissioned']!.add(device);
-      } else if (device.status.toLowerCase() == 'decommissioned') {
-        grouped['Decommissioned']!.add(device);
-      } else {
-        grouped['Unknown']!.add(device);
-      }
-    }
+  //   if (status.toLowerCase().contains('active') || isActive) {
+  //     // Active - Green
+  //     backgroundColor = const Color(0xFF059669).withOpacity(0.1);
+  //     borderColor = const Color(0xFF059669).withOpacity(0.3);
+  //     textColor = const Color(0xFF059669);
+  //   } else {
+  //     // Inactive - Red
+  //     backgroundColor = const Color(0xFFDC2626).withOpacity(0.1);
+  //     borderColor = const Color(0xFFDC2626).withOpacity(0.3);
+  //     textColor = const Color(0xFFDC2626);
+  //   }
 
-    return grouped;
-  }
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: AppSizes.spacing8,
+  //       vertical: AppSizes.spacing4,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       color: backgroundColor,
+  //       borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+  //       border: Border.all(color: borderColor, width: 1),
+  //     ),
+  //     child: Text(
+  //       isActive ? 'Active' : 'Inactive',
+  //       style: TextStyle(
+  //         color: textColor,
+  //         fontSize: AppSizes.fontSizeSmall,
+  //         fontWeight: FontWeight.w500,
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildDeviceStatusColumn(String status, List<Device> devices) {
-    Color statusColor;
-    IconData statusIcon;
+  // Widget _buildDetailRow(IconData icon, String label, String value) {
+  //   return Row(
+  //     children: [
+  //       Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
+  //       const SizedBox(width: AppSizes.spacing8),
+  //       Text(
+  //         '$label:',
+  //         style: const TextStyle(
+  //           fontSize: AppSizes.fontSizeSmall,
+  //           color: AppColors.textSecondary,
+  //           fontWeight: FontWeight.w500,
+  //         ),
+  //       ),
+  //       const SizedBox(width: AppSizes.spacing4),
+  //       Expanded(
+  //         child: Text(
+  //           value.isNotEmpty ? value : 'Not specified',
+  //           style: const TextStyle(
+  //             fontSize: AppSizes.fontSizeSmall,
+  //             color: AppColors.textPrimary,
+  //           ),
+  //           maxLines: 1,
+  //           overflow: TextOverflow.ellipsis,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-    switch (status.toLowerCase()) {
-      case 'commissioned':
-        statusColor = AppColors.success;
-        statusIcon = Icons.check_circle_outline;
-        break;
-      case 'decommissioned':
-        statusColor = AppColors.error;
-        statusIcon = Icons.cancel_outlined;
-        break;
-      case 'unknown':
-      default:
-        statusColor = AppColors.textSecondary;
-        statusIcon = Icons.help_outline;
-    }
+  // Color _getDeviceLinkStatusColor(String linkStatus) {
+  //   switch (linkStatus.toLowerCase()) {
+  //     case 'connected':
+  //     case 'online':
+  //     case 'multidrive':
+  //       return AppColors.success;
+  //     case 'disconnected':
+  //     case 'offline':
+  //       return AppColors.error;
+  //     case 'pending':
+  //       return AppColors.warning;
+  //     default:
+  //       return AppColors.textSecondary;
+  //   }
+  // }
 
-    return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column header
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSizes.radiusMedium),
-                topRight: Radius.circular(AppSizes.radiusMedium),
-              ),
-              border: Border(
-                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(statusIcon, color: statusColor, size: 20),
-                const SizedBox(width: AppSizes.spacing8),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                    fontSize: AppSizes.fontSizeMedium,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  ),
-                  child: Text(
-                    '${devices.length}',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Device cards
-          Expanded(
-            child: devices.isEmpty
-                ? _buildDeviceEmptyState(status)
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSizes.spacing8),
-                    itemCount: devices.length,
-                    itemBuilder: (context, index) {
-                      return _buildDeviceKanbanCard(devices[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeviceEmptyState(String status) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.device_hub_outlined,
-            size: 48,
-            color: AppColors.textSecondary.withOpacity(0.5),
-          ),
-          const SizedBox(height: AppSizes.spacing12),
-          Text(
-            'No ${status.toLowerCase()} devices',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppSizes.fontSizeSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeviceKanbanCard(Device device) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _viewDeviceDetails(device),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with name, status, and actions
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    device.name.isNotEmpty ? device.name : device.serialNumber,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      fontSize: AppSizes.fontSizeMedium,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                _buildDeviceStatusChip(device.status, device.active),
-                const SizedBox(width: AppSizes.spacing4),
-                _buildDeviceActionsDropdown(device),
-              ],
-            ),
-            const SizedBox(height: AppSizes.spacing12),
-
-            // Device details
-            _buildDetailRow(Icons.tag, 'Serial', device.serialNumber),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(Icons.memory, 'Type', device.deviceType),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(Icons.settings, 'Model', device.model),
-            const SizedBox(height: AppSizes.spacing8),
-            _buildDetailRow(
-              Icons.business,
-              'Manufacturer',
-              device.manufacturer,
-            ),
-
-            // Link status indicator
-            if (device.linkStatus.isNotEmpty) ...[
-              const SizedBox(height: AppSizes.spacing12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing8,
-                  vertical: AppSizes.spacing4,
-                ),
-                decoration: BoxDecoration(
-                  color: _getDeviceLinkStatusColor(
-                    device.linkStatus,
-                  ).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(
-                    color: _getDeviceLinkStatusColor(
-                      device.linkStatus,
-                    ).withOpacity(0.2),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      device.linkStatus.toLowerCase() == 'connected'
-                          ? Icons.link
-                          : Icons.link_off,
-                      size: 14,
-                      color: _getDeviceLinkStatusColor(device.linkStatus),
-                    ),
-                    const SizedBox(width: AppSizes.spacing4),
-                    Text(
-                      'Link: ${device.linkStatus}',
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeExtraSmall,
-                        color: _getDeviceLinkStatusColor(device.linkStatus),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeviceStatusChip(String status, bool isActive) {
-    Color backgroundColor;
-    Color borderColor;
-    Color textColor;
-
-    if (status.toLowerCase().contains('active') || isActive) {
-      // Active - Green
-      backgroundColor = const Color(0xFF059669).withOpacity(0.1);
-      borderColor = const Color(0xFF059669).withOpacity(0.3);
-      textColor = const Color(0xFF059669);
-    } else {
-      // Inactive - Red
-      backgroundColor = const Color(0xFFDC2626).withOpacity(0.1);
-      borderColor = const Color(0xFFDC2626).withOpacity(0.3);
-      textColor = const Color(0xFFDC2626);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing8,
-        vertical: AppSizes.spacing4,
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: borderColor, width: 1),
-      ),
-      child: Text(
-        isActive ? 'Active' : 'Inactive',
-        style: TextStyle(
-          color: textColor,
-          fontSize: AppSizes.fontSizeSmall,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: AppSizes.iconSmall, color: AppColors.textSecondary),
-        const SizedBox(width: AppSizes.spacing8),
-        Text(
-          '$label:',
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: AppSizes.spacing4),
-        Expanded(
-          child: Text(
-            value.isNotEmpty ? value : 'Not specified',
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getDeviceStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'commissioned':
-        return AppColors.success;
-      case 'decommissioned':
-        return AppColors.error;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  Color _getDeviceLinkStatusColor(String linkStatus) {
-    switch (linkStatus.toLowerCase()) {
-      case 'connected':
-      case 'online':
-      case 'multidrive':
-        return AppColors.success;
-      case 'disconnected':
-      case 'offline':
-        return AppColors.error;
-      case 'pending':
-        return AppColors.warning;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  Widget _buildDeviceActionsDropdown(Device device) {
-    return PopupMenuButton<String>(
-      icon: const Icon(
-        Icons.more_vert,
-        color: AppColors.textSecondary,
-        size: 16,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-      ),
-      itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'view',
-          child: Row(
-            children: [
-              Icon(Icons.visibility, size: 16, color: AppColors.primary),
-              SizedBox(width: AppSizes.spacing8),
-              Text('View Details'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 16, color: AppColors.warning),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Edit'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 16, color: AppColors.error),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Delete', style: TextStyle(color: AppColors.error)),
-            ],
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        switch (value) {
-          case 'view':
-            _viewDeviceDetails(device);
-            break;
-          case 'edit':
-            _editDevice(device);
-            break;
-          case 'delete':
-            _deleteDevice(device);
-            break;
-        }
-      },
-    );
-  }
+  // Widget _buildDeviceActionsDropdown(Device device) {
+  //   return PopupMenuButton<String>(
+  //     icon: const Icon(
+  //       Icons.more_vert,
+  //       color: AppColors.textSecondary,
+  //       size: 16,
+  //     ),
+  //     shape: RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+  //     ),
+  //     itemBuilder: (context) => [
+  //       const PopupMenuItem<String>(
+  //         value: 'view',
+  //         child: Row(
+  //           children: [
+  //             Icon(Icons.visibility, size: 16, color: AppColors.primary),
+  //             SizedBox(width: AppSizes.spacing8),
+  //             Text('View Details'),
+  //           ],
+  //         ),
+  //       ),
+  //       const PopupMenuItem<String>(
+  //         value: 'edit',
+  //         child: Row(
+  //           children: [
+  //             Icon(Icons.edit, size: 16, color: AppColors.warning),
+  //             SizedBox(width: AppSizes.spacing8),
+  //             Text('Edit'),
+  //           ],
+  //         ),
+  //       ),
+  //       const PopupMenuItem<String>(
+  //         value: 'delete',
+  //         child: Row(
+  //           children: [
+  //             Icon(Icons.delete, size: 16, color: AppColors.error),
+  //             SizedBox(width: AppSizes.spacing8),
+  //             Text('Delete', style: TextStyle(color: AppColors.error)),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //     onSelected: (value) {
+  //       switch (value) {
+  //         case 'view':
+  //           _viewDeviceDetails(device);
+  //           break;
+  //         case 'edit':
+  //           _editDevice(device);
+  //           break;
+  //         case 'delete':
+  //           _deleteDevice(device);
+  //           break;
+  //       }
+  //     },
+  //   );
+  // }
 
   Widget _buildMapView() {
     return Column(

@@ -33,7 +33,7 @@ class SpecialDaySummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'Total Special Days',
+                  'Total',
                   stats.totalSpecialDays.toString(),
                   Icons.event_note,
                   AppColors.primary,
@@ -42,7 +42,7 @@ class SpecialDaySummaryCard extends StatelessWidget {
               const SizedBox(width: AppSizes.spacing12),
               Expanded(
                 child: _buildStatCard(
-                  'Active Special Days',
+                  'Active',
                   stats.activeSpecialDays.toString(),
                   Icons.check_circle_outline,
                   AppColors.success,
@@ -51,10 +51,10 @@ class SpecialDaySummaryCard extends StatelessWidget {
               const SizedBox(width: AppSizes.spacing12),
               Expanded(
                 child: _buildStatCard(
-                  'Inactive Special Days',
+                  'Inactive',
                   stats.inactiveSpecialDays.toString(),
                   Icons.cancel_outlined,
-                  AppColors.warning,
+                  AppColors.error,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),

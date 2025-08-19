@@ -7,6 +7,8 @@ import '../common/app_input_field.dart';
 import '../common/app_toast.dart';
 import '../common/custom_single_date_picker.dart';
 
+enum SpecialDayDialogMode { view, edit, create }
+
 // Helper class to manage Special Day Detail form data
 class _SpecialDayDetailItem {
   final int id;
@@ -14,6 +16,7 @@ class _SpecialDayDetailItem {
   final TextEditingController descriptionController;
   DateTime? startDate;
   DateTime? endDate;
+  bool active; // Track if this detail is active or marked for deletion
 
   _SpecialDayDetailItem({
     required this.id,
@@ -21,6 +24,7 @@ class _SpecialDayDetailItem {
     String? description,
     this.startDate,
     this.endDate,
+    this.active = true, // Default to active
   }) : nameController = TextEditingController(text: name ?? ''),
        descriptionController = TextEditingController(text: description ?? '');
 
@@ -37,7 +41,7 @@ class _SpecialDayDetailItem {
       description: descriptionController.text.trim(),
       startDate: startDate ?? DateTime.now(),
       endDate: endDate ?? DateTime.now(),
-      active: true, // Always active since we removed the toggle
+      active: active, // Use the active field from this item
     );
   }
 
@@ -51,13 +55,14 @@ class _SpecialDayDetailItem {
           .split('T')
           .first,
       'EndDate': (endDate ?? DateTime.now()).toIso8601String().split('T').first,
-      'Active': true, // Always active since we removed the toggle
+      'Active': active, // Use the active field from this item
     };
   }
 }
 
 class SpecialDayFormDialog extends StatefulWidget {
-  final SpecialDay? specialDay; // null for create, non-null for edit
+  final SpecialDay? specialDay; // null for create, non-null for edit/view
+  final SpecialDayDialogMode mode; // view, edit, or create
   final Function(SpecialDay) onSave;
   final VoidCallback?
   onSuccess; // Callback to refresh data after successful operation
@@ -65,6 +70,7 @@ class SpecialDayFormDialog extends StatefulWidget {
   const SpecialDayFormDialog({
     super.key,
     this.specialDay,
+    this.mode = SpecialDayDialogMode.create,
     required this.onSave,
     this.onSuccess,
   });
@@ -78,6 +84,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isSaving = false;
+  bool _hasValidationErrors = false; // Track if validation has been attempted
+  SpecialDayDialogMode _currentMode =
+      SpecialDayDialogMode.create; // Track current mode
 
   // Special Day Details Management
   List<_SpecialDayDetailItem> _specialDayDetails = [];
@@ -86,6 +95,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
   @override
   void initState() {
     super.initState();
+    _currentMode = widget.mode;
     _initializeForm();
   }
 
@@ -115,6 +125,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
           description: detail.description,
           startDate: detail.startDate,
           endDate: detail.endDate,
+          active: detail.active, // Include the active field
         );
       }).toList();
     } else {
@@ -141,52 +152,110 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
 
   void _removeSpecialDayDetail(int index) {
     setState(() {
-      _specialDayDetails[index].dispose();
-      _specialDayDetails.removeAt(index);
+      // Instead of removing the item, mark it as inactive
+      _specialDayDetails[index].active = false;
     });
   }
 
-  bool get _isEditMode => widget.specialDay != null;
+  bool get _isEditMode => _currentMode == SpecialDayDialogMode.edit;
+  bool get _isViewMode => _currentMode == SpecialDayDialogMode.view;
+  bool get _isCreateMode => _currentMode == SpecialDayDialogMode.create;
+  bool get _isReadOnlyMode => _isViewMode;
 
   String get _dialogTitle {
-    return _isEditMode ? 'Edit Special Day' : 'Add Special Day';
+    switch (_currentMode) {
+      case SpecialDayDialogMode.view:
+        return 'View Special Day';
+      case SpecialDayDialogMode.edit:
+        return 'Edit Special Day';
+      case SpecialDayDialogMode.create:
+        return 'Add Special Day';
+    }
+  }
+
+  void _switchToEditMode() {
+    setState(() {
+      _currentMode = SpecialDayDialogMode.edit;
+    });
   }
 
   Future<void> _handleSave() async {
+    // Set validation attempted flag and trigger rebuild
+    setState(() {
+      _hasValidationErrors = true;
+    });
+
+    // First, validate the main form
     if (!_formKey.currentState!.validate()) {
+      AppToast.show(
+        context,
+        title: 'Validation Error',
+        message: 'Please fix the errors in the form',
+        type: ToastType.error,
+      );
       return;
     }
 
-    // Validate Special Day Details
+    // Validate Special Day Details and trigger UI error states
+    bool hasValidationErrors = false;
+
     for (int i = 0; i < _specialDayDetails.length; i++) {
       final detail = _specialDayDetails[i];
+
+      // Skip validation for inactive details (marked for deletion)
+      if (!detail.active) continue;
+
+      // Validate Detail Name (required)
       if (detail.nameController.text.trim().isEmpty) {
         AppToast.show(
           context,
           title: 'Validation Error',
-          message: 'Detail name is required',
+          message: 'Detail name is required for detail ${i + 1}',
           type: ToastType.error,
         );
-        return;
+        hasValidationErrors = true;
+        break;
       }
-      if (detail.startDate == null || detail.endDate == null) {
+
+      // Validate Start Date (required)
+      if (detail.startDate == null) {
         AppToast.show(
           context,
           title: 'Validation Error',
-          message: 'Start and End dates are required',
+          message: 'Start date is required for detail ${i + 1}',
           type: ToastType.error,
         );
-        return;
+        hasValidationErrors = true;
+        break;
       }
+
+      // Validate End Date (required)
+      if (detail.endDate == null) {
+        AppToast.show(
+          context,
+          title: 'Validation Error',
+          message: 'End date is required for detail ${i + 1}',
+          type: ToastType.error,
+        );
+        hasValidationErrors = true;
+        break;
+      }
+
+      // Validate date range
       if (detail.endDate!.isBefore(detail.startDate!)) {
         AppToast.show(
           context,
           title: 'Validation Error',
-          message: 'End date cannot be before start date',
+          message: 'End date cannot be before start date for detail ${i + 1}',
           type: ToastType.error,
         );
-        return;
+        hasValidationErrors = true;
+        break;
       }
+    }
+
+    if (hasValidationErrors) {
+      return;
     }
 
     setState(() {
@@ -237,7 +306,14 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
   }
 
   List<Widget> _buildSpecialDayDetailsList() {
-    if (_specialDayDetails.isEmpty) {
+    // Filter to show only active details in the UI
+    final activeDetails = _specialDayDetails
+        .asMap()
+        .entries
+        .where((entry) => entry.value.active)
+        .toList();
+
+    if (activeDetails.isEmpty) {
       return [
         Container(
           padding: const EdgeInsets.all(AppSizes.spacing24),
@@ -258,7 +334,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
               ),
               const SizedBox(height: AppSizes.spacing8),
               Text(
-                'Click "Add Detail" to create special day periods',
+                _isViewMode
+                    ? 'This special day has no details'
+                    : 'Click "Add Detail" to create special day periods',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -269,8 +347,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
       ];
     }
 
-    return _specialDayDetails.asMap().entries.map((entry) {
-      final index = entry.key;
+    return activeDetails.map((entry) {
+      final index =
+          entry.key; // This is the original index in _specialDayDetails
       final detail = entry.value;
       return _buildSpecialDayDetailCard(detail, index);
     }).toList();
@@ -280,28 +359,36 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.end, // Align to bottom to match field heights
+        crossAxisAlignment: CrossAxisAlignment
+            .start, // Align to top for consistent label positioning
         children: [
           // Name field
           Expanded(
-            flex: 2,
             child: AppInputField(
               controller: detail.nameController,
               label: 'Detail Name',
               hintText: 'e.g., Khmer New Year',
               required: true,
+              readOnly: _isReadOnlyMode,
+              showErrorSpace: false, // Show error space for better UX
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Detail name is required';
+                }
+                return null;
+              },
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
 
           // Description field
           Expanded(
-            flex: 2,
             child: AppInputField(
               controller: detail.descriptionController,
               label: 'Description',
               hintText: 'Optional description',
+              readOnly: _isReadOnlyMode,
+              showErrorSpace: false, // Show error space for consistency
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -313,9 +400,14 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
               label: 'Start Date',
               hintText: 'Select start date',
               initialDate: detail.startDate,
+              enabled: !_isReadOnlyMode,
               onDateSelected: (date) {
                 setState(() {
                   detail.startDate = date;
+                  // Clear validation errors when user selects a date
+                  if (_hasValidationErrors && detail.startDate != null) {
+                    // Optional: you can clear validation state here
+                  }
                   // Auto-set end date if it's before start date
                   if (detail.endDate != null &&
                       detail.endDate!.isBefore(date)) {
@@ -324,6 +416,10 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                 });
               },
               isRequired: true,
+              hasError: _hasValidationErrors && detail.startDate == null,
+              errorText: _hasValidationErrors && detail.startDate == null
+                  ? 'This field is required'
+                  : null,
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -335,29 +431,48 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
               label: 'End Date',
               hintText: 'Select end date',
               initialDate: detail.endDate,
+              enabled: !_isReadOnlyMode,
               firstDate: detail
                   .startDate, // This will be null for new records, which should be fine
               onDateSelected: (date) {
                 setState(() {
                   detail.endDate = date;
+                  // Clear validation errors when user selects a date
+                  if (_hasValidationErrors && detail.endDate != null) {
+                    // Optional: you can clear validation state here
+                  }
                 });
               },
               isRequired: true,
+              hasError: _hasValidationErrors && detail.endDate == null,
+              errorText: _hasValidationErrors && detail.endDate == null
+                  ? 'This field is required'
+                  : null,
             ),
           ),
 
-          // Delete button (only show if multiple details exist)
-          if (_specialDayDetails.length > 1) ...[
+          // Delete button (only show if multiple active details exist)
+          if (_specialDayDetails.where((d) => d.active).length > 1) ...[
             const SizedBox(width: AppSizes.spacing12),
-            IconButton(
-              onPressed: () => _removeSpecialDayDetail(index),
-              icon: const Icon(Icons.delete_outline),
-              style: IconButton.styleFrom(
-                foregroundColor: AppColors.error,
-                backgroundColor: AppColors.surfaceVariant,
+            // Position delete button to align with the center of the date picker input field
+            // Label height (~17px) + spacing (8px) + half input height (19px) = ~44px from top
+            if (!_isReadOnlyMode)
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 20,
+                ), // Align with date picker input center
+                child: IconButton(
+                  onPressed: () => _removeSpecialDayDetail(index),
+                  icon: const Icon(Icons.delete_outline),
+                  style: IconButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    backgroundColor: Colors.transparent, // Remove background
+                    padding: EdgeInsets.zero, // Remove default padding
+                    tapTargetSize: MaterialTapTargetSize
+                        .shrinkWrap, // Remove extra tap area
+                  ),
+                ),
               ),
-              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            ),
           ],
         ],
       ),
@@ -426,6 +541,8 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
 
                       // Special Day Information - Single Row Layout (Name + Description)
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment
+                            .start, // Align to top for consistent label positioning
                         children: [
                           Expanded(
                             child: AppInputField(
@@ -433,6 +550,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                               label: 'Special Day Name',
                               hintText: 'Enter special day name',
                               required: true,
+                              readOnly: _isReadOnlyMode,
+                              showErrorSpace:
+                                  true, // Show error space for main form fields
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Special day name is required';
@@ -450,6 +570,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                               controller: _descriptionController,
                               label: 'Description',
                               hintText: 'Enter description (optional)',
+                              readOnly: _isReadOnlyMode,
+                              showErrorSpace:
+                                  true, // Show error space for main form fields
                               validator: (value) {
                                 return null; // No validation required for description
                               },
@@ -472,11 +595,12 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                                   color: AppColors.primary,
                                 ),
                           ),
-                          AppButton(
-                            text: 'Add Detail',
-                            type: AppButtonType.outline,
-                            onPressed: _addNewSpecialDayDetail,
-                          ),
+                          if (!_isReadOnlyMode)
+                            AppButton(
+                              text: 'Add Detail',
+                              type: AppButtonType.outline,
+                              onPressed: _addNewSpecialDayDetail,
+                            ),
                         ],
                       ),
                       const SizedBox(height: AppSizes.spacing16),
@@ -498,18 +622,32 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  AppButton(
-                    text: 'Cancel',
-                    type: AppButtonType.outline,
-                    onPressed: _isSaving ? null : _handleCancel,
-                  ),
-                  const SizedBox(width: AppSizes.spacing12),
-                  AppButton(
-                    text: _isEditMode ? 'Update' : 'Create',
-                    type: AppButtonType.primary,
-                    onPressed: _isSaving ? null : _handleSave,
-                    isLoading: _isSaving,
-                  ),
+                  if (_isViewMode) ...[
+                    AppButton(
+                      text: 'Close',
+                      type: AppButtonType.outline,
+                      onPressed: _handleCancel,
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    AppButton(
+                      text: 'Edit',
+                      type: AppButtonType.primary,
+                      onPressed: _switchToEditMode,
+                    ),
+                  ] else ...[
+                    AppButton(
+                      text: 'Cancel',
+                      type: AppButtonType.outline,
+                      onPressed: _isSaving ? null : _handleCancel,
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    AppButton(
+                      text: _isEditMode ? 'Update' : 'Create',
+                      type: AppButtonType.primary,
+                      onPressed: _isSaving ? null : _handleSave,
+                      isLoading: _isSaving,
+                    ),
+                  ],
                 ],
               ),
             ),

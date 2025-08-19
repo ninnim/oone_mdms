@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mdms_clone/presentation/screens/dashboard/dashboard_screen.dart';
 import 'package:mdms_clone/presentation/screens/schedules/schedule_screen.dart';
-import 'package:mdms_clone/presentation/screens/tou_management/tou_management_screen.dart';
 import 'package:mdms_clone/presentation/screens/tou_management/seasons_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_bands/time_bands_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_of_use/time_of_use_screen.dart';
@@ -171,13 +170,6 @@ class AppRouter {
               path: '/schedules',
               name: 'schedules',
               builder: (context, state) => const ScheduleRouteWrapper(),
-            ),
-
-            // TOU Management Routes
-            GoRoute(
-              path: '/tou-management',
-              name: 'tou-management',
-              builder: (context, state) => const TouManagementRouteWrapper(),
             ),
 
             GoRoute(
@@ -945,15 +937,6 @@ class _SiteDetailsRouteWrapperState extends State<SiteDetailsRouteWrapper> {
   }
 }
 
-class TouManagementRouteWrapper extends StatelessWidget {
-  const TouManagementRouteWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MainLayoutWithRouter(child: TouManagementScreen());
-  }
-}
-
 class TimeOfUseRouteWrapper extends StatelessWidget {
   const TimeOfUseRouteWrapper({super.key});
 
@@ -1291,7 +1274,6 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         //   selectedScreen == 'tickets',
         //   badge: '3',
         // ),
-
         const SizedBox(height: 8),
 
         // Analytics Group

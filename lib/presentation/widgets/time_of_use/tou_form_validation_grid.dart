@@ -229,39 +229,43 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        //mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // Channel and Time Band Legend
-          _buildChannelTimeBandLegend(),
+          Container(
+            alignment: Alignment.centerLeft,
+            child: _buildChannelTimeBandLegend(),
+          ),
 
-          const SizedBox(height: AppSizes.spacing8),
+          //  const SizedBox(height: AppSizes.spacing8),
 
           // Status Legend
-          Row(
-            children: [
-              const Text(
-                'Status:',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacing12),
-              _buildLegendItem(
-                'Covered',
-                AppColors.success.withValues(alpha: 0.8),
-              ),
-              _buildLegendItem(
-                'Overlap',
-                AppColors.warning.withValues(alpha: 0.8),
-              ),
-              _buildLegendItem(
-                'Conflict',
-                AppColors.error.withValues(alpha: 0.8),
-              ),
-              _buildLegendItem('Empty', AppColors.surface),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     const Text(
+          //       'Status:',
+          //       style: TextStyle(
+          //         fontSize: AppSizes.fontSizeSmall,
+          //         fontWeight: FontWeight.w500,
+          //         color: AppColors.textPrimary,
+          //       ),
+          //     ),
+          //     const SizedBox(width: AppSizes.spacing12),
+          //     _buildLegendItem(
+          //       'Covered',
+          //       AppColors.success.withValues(alpha: 0.8),
+          //     ),
+          //     _buildLegendItem(
+          //       'Overlap',
+          //       AppColors.warning.withValues(alpha: 0.8),
+          //     ),
+          //     _buildLegendItem(
+          //       'Conflict',
+          //       AppColors.error.withValues(alpha: 0.8),
+          //     ),
+          //     _buildLegendItem('Empty', AppColors.surface),
+          //   ],
+          // ),
         ],
       ),
     );

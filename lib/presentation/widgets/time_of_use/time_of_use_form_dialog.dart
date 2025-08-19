@@ -42,13 +42,14 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   bool _isLoading = false;
   bool _isEditMode = false;
   List<TimeOfUseDetail> _details = [];
+
+  // Add getter for view mode
+  bool get _isViewMode => !_isEditMode;
   List<TimeBand> _availableTimeBands = [];
   List<Channel> _availableChannels = [];
   int? _selectedFilterChannelId; // Channel filter for validation grid
-  Map<String, TextEditingController> _registerCodeControllers = {};
-  int _detailIdCounter = 0; // Counter for generating unique IDs for new details
-  final Map<TimeOfUseDetail, String> _detailToIdMap =
-      {}; // Map to track detail unique IDs
+  Map<int, TextEditingController> _registerCodeControllers =
+      {}; // Use index as key for proper state management
 
   @override
   void didChangeDependencies() {
@@ -78,13 +79,23 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       _details = List.from(tou.timeOfUseDetails)
         ..sort((a, b) => a.priorityOrder.compareTo(b.priorityOrder));
 
-      // Initialize mapping for existing details
-      for (final detail in _details) {
-        if (detail.id == null) {
-          // For details without IDs, generate unique IDs
-          _detailToIdMap[detail] = 'existing_detail_${_detailIdCounter++}';
-        }
-      }
+      // Initialize controllers for existing details
+      _initializeControllers();
+    }
+  }
+
+  void _initializeControllers() {
+    // Clear existing controllers
+    for (final controller in _registerCodeControllers.values) {
+      controller.dispose();
+    }
+    _registerCodeControllers.clear();
+
+    // Create controllers for each detail using index as key
+    for (int i = 0; i < _details.length; i++) {
+      _registerCodeControllers[i] = TextEditingController(
+        text: _details[i].registerDisplayCode,
+      );
     }
   }
 
@@ -124,10 +135,6 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     setState(() => _isEditMode = !_isEditMode);
   }
 
-  void _cancel() {
-    Navigator.of(context).pop();
-  }
-
   void _addDetail() {
     setState(() {
       final newDetail = TimeOfUseDetail(
@@ -143,27 +150,13 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       );
       _details.add(newDetail);
 
-      // Generate unique ID for new detail
-      _detailToIdMap[newDetail] = 'new_detail_${_detailIdCounter++}';
-
-      _cleanupControllers();
+      // Reinitialize all controllers to ensure proper indexing
+      _initializeControllers();
     });
   }
 
   void _removeDetail(int index) {
     setState(() {
-      final detailToRemove = _details[index];
-
-      // Dispose the controller for the removed item
-      final detailId = _getDetailUniqueId(detailToRemove);
-      if (_registerCodeControllers.containsKey(detailId)) {
-        _registerCodeControllers[detailId]!.dispose();
-        _registerCodeControllers.remove(detailId);
-      }
-
-      // Remove from mapping if it's a new detail
-      _detailToIdMap.remove(detailToRemove);
-
       _details.removeAt(index);
 
       // Update priority order for remaining items
@@ -171,7 +164,8 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         _details[i] = _details[i].copyWith(priorityOrder: i + 1);
       }
 
-      _cleanupControllers();
+      // Reinitialize all controllers to ensure proper indexing
+      _initializeControllers();
     });
   }
 
@@ -189,14 +183,10 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         registerDisplayCode: registerDisplayCode,
       );
 
-      // If we're creating a new detail object, we need to update the mapping
-      if (_detailToIdMap.containsKey(oldDetail)) {
-        final uniqueId = _detailToIdMap[oldDetail]!;
-        _detailToIdMap.remove(oldDetail);
-        _detailToIdMap[newDetail] = uniqueId;
-      }
-
       _details[index] = newDetail;
+
+      // Note: Do not update controller text here as it causes auto-selection
+      // The controller is already updated by user input via onChanged
     });
   }
 
@@ -205,6 +195,16 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       if (newIndex > oldIndex) {
         newIndex -= 1;
       }
+
+      // Store the register code values before reordering
+      final Map<int, String> registerCodeValues = {};
+      for (int i = 0; i < _details.length; i++) {
+        if (_registerCodeControllers.containsKey(i)) {
+          registerCodeValues[i] = _registerCodeControllers[i]!.text;
+        }
+      }
+
+      // Reorder the details
       final item = _details.removeAt(oldIndex);
       _details.insert(newIndex, item);
 
@@ -212,55 +212,109 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       for (int i = 0; i < _details.length; i++) {
         _details[i] = _details[i].copyWith(priorityOrder: i + 1);
       }
+
+      // Create new mapping for reordered register codes
+      final Map<int, String> reorderedValues = {};
+      List<int> oldOrder = List.generate(_details.length, (index) => index);
+      int movedValue = oldOrder.removeAt(oldIndex);
+      oldOrder.insert(newIndex, movedValue);
+
+      for (int newPos = 0; newPos < oldOrder.length; newPos++) {
+        int oldPos = oldOrder[newPos];
+        if (registerCodeValues.containsKey(oldPos)) {
+          reorderedValues[newPos] = registerCodeValues[oldPos]!;
+        }
+      }
+
+      // Update the details with the reordered register codes
+      for (int i = 0; i < _details.length; i++) {
+        if (reorderedValues.containsKey(i)) {
+          _details[i] = _details[i].copyWith(
+            registerDisplayCode: reorderedValues[i]!,
+          );
+        }
+      }
+
+      // Reinitialize controllers with the new data
+      _initializeControllers();
     });
   }
 
-  String _getDetailUniqueId(TimeOfUseDetail detail) {
-    // For existing details, use their ID from the backend
-    if (detail.id != null) {
-      return detail.id.toString();
-    }
-
-    // For new details, use the generated unique ID
-    if (_detailToIdMap.containsKey(detail)) {
-      return _detailToIdMap[detail]!;
-    }
-
-    // Fallback - this shouldn't happen if _addDetail is used properly
-    final uniqueId = 'fallback_detail_${_detailIdCounter++}';
-    _detailToIdMap[detail] = uniqueId;
-    return uniqueId;
-  }
-
-  TextEditingController _getRegisterCodeController(
-    TimeOfUseDetail detail,
-    String initialValue,
-  ) {
-    final detailId = _getDetailUniqueId(detail);
-    if (!_registerCodeControllers.containsKey(detailId)) {
-      _registerCodeControllers[detailId] = TextEditingController(
-        text: initialValue,
+  TextEditingController _getRegisterCodeController(int index) {
+    // Ensure controller exists for this index
+    if (!_registerCodeControllers.containsKey(index)) {
+      _registerCodeControllers[index] = TextEditingController(
+        text: index < _details.length
+            ? _details[index].registerDisplayCode
+            : '',
       );
     }
-    return _registerCodeControllers[detailId]!;
+    return _registerCodeControllers[index]!;
   }
 
-  void _cleanupControllers() {
-    // Remove controllers for items that no longer exist
-    final validIds = _details
-        .map((detail) => _getDetailUniqueId(detail))
-        .toSet();
-    _registerCodeControllers.removeWhere((key, controller) {
-      if (!validIds.contains(key)) {
-        controller.dispose();
-        return true;
+  /// Validates individual time bands for basic validity (duration, format, etc.)
+  String? _validateTimeBands() {
+    final List<String> timeBandErrors = [];
+
+    // Get all unique time band IDs used in details
+    final timeBandIds = _details.map((d) => d.timeBandId).toSet();
+
+    for (final timeBandId in timeBandIds) {
+      final timeBand = _availableTimeBands.firstWhere(
+        (tb) => tb.id == timeBandId,
+        orElse: () => TimeBand(
+          id: timeBandId,
+          name: 'Unknown TimeBand $timeBandId',
+          startTime: '00:00:00',
+          endTime: '00:00:00',
+          description: '',
+          active: false,
+        ),
+      );
+
+      // Validate time band duration
+      final startTime = _parseTimeToHours(timeBand.startTime);
+      final endTime = _parseTimeToHours(timeBand.endTime);
+
+      if (startTime != null && endTime != null) {
+        // Check for zero-duration time bands
+        if (startTime == endTime) {
+          timeBandErrors.add(
+            '❌ Time Band "${timeBand.name}" has zero duration (${timeBand.startTime} - ${timeBand.endTime})\n'
+            '   This time band provides no coverage and cannot be used in Time of Use.',
+          );
+        }
+
+        // Check for invalid time ranges (over 24 hours for same-day periods)
+        if (endTime > startTime && (endTime - startTime) > 24.0) {
+          timeBandErrors.add(
+            '❌ Time Band "${timeBand.name}" has invalid duration > 24 hours (${timeBand.startTime} - ${timeBand.endTime})\n'
+            '   Single-day time bands cannot exceed 24 hours.',
+          );
+        }
+      } else {
+        timeBandErrors.add(
+          '❌ Time Band "${timeBand.name}" has invalid time format (${timeBand.startTime} - ${timeBand.endTime})',
+        );
       }
-      return false;
-    });
+    }
+
+    if (timeBandErrors.isNotEmpty) {
+      return '🚨 INVALID TIME BANDS DETECTED\n\n${timeBandErrors.join('\n\n')}\n\n'
+          'Please select valid time bands with proper duration before saving.';
+    }
+
+    return null;
   }
 
   /// Validates that each channel has 24-hour and 7-day coverage with detailed error messages
   String? _validateChannelCoverage() {
+    // First, validate all time bands for basic validity
+    final timeBandValidationError = _validateTimeBands();
+    if (timeBandValidationError != null) {
+      return timeBandValidationError;
+    }
+
     // Group details by channel
     final channelGroups = <int, List<TimeOfUseDetail>>{};
     for (final detail in _details) {
@@ -310,7 +364,9 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       }
 
       if (timeBands.isEmpty) {
-        allErrors.add('❌ $channelName: No time bands assigned');
+        allErrors.add(
+          '❌ $channelName: No time bands assigned - Cannot save without time band coverage',
+        );
         continue;
       }
 
@@ -416,8 +472,17 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       final endTime = _parseTimeToHours(timeBand.endTime);
 
       if (startTime != null && endTime != null) {
+        // Check for zero-duration time bands (same start and end time)
+        if (startTime == endTime) {
+          print(
+            '⚠️ Zero-duration time band detected: ${timeBand.name} (${timeBand.startTime} - ${timeBand.endTime})',
+          );
+          // Zero-duration time bands contribute 0 hours
+          continue;
+        }
+
         // Handle overnight periods (e.g., 22:00 - 06:00)
-        if (endTime <= startTime) {
+        if (endTime < startTime) {
           // Split into two ranges: start to 24:00 and 00:00 to end
           timeRanges.add((start: startTime, end: 24.0));
           if (endTime > 0) {
@@ -530,13 +595,10 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   }
 
   Future<void> _save() async {
-    print('🔄 TOU Dialog: Save method called');
     if (!_formKey.currentState!.validate()) {
-      print('❌ TOU Dialog: Form validation failed');
       return;
     }
     if (_details.isEmpty) {
-      print('❌ TOU Dialog: No details provided');
       AppToast.showWarning(
         context,
         message: 'Please add at least one time of use detail',
@@ -545,10 +607,31 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       return;
     }
 
+    // Additional validation: Check for any details with missing or invalid channels/time bands
+    final invalidDetails = <String>[];
+    for (int i = 0; i < _details.length; i++) {
+      final detail = _details[i];
+      if (detail.channelId <= 0) {
+        invalidDetails.add('Row ${i + 1}: Channel is required');
+      }
+      if (detail.timeBandId <= 0) {
+        invalidDetails.add('Row ${i + 1}: Time Band is required');
+      }
+    }
+
+    if (invalidDetails.isNotEmpty) {
+      AppToast.showWarning(
+        context,
+        message:
+            'Please fix the following issues:\n${invalidDetails.join('\n')}',
+        title: 'Invalid Details',
+      );
+      return;
+    }
+
     // Validate 24-hour and 7-day coverage for each channel
     final coverageError = _validateChannelCoverage();
     if (coverageError != null) {
-      print('❌ TOU Dialog: Coverage validation failed');
       AppToast.showWarning(
         context,
         message: coverageError,
@@ -557,16 +640,20 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       return;
     }
 
-    print('✅ TOU Dialog: All validations passed, proceeding with save');
-
     // Update register codes from controllers before saving
     for (int i = 0; i < _details.length; i++) {
-      final detailId = _getDetailUniqueId(_details[i]);
-      if (_registerCodeControllers.containsKey(detailId)) {
-        _details[i] = _details[i].copyWith(
-          registerDisplayCode: _registerCodeControllers[detailId]!.text.trim(),
-        );
+      String newRegisterCode = '';
+
+      // First priority: get value from controller if it exists
+      if (_registerCodeControllers.containsKey(i)) {
+        newRegisterCode = _registerCodeControllers[i]!.text.trim();
+      } else {
+        // Fallback: use current detail value
+        newRegisterCode = _details[i].registerDisplayCode.trim();
       }
+
+      // Update the detail with the final register code value
+      _details[i] = _details[i].copyWith(registerDisplayCode: newRegisterCode);
     }
 
     // Ensure details are sorted by PriorityOrder before saving
@@ -574,7 +661,6 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
 
     try {
       setState(() => _isLoading = true);
-      print('🔄 TOU Dialog: Starting API call...');
 
       final response = widget.timeOfUse == null
           ? await _timeOfUseService.createTimeOfUse(
@@ -600,7 +686,6 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         setState(() => _isLoading = false);
 
         if (response.success) {
-          print('✅ TOU Dialog: Save successful, showing success toast');
           // Show success toast message
           AppToast.showSuccess(
             context,
@@ -614,17 +699,12 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
 
           // Call the callback if provided
           if (widget.onSaved != null) {
-            print('🔄 TOU Dialog: Calling onSaved callback');
             widget.onSaved!();
           }
 
-          print(
-            '🚪 TOU Dialog: Closing dialog with result=true to trigger parent refresh',
-          );
           // Close dialog and return true to trigger parent data refresh
           Navigator.of(context).pop(true);
         } else {
-          print('❌ TOU Dialog: Save failed - ${response.message}');
           // Show error toast message
           AppToast.showError(
             context,
@@ -636,7 +716,6 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         }
       }
     } catch (error) {
-      print('💥 TOU Dialog: Exception during save - $error');
       if (mounted) {
         setState(() => _isLoading = false);
 
@@ -800,6 +879,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
               child: AppInputField(
                 controller: _codeController,
                 label: 'Code',
+
                 enabled: _isEditMode,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -1040,129 +1120,167 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   }
 
   Widget _buildDetailItem(int index, TimeOfUseDetail detail) {
-    final itemContent = Container(
-      padding: const EdgeInsets.all(AppSizes.spacing12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Priority order indicator with drag icon
-          Container(
-            padding: const EdgeInsets.only(
-              top: 28,
-            ), // Align with first input field
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Priority number circle
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
+    final itemContent = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Priority Order indicator
+        Container(
+          width: 28,
+          height: 28,
+          margin: const EdgeInsets.only(top: 24), // Align with input fields
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: Text(
+              '${detail.priorityOrder}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing12),
+
+        // Form fields - Time Band and Channel only
+        Expanded(
+          child: Column(
+            children: [
+              // Row with Time Band and Channel
+              Row(
+                children: [
+                  // Time Band dropdown
+                  Expanded(
+                    flex: 3,
+                    child: _buildEnhancedTimeBandDropdown(detail, index),
                   ),
-                  child: Center(
-                    child: Text(
-                      '${detail.priorityOrder}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: AppSizes.fontSizeSmall,
-                        fontWeight: FontWeight.w600,
+                  const SizedBox(width: AppSizes.spacing8),
+
+                  // Channel dropdown
+                  Expanded(
+                    flex: 3,
+                    child: _buildEnhancedChannelDropdown(detail, index),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing12),
+
+        // Register Code field with tooltip - moved to right side
+        SizedBox(
+          width: 120,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Register Code',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacing8),
+              SizedBox(
+                height: AppSizes.inputHeight,
+                child: TextFormField(
+                  controller: _getRegisterCodeController(index),
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeSmall,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  readOnly: _isViewMode,
+                  onChanged: (value) {
+                    // The register code value is captured in the controller
+                    // and will be synced to the detail object during save
+                  },
+                  enableInteractiveSelection: true,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    hintText: 'Enter code',
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                      borderSide: BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                      borderSide: BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
                       ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing16,
+                      vertical: AppSizes.spacing12,
                     ),
                   ),
                 ),
-                // Drag icon
-                if (_isEditMode) ...[
-                  const SizedBox(height: 4),
-                  ReorderableDragStartListener(
+              ),
+            ],
+          ),
+        ),
+
+        // Action buttons (Drag handle and Delete) - aligned with center of text input
+        if (_isEditMode) ...[
+          const SizedBox(width: AppSizes.spacing8),
+          Container(
+            margin: const EdgeInsets.only(
+              top: 24,
+            ), // Align with input field center
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle with tooltip
+                Tooltip(
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  message: 'First order will be calculated first',
+                  child: ReorderableDragStartListener(
                     index: index,
                     child: const Icon(
                       Icons.drag_handle,
                       color: AppColors.textSecondary,
-                      size: 16,
+                      size: 20,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing12),
-
-          // Form fields in a column
-          Expanded(
-            child: Column(
-              children: [
-                // Row with Register Code, Time Band and Channel
-                Row(
-                  children: [
-                    // Register Code field
-                    Expanded(
-                      flex: 2,
-                      child: AppInputField(
-                        controller: _getRegisterCodeController(
-                          detail,
-                          detail.registerDisplayCode,
-                        ),
-                        label: 'Register Code',
-                        enabled: _isEditMode,
-                        onChanged: (value) =>
-                            _updateDetail(index, registerDisplayCode: value),
-                      ),
-                    ),
-                    const SizedBox(width: AppSizes.spacing8),
-
-                    // Time Band dropdown
-                    Expanded(
-                      flex: 3,
-                      child: _buildEnhancedTimeBandDropdown(detail, index),
-                    ),
-                    const SizedBox(width: AppSizes.spacing8),
-
-                    // Channel dropdown
-                    Expanded(
-                      flex: 2,
-                      child: _buildEnhancedChannelDropdown(detail, index),
-                    ),
-                  ],
+                ),
+                const SizedBox(width: 4),
+                // Delete button
+                IconButton(
+                  onPressed: () => _removeDetail(index),
+                  icon: const Icon(Icons.delete_outline),
+                  style: IconButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(32, 32),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
               ],
             ),
           ),
-
-          // Delete button
-          if (_isEditMode) ...[
-            const SizedBox(width: AppSizes.spacing12),
-            Container(
-              padding: const EdgeInsets.only(
-                top: 28,
-              ), // Align with first input field
-              child: IconButton(
-                onPressed: () => _removeDetail(index),
-                icon: const Icon(Icons.delete_outline),
-                style: IconButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  backgroundColor: AppColors.surfaceVariant,
-                ),
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-              ),
-            ),
-          ],
         ],
-      ),
+      ],
     );
 
-    // Wrap with drag listener if in edit mode
-    if (_isEditMode) {
-      return ReorderableDragStartListener(index: index, child: itemContent);
-    } else {
-      return itemContent;
-    }
+    // No need to wrap with drag listener since we have specific drag handle
+    return itemContent;
   }
 
   /// Builds enhanced channel dropdown with code and name display
@@ -1334,35 +1452,60 @@ class _CustomChannelDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Channel',
-          style: TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
+        Row(
+          children: [
+            const Text(
+              'Channel',
+              style: TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            // if (!enabled) ...[
+            //   const SizedBox(width: 8),
+            //   Tooltip(
+            //     message: 'Channel dropdown is disabled in view mode',
+            //     child: Icon(
+            //       Icons.info_outline,
+            //       size: 16,
+            //       color: AppColors.textSecondary,
+            //     ),
+            //   ),
+            // ],
+          ],
         ),
         const SizedBox(height: 8),
-        AppSearchableDropdown<int>(
-          value: value,
-          hintText: 'Select Channel',
-          items: channels
-              .map(
-                (channel) => DropdownMenuItem<int>(
-                  value: channel.id,
-                  child: Text(
-                    _getChannelDisplayText(channel),
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      color: AppColors.textPrimary,
+        IgnorePointer(
+          ignoring: !enabled, // Completely disable interaction when not enabled
+          child: Opacity(
+            opacity: enabled ? 1.0 : 0.6, // Visual feedback for disabled state
+            child: AppSearchableDropdown<int>(
+              value: value,
+              hintText: enabled ? 'Select Channel' : 'Channel (View Only)',
+              items: channels
+                  .map(
+                    (channel) => DropdownMenuItem<int>(
+                      value: channel.id,
+                      child: Text(
+                        _getChannelDisplayText(channel),
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeSmall,
+                          color: enabled
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: enabled ? onChanged : null,
-          validator: validator,
+                  )
+                  .toList(),
+              onChanged: enabled ? onChanged : null,
+              validator: enabled
+                  ? validator
+                  : null, // Skip validation in view mode
+            ),
+          ),
         ),
       ],
     );
@@ -1398,7 +1541,6 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
   int _currentPage = 1;
   int _itemsPerPage = 10;
   int _totalPages = 1;
-  int? _selectedTimeBandId;
   String? _sortBy;
   bool _sortAscending = true;
   List<String> _hiddenColumns = ['id', 'attributes', 'status'];
@@ -1406,7 +1548,6 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedTimeBandId = widget.selectedTimeBandId;
     _filterTimeBands();
   }
 
@@ -1494,29 +1635,13 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
   }
 
   void _handleTimeBandSelection(TimeBand timeBand) {
-    setState(() {
-      _selectedTimeBandId = timeBand.id;
-    });
+    // Directly select and close dialog
+    widget.onTimeBandSelected(timeBand.id);
+    Navigator.of(context).pop();
   }
 
   List<BluNestTableColumn<TimeBand>> _buildTableColumns() {
     return [
-      // Selection column
-      BluNestTableColumn<TimeBand>(
-        key: 'selection',
-        title: '',
-        flex: 1,
-        builder: (timeBand) => Radio<int>(
-          value: timeBand.id,
-          groupValue: _selectedTimeBandId,
-          onChanged: (value) {
-            if (value != null) {
-              _handleTimeBandSelection(timeBand);
-            }
-          },
-        ),
-      ),
-
       // Name column (with ID)
       BluNestTableColumn<TimeBand>(
         key: 'name',
@@ -1529,14 +1654,10 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
           children: [
             Text(
               timeBand.name,
-              style: TextStyle(
-                fontWeight: _selectedTimeBandId == timeBand.id
-                    ? FontWeight.w600
-                    : FontWeight.w500,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
                 fontSize: 14,
-                color: _selectedTimeBandId == timeBand.id
-                    ? AppColors.primary
-                    : AppColors.textPrimary,
+                color: AppColors.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1563,7 +1684,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
           ),
           decoration: BoxDecoration(
             color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           ),
           child: Text(
             '${timeBand.startTime} - ${timeBand.endTime}',
@@ -1656,6 +1777,15 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                           color: AppColors.textPrimary,
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '(Click on a row to select)',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeSmall,
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                       const Spacer(),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
@@ -1672,13 +1802,15 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                   Row(
                     children: [
                       Expanded(
+                        flex: 1,
                         child: AppInputField(
                           hintText: 'Search time bands...',
                           prefixIcon: const Icon(Icons.search),
                           onChanged: _handleSearchChanged,
                         ),
                       ),
-                      const SizedBox(width: AppSizes.spacing12),
+                      //  const SizedBox(width: AppSizes.spacing12),
+                      const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSizes.spacing12,
@@ -1687,7 +1819,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
-                            AppSizes.radiusSmall,
+                            AppSizes.radiusMedium,
                           ),
                         ),
                         child: Text(
@@ -1776,7 +1908,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                     ),
                   ),
 
-                  // Action buttons
+                  // Action buttons - Only Cancel button needed
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -1784,16 +1916,6 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                         text: 'Cancel',
                         type: AppButtonType.outline,
                         onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      const SizedBox(width: AppSizes.spacing12),
-                      AppButton(
-                        text: 'Select',
-                        onPressed: _selectedTimeBandId != null
-                            ? () {
-                                widget.onTimeBandSelected(_selectedTimeBandId!);
-                                Navigator.of(context).pop();
-                              }
-                            : null,
                       ),
                     ],
                   ),

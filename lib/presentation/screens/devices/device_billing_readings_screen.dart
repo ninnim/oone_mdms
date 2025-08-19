@@ -1483,7 +1483,7 @@ class _DeviceBillingReadingsScreenState
         totalPages: totalPages,
         totalItems: totalItems,
         itemsPerPage: _itemsPerPage,
-        itemsPerPageOptions: const [5, 10, 20, 25, 50],
+        //itemsPerPageOptions: const [5, 10, 20, 25, 50],
         startItem: startItem,
         endItem: endItem,
         onPageChanged: (page) {
@@ -1502,32 +1502,4 @@ class _DeviceBillingReadingsScreenState
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF64748b),
-              ),
-            ),
-          ),
-          const Text(': ', style: TextStyle(color: Color(0xFF64748b))),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF1e293b)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

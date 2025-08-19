@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
 import 'dart:async';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/device.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/device_group_service.dart';
-import '../../../core/services/device_service.dart';
 import '../../../core/services/service_locator.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_toast.dart';
@@ -33,7 +33,6 @@ class DeviceGroupManageDevicesDialog extends StatefulWidget {
 class _DeviceGroupManageDevicesDialogState
     extends State<DeviceGroupManageDevicesDialog> {
   late final DeviceGroupService _deviceGroupService;
-  late final DeviceService _deviceService;
   final TextEditingController _searchController = TextEditingController();
 
   List<Device> _availableDevices = [];
@@ -82,7 +81,6 @@ class _DeviceGroupManageDevicesDialogState
     final serviceLocator = ServiceLocator();
     final apiService = serviceLocator.apiService;
     _deviceGroupService = DeviceGroupService(apiService);
-    _deviceService = DeviceService(apiService);
 
     // Load data
     _loadAvailableDevices();
@@ -343,18 +341,55 @@ class _DeviceGroupManageDevicesDialogState
 
   Future<List<Device>> _fetchAllAvailableDevices() async {
     try {
-      // Return all available devices (since they're already loaded)
-      return _availableDevices;
+      // Fetch all available devices with the same search query
+      final response = await _deviceGroupService.getAvailableDevices(
+        search: _availableSearchQuery,
+        offset: 0,
+        limit: _totalAvailableDevices > 0
+            ? _totalAvailableDevices
+            : 1000, // Fetch all or a large number
+      );
+
+      if (response.success && response.data != null) {
+        print(
+          '✅ Device Group Dialog: Fetched ${response.data!.length} available devices for selection',
+        );
+        return response.data!;
+      } else {
+        throw Exception(
+          response.message ?? 'Failed to fetch all available devices',
+        );
+      }
     } catch (e) {
+      print('❌ Device Group Dialog: Error fetching all available devices - $e');
       throw Exception('Error fetching all available devices: $e');
     }
   }
 
   Future<List<Device>> _fetchAllCurrentDevices() async {
     try {
-      // Return all current devices (since they're already loaded)
-      return _currentDevices;
+      // Fetch all current devices with the same search query
+      final response = await _deviceGroupService.getDevicesInGroup(
+        groupId: widget.deviceGroup.id!,
+        search: _currentSearchQuery,
+        offset: 0,
+        limit: _totalCurrentDevices > 0
+            ? _totalCurrentDevices
+            : 1000, // Fetch all or a large number
+      );
+
+      if (response.success && response.data != null) {
+        print(
+          '✅ Device Group Dialog: Fetched ${response.data!.length} current devices for selection',
+        );
+        return response.data!;
+      } else {
+        throw Exception(
+          response.message ?? 'Failed to fetch all current devices',
+        );
+      }
     } catch (e) {
+      print('❌ Device Group Dialog: Error fetching all current devices - $e');
       throw Exception('Error fetching all current devices: $e');
     }
   }
@@ -373,26 +408,41 @@ class _DeviceGroupManageDevicesDialogState
     setState(() => _isProcessing = true);
 
     try {
-      // Update each selected device to set the group ID
-      for (final device in _selectedAvailableDevices) {
-        final updatedDevice = device.copyWith(
-          deviceGroupId: widget.deviceGroup.id,
-        );
-        await _deviceService.updateDevice(updatedDevice);
-      }
+      // Get the device IDs to add (filter out null IDs)
+      final deviceIdsToAdd = _selectedAvailableDevices
+          .where((device) => device.id != null)
+          .map((device) => device.id!)
+          .toList();
 
-      AppToast.show(
-        context,
-        title: 'Success',
-        message: '${_selectedAvailableDevices.length} device(s) added to group',
-        type: ToastType.success,
+      // Use the proper Device Group API to update the group
+      final response = await _deviceGroupService.updateDeviceGroup(
+        widget.deviceGroup,
+        deviceIds: deviceIdsToAdd,
+        removedDeviceIds: [], // No devices to remove
       );
 
-      // Clear selection and refresh data
-      setState(() => _selectedAvailableDevices.clear());
-      await Future.wait([_loadAvailableDevices(), _loadCurrentDevices()]);
+      if (response.success) {
+        AppToast.show(
+          context,
+          title: 'Success',
+          message:
+              '${_selectedAvailableDevices.length} device(s) added to group',
+          type: ToastType.success,
+        );
 
-      widget.onDevicesChanged?.call();
+        // Clear selection and refresh data
+        setState(() => _selectedAvailableDevices.clear());
+        await Future.wait([_loadAvailableDevices(), _loadCurrentDevices()]);
+
+        widget.onDevicesChanged?.call();
+      } else {
+        AppToast.show(
+          context,
+          title: 'Error',
+          message: response.message ?? 'Failed to add devices to group',
+          type: ToastType.error,
+        );
+      }
     } catch (e) {
       AppToast.show(
         context,
@@ -419,25 +469,41 @@ class _DeviceGroupManageDevicesDialogState
     setState(() => _isProcessing = true);
 
     try {
-      // Update each selected device to remove from group (set deviceGroupId to 0)
-      for (final device in _selectedCurrentDevices) {
-        final updatedDevice = device.copyWith(deviceGroupId: 0);
-        await _deviceService.updateDevice(updatedDevice);
-      }
+      // Get the device IDs to remove (filter out null IDs)
+      final deviceIdsToRemove = _selectedCurrentDevices
+          .where((device) => device.id != null)
+          .map((device) => device.id!)
+          .toList();
 
-      AppToast.show(
-        context,
-        title: 'Success',
-        message:
-            '${_selectedCurrentDevices.length} device(s) removed from group',
-        type: ToastType.success,
+      // Use the proper Device Group API to update the group
+      final response = await _deviceGroupService.updateDeviceGroup(
+        widget.deviceGroup,
+        deviceIds: [], // No devices to add
+        removedDeviceIds: deviceIdsToRemove,
       );
 
-      // Clear selection and refresh data
-      setState(() => _selectedCurrentDevices.clear());
-      await Future.wait([_loadAvailableDevices(), _loadCurrentDevices()]);
+      if (response.success) {
+        AppToast.show(
+          context,
+          title: 'Success',
+          message:
+              '${_selectedCurrentDevices.length} device(s) removed from group',
+          type: ToastType.success,
+        );
 
-      widget.onDevicesChanged?.call();
+        // Clear selection and refresh data
+        setState(() => _selectedCurrentDevices.clear());
+        await Future.wait([_loadAvailableDevices(), _loadCurrentDevices()]);
+
+        widget.onDevicesChanged?.call();
+      } else {
+        AppToast.show(
+          context,
+          title: 'Error',
+          message: response.message ?? 'Failed to remove devices from group',
+          type: ToastType.error,
+        );
+      }
     } catch (e) {
       AppToast.show(
         context,
@@ -571,13 +637,13 @@ class _DeviceGroupManageDevicesDialogState
             Row(
               children: [
                 if (_currentTabIndex == 0) ...[
-                  Text(
-                    '${_selectedAvailableDevices.length} device(s) selected',
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  // Text(
+                  //   '${_selectedAvailableDevices.length} device(s) selected',
+                  //   style: const TextStyle(
+                  //     fontSize: AppSizes.fontSizeSmall,
+                  //     color: AppColors.textSecondary,
+                  //   ),
+                  // ),
                   const Spacer(),
                   AppButton(
                     onPressed:
@@ -591,13 +657,13 @@ class _DeviceGroupManageDevicesDialogState
                     icon: const Icon(Icons.add),
                   ),
                 ] else ...[
-                  Text(
-                    '${_selectedCurrentDevices.length} device(s) selected',
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  // Text(
+                  //   '${_selectedCurrentDevices.length} device(s) selected',
+                  //   style: const TextStyle(
+                  //     fontSize: AppSizes.fontSizeSmall,
+                  //     color: AppColors.textSecondary,
+                  //   ),
+                  // ),
                   const Spacer(),
                   AppButton(
                     onPressed: _selectedCurrentDevices.isEmpty || _isProcessing
@@ -694,7 +760,7 @@ class _DeviceGroupManageDevicesDialogState
             onSort: _onAvailableSort,
             hiddenColumns: _availableHiddenColumns,
             onColumnVisibilityChanged: _onAvailableColumnVisibilityChanged,
-            totalItemsCount: _availableDevices.length,
+            totalItemsCount: _totalAvailableDevices, // Use total count from API
             onSelectAllItems: _fetchAllAvailableDevices,
           ),
         ),
@@ -717,7 +783,7 @@ class _DeviceGroupManageDevicesDialogState
               totalPages: totalPages,
               totalItems: _totalAvailableDevices,
               itemsPerPage: _availableItemsPerPage,
-              itemsPerPageOptions: const [5, 10, 20, 25, 50],
+              // itemsPerPageOptions: const [5, 10, 20, 25, 50],
               startItem: startIndex,
               endItem: endIndex,
               itemLabel: 'devices',
@@ -816,7 +882,7 @@ class _DeviceGroupManageDevicesDialogState
             onSort: _onCurrentSort,
             hiddenColumns: _currentHiddenColumns,
             onColumnVisibilityChanged: _onCurrentColumnVisibilityChanged,
-            totalItemsCount: _currentDevices.length,
+            totalItemsCount: _totalCurrentDevices, // Use total count from API
             onSelectAllItems: _fetchAllCurrentDevices,
           ),
         ),
@@ -839,7 +905,7 @@ class _DeviceGroupManageDevicesDialogState
               totalPages: totalPages,
               totalItems: _totalCurrentDevices,
               itemsPerPage: _currentDevicesItemsPerPage,
-              itemsPerPageOptions: const [5, 10, 20, 25, 50],
+              // itemsPerPageOptions: const [5, 10, 20, 25, 50],
               startItem: startIndex,
               endItem: endIndex,
               itemLabel: 'devices',
@@ -877,14 +943,14 @@ class _DeviceGroupManageDevicesDialogState
           ),
         ),
       ),
-      BluNestTableColumn<Device>(
-        key: 'Name',
-        title: 'Name',
-        flex: 2,
-        sortable: true,
-        builder: (device) =>
-            Text(device.name.isEmpty ? 'Unnamed' : device.name),
-      ),
+      // BluNestTableColumn<Device>(
+      //   key: 'Name',
+      //   title: 'Name',
+      //   flex: 2,
+      //   sortable: true,
+      //   builder: (device) =>
+      //       Text(device.name.isEmpty ? 'Unnamed' : device.name),
+      // ),
       BluNestTableColumn<Device>(
         key: 'Type',
         title: 'Type',
@@ -907,35 +973,44 @@ class _DeviceGroupManageDevicesDialogState
         flex: 1,
         sortable: true,
         builder: (device) => Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.spacing8,
-            vertical: AppSizes.spacing4,
+          alignment: Alignment.centerLeft,
+          child: StatusChip(
+            text: device.status,
+            type: device.status == 'Commissioned'
+                ? StatusChipType.success
+                : device.status == 'Discommissioned'
+                ? StatusChipType.construction
+                : device.status == 'None'
+                ? StatusChipType.none
+                : StatusChipType.none,
+            //  height: AppSizes.spacing40,
+            compact: true,
+            //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           ),
-          decoration: BoxDecoration(
-            color: _getStatusColor(device.status).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-          ),
-          child: Text(
-            device.status.isEmpty ? 'Unknown' : device.status,
-            style: TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              fontWeight: FontWeight.w500,
-              color: _getStatusColor(device.status),
-            ),
+        ),
+      ),
+      BluNestTableColumn<Device>(
+        key: 'LinkStatus',
+        title: 'Link Status',
+        flex: 1,
+        sortable: true,
+        builder: (device) => Container(
+          alignment: Alignment.centerLeft,
+          child: StatusChip(
+            text: device.linkStatus,
+            type: device.linkStatus == 'MULTIDRIVE'
+                ? StatusChipType.commissioned
+                : device.linkStatus == 'E-POWER'
+                ? StatusChipType.warning
+                : device.linkStatus == 'None'
+                ? StatusChipType.none
+                : StatusChipType.none,
+            compact: true,
+            //  height: AppSizes.spacing40,
+            //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           ),
         ),
       ),
     ];
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'commissioned':
-        return AppColors.success;
-      case 'none':
-        return AppColors.warning;
-      default:
-        return AppColors.textSecondary;
-    }
   }
 }

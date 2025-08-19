@@ -116,7 +116,15 @@ class TimeBandTableColumns {
         title: 'Time Range',
         sortable: true,
         flex: 2,
-        builder: (timeBand) => _buildTimeRangeColumn(timeBand),
+        builder: (timeBand) => Container(
+          alignment: Alignment.centerLeft,
+          child: StatusChip(
+            text: timeBand.timeRangeDisplay,
+            type: StatusChipType.info,
+            compact: true,
+          ),
+        ),
+        // _buildTimeRangeColumn(timeBand),
       ),
 
       // Days of Week column
@@ -256,7 +264,7 @@ class TimeBandTableColumns {
       return Text(
         'All days',
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppSizes.fontSizeSmall,
           color: Colors.grey[500],
           fontStyle: FontStyle.italic,
         ),
@@ -272,7 +280,7 @@ class TimeBandTableColumns {
       return Text(
         'All months',
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppSizes.fontSizeSmall,
           color: Colors.grey[500],
           fontStyle: FontStyle.italic,
         ),
@@ -322,7 +330,7 @@ class TimeBandTableColumns {
       child: Text(
         attributeCount.toString(),
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppSizes.fontSizeSmall,
           fontWeight: FontWeight.w600,
           color: attributeCount > 0 ? AppColors.warning : Colors.grey[600],
         ),

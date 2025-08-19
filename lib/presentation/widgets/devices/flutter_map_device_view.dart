@@ -45,11 +45,11 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
   bool _isLoadingDevices = false;
   String _errorMessage = '';
 
-  // Device list pagination
+  // Device list pagination (sidebar)
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalItems = 0;
-  final int _itemsPerPage = 8;
+  int _itemsPerPage = 8; // Changed from final to mutable
   String _searchQuery = '';
 
   @override
@@ -59,6 +59,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
         widget.deviceService ??
         Provider.of<DeviceService>(context, listen: false);
     _loadDevicesForMap();
+    _updateMapData();
   }
 
   @override
@@ -66,6 +67,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.devices != widget.devices && _allDevicesForMap.isEmpty) {
       _setupMapData(widget.devices);
+      _updateMapData();
     }
   }
 
@@ -85,6 +87,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
       if (response.success) {
         _allDevicesForMap = response.data ?? [];
         _setupMapData(_allDevicesForMap);
+        _updateMapData();
         await _loadDeviceListPage();
       } else {
         _errorMessage = response.message ?? 'Failed to load devices';
@@ -97,6 +100,19 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
         _isLoadingDevices = false;
       });
     }
+  }
+
+  void _updateMapData() {
+    // Update map to show devices from current sidebar page
+    final devicesWithCoords = _allDevicesForMap
+        .where(
+          (device) =>
+              device.address?.latitude != null &&
+              device.address?.longitude != null,
+        )
+        .toList();
+
+    _setupMapData(devicesWithCoords);
   }
 
   Future<void> _loadDeviceListPage() async {
@@ -167,6 +183,14 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
     _loadDeviceListPage();
   }
 
+  void _onItemsPerPageChanged(int newItemsPerPage) {
+    setState(() {
+      _itemsPerPage = newItemsPerPage;
+      _currentPage = 1; // Reset to first page when changing items per page
+    });
+    _loadDeviceListPage();
+  }
+
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
@@ -205,22 +229,13 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
   Widget build(BuildContext context) {
     if (_isLoadingDevices && _allDevicesForMap.isEmpty) {
       return Center(
-        child:
-            //  Column(
-            //   mainAxisAlignment: MainAxisAlignment.center,
-            //   children: [
-            //     CircularProgressIndicator(),
-            //     SizedBox(height: 16),
-            //     Text('Loading device locations...'),
-            //   ],
-            // ),
-            AppLottieStateWidget.loading(
-              title: 'Loading Device Locations',
-              message: 'Please wait while we fetch device locations.',
-              lottieSize: 80,
-              titleColor: AppColors.primary,
-              messageColor: AppColors.secondary,
-            ),
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Device Locations',
+          message: 'Please wait while we fetch device locations.',
+          lottieSize: 80,
+          titleColor: AppColors.primary,
+          messageColor: AppColors.secondary,
+        ),
       );
     }
 
@@ -240,57 +255,64 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
       );
     }
 
-    return Row(
+    return Column(
       children: [
-        // Sidebar toggle
-        _buildSidebarToggle(),
-
-        // Device list sidebar
-        if (_showDeviceList) ...[
-          _buildDeviceListSidebar(),
-          Container(width: 1, color: AppColors.border),
-        ],
-
-        // Map view
+        // Main map content
         Expanded(
-          child: Stack(
+          child: Row(
             children: [
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: LatLng(11.556400, 104.928200),
-                  initialZoom: _currentZoom,
-                  maxZoom: 18,
-                  minZoom: 2,
-                  onPositionChanged: (MapPosition pos, bool hasGesture) {
-                    setState(() {
-                      _currentZoom = pos.zoom ?? _currentZoom;
-                    });
-                  },
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    subdomains: const ['a', 'b', 'c'],
-                  ),
-                  MarkerClusterLayerWidget(
-                    options: MarkerClusterLayerOptions(
-                      markers: _markers,
-                      maxClusterRadius: 120,
-                      size: const Size(40, 40),
-                      builder: (context, markers) =>
-                          _buildClusterMarker(markers.length),
-                      zoomToBoundsOnClick: true,
-                      spiderfyCluster: true,
-                      showPolygon: false,
-                    ),
-                  ),
-                ],
-              ),
+              // Sidebar toggle
+              _buildSidebarToggle(),
 
-              // Selected device info panel
-              if (_selectedDevice != null) _buildDeviceInfoPanel(),
+              // Device list sidebar
+              if (_showDeviceList) ...[
+                _buildDeviceListSidebar(),
+                Container(width: 1, color: AppColors.border),
+              ],
+
+              // Map view
+              Expanded(
+                child: Stack(
+                  children: [
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: LatLng(11.556400, 104.928200),
+                        initialZoom: _currentZoom,
+                        maxZoom: 18,
+                        minZoom: 2,
+                        onPositionChanged: (MapPosition pos, bool hasGesture) {
+                          setState(() {
+                            _currentZoom = pos.zoom ?? _currentZoom;
+                          });
+                        },
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          subdomains: const ['a', 'b', 'c'],
+                        ),
+                        MarkerClusterLayerWidget(
+                          options: MarkerClusterLayerOptions(
+                            markers: _markers,
+                            maxClusterRadius: 120,
+                            size: const Size(40, 40),
+                            builder: (context, markers) =>
+                                _buildClusterMarker(markers.length),
+                            zoomToBoundsOnClick: true,
+                            spiderfyCluster: true,
+                            showPolygon: false,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Selected device info panel
+                    if (_selectedDevice != null) _buildDeviceInfoPanel(),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -400,29 +422,25 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
               color: Color(0xFFF8F9FA),
               border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9))),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.location_on, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Device Locations ($_totalItems)',
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Device Locations ($_totalItems)',
+                        style: const TextStyle(
+                          fontSize: AppSizes.fontSizeSmall,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-
-                // IconButton(
-                //   icon: const Icon(Icons.close),
-                //   onPressed: () {
-                //     setState(() {
-                //       _showDeviceList = false;
-                //     });
-                //   },
-                // ),
               ],
             ),
           ),
@@ -613,18 +631,20 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                   ),
           ),
 
-          // Reusable pagination
-          if (_totalPages > 1)
+          // Reusable pagination (always show if there are items)
+          if (_totalItems > 0)
             ResultsPagination(
               currentPage: _currentPage,
               totalPages: _totalPages,
               totalItems: _totalItems,
               itemsPerPage: _itemsPerPage,
+              itemsPerPageOptions: const [4, 8, 12, 16, 20],
               startItem: (_currentPage - 1) * _itemsPerPage + 1,
               endItem: math.min(_currentPage * _itemsPerPage, _totalItems),
               onPageChanged: _onPageChanged,
-              showItemsPerPageSelector: false,
-              // itemLabel: 'devices',
+              onItemsPerPageChanged: _onItemsPerPageChanged,
+              showItemsPerPageSelector: true,
+              itemLabel: 'devices',
             ),
         ],
       ),

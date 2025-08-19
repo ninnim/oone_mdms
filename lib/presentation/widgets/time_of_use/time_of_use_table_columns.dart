@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_of_use.dart';
@@ -39,7 +40,21 @@ class TimeOfUseTableColumns {
           );
         },
       ),
-
+      // Code column
+      BluNestTableColumn<TimeOfUse>(
+        key: 'code',
+        title: 'Code',
+        sortable: true,
+        flex: 1,
+        builder: (timeOfUse) => Container(
+          alignment: Alignment.centerLeft,
+          child: StatusChip(
+            text: timeOfUse.code,
+            type: StatusChipType.info,
+            compact: true,
+          ),
+        ),
+      ),
       // Name column
       BluNestTableColumn<TimeOfUse>(
         key: 'name',
@@ -47,24 +62,6 @@ class TimeOfUseTableColumns {
         sortable: true,
         flex: 2,
         builder: (timeOfUse) => _buildNameColumn(timeOfUse),
-      ),
-
-      // Code column
-      BluNestTableColumn<TimeOfUse>(
-        key: 'code',
-        title: 'Code',
-        sortable: true,
-        flex: 1,
-        builder: (timeOfUse) => _buildCodeColumn(timeOfUse),
-      ),
-
-      // Description column
-      BluNestTableColumn<TimeOfUse>(
-        key: 'description',
-        title: 'Description',
-        sortable: true,
-        flex: 2,
-        builder: (timeOfUse) => _buildDescriptionColumn(timeOfUse),
       ),
 
       // Time Bands column
@@ -80,7 +77,9 @@ class TimeOfUseTableColumns {
         key: 'channels',
         title: 'Channels',
         flex: 1,
-        builder: (timeOfUse) => _buildChannelsColumn(timeOfUse),
+        builder: (timeOfUse) =>
+        
+         _buildChannelsColumn(timeOfUse),
       ),
 
       // Status column
@@ -90,6 +89,14 @@ class TimeOfUseTableColumns {
         sortable: true,
         flex: 1,
         builder: (timeOfUse) => _buildStatusColumn(timeOfUse),
+      ),
+      // Description column
+      BluNestTableColumn<TimeOfUse>(
+        key: 'description',
+        title: 'Description',
+        sortable: true,
+        flex: 2,
+        builder: (timeOfUse) => _buildDescriptionColumn(timeOfUse),
       ),
 
       // Actions column
@@ -155,6 +162,7 @@ class TimeOfUseTableColumns {
   static Widget _buildNameColumn(TimeOfUse timeOfUse) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      alignment: Alignment.centerLeft,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -191,7 +199,7 @@ class TimeOfUseTableColumns {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           border: Border.all(color: AppColors.primary.withOpacity(0.3)),
         ),
         child: Text(
@@ -242,7 +250,7 @@ class TimeOfUseTableColumns {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.info.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           border: Border.all(color: AppColors.info.withOpacity(0.3)),
         ),
         child: Row(
@@ -280,7 +288,7 @@ class TimeOfUseTableColumns {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.warning.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           border: Border.all(color: AppColors.warning.withOpacity(0.3)),
         ),
         child: Row(
@@ -315,7 +323,7 @@ class TimeOfUseTableColumns {
           color: timeOfUse.active
               ? AppColors.success.withOpacity(0.1)
               : AppColors.error.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           border: Border.all(
             color: timeOfUse.active
                 ? AppColors.success.withOpacity(0.3)

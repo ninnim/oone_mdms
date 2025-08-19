@@ -1,140 +1,269 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import 'results_pagination.dart';
 
-/// A reusable Kanban board component with pagination support
-class KanbanView<T extends Object> extends StatefulWidget {
-  final List<KanbanColumn<T>> columns;
+/// Generic data model for Kanban items
+abstract class KanbanItem {
+  /// Unique identifier for the item
+  String get id;
+
+  /// Display title/name for the item
+  String get title;
+
+  /// Status/column for grouping
+  String get status;
+
+  /// Optional subtitle/description
+  String? get subtitle => null;
+
+  /// Optional badge text (e.g., count, priority)
+  String? get badge => null;
+
+  /// Optional status badge (e.g., link status, connection state)
+  Widget? get statusBadge => null;
+
+  /// Optional icon for the item
+  IconData? get icon => null;
+
+  /// Color scheme for the item (optional)
+  Color? get itemColor => null;
+
+  /// Additional details to display
+  List<KanbanDetail> get details => [];
+
+  /// Smart chips to display (e.g., month range, days of week)
+  List<Widget> get smartChips => [];
+
+  /// Whether the item is active/enabled
+  bool get isActive => true;
+}
+
+/// Detail row structure for Kanban items
+class KanbanDetail {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const KanbanDetail({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+}
+
+/// Configuration for Kanban columns
+class KanbanColumn {
+  final String key;
+  final String title;
+  final IconData icon;
+  final Color color;
+  final String emptyMessage;
+
+  const KanbanColumn({
+    required this.key,
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.emptyMessage,
+  });
+}
+
+/// Action configuration for items
+class KanbanAction {
+  final String key;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Function(KanbanItem) onTap;
+
+  const KanbanAction({
+    required this.key,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+}
+
+/// Generic and reusable Kanban view widget
+class KanbanView<T extends KanbanItem> extends StatelessWidget {
   final List<T> items;
-  final Widget Function(T item) cardBuilder;
-  final Function(T item, String fromColumn, String toColumn)? onItemMoved;
-  final Function(T item)? onItemTapped;
-  final bool enableDragDrop;
+  final List<KanbanColumn> columns;
+  final List<KanbanAction> actions;
+  final Function(T) onItemTap;
+  final bool isLoading;
   final bool enablePagination;
   final int itemsPerPage;
-  final bool isLoading;
-  final Widget? emptyState;
-  final String Function(T item) getItemColumn;
+  final double? columnWidth;
+  final double? maxHeight;
+  final EdgeInsets? padding;
+  final Widget Function(T)? customItemBuilder;
+  final Widget Function(String)? customEmptyBuilder;
 
   const KanbanView({
     super.key,
-    required this.columns,
     required this.items,
-    required this.cardBuilder,
-    required this.getItemColumn,
-    this.onItemMoved,
-    this.onItemTapped,
-    this.enableDragDrop = true,
-    this.enablePagination = false,
-    this.itemsPerPage = 20,
+    required this.columns,
+    required this.onItemTap,
+    this.actions = const [],
     this.isLoading = false,
-    this.emptyState,
+    this.enablePagination = true,
+    this.itemsPerPage = 25,
+    this.columnWidth,
+    this.maxHeight,
+    this.padding,
+    this.customItemBuilder,
+    this.customEmptyBuilder,
   });
 
   @override
-  State<KanbanView<T>> createState() => _KanbanViewState<T>();
-}
-
-class _KanbanViewState<T extends Object> extends State<KanbanView<T>> {
-  int _currentPage = 1;
-  final Map<String, ScrollController> _scrollControllers = {};
-
-  @override
-  void initState() {
-    super.initState();
-    for (final column in widget.columns) {
-      _scrollControllers[column.id] = ScrollController();
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final controller in _scrollControllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    if (widget.isLoading) {
+    final groupedItems = _groupItemsByStatus();
+
+    // Filter out empty columns
+    final nonEmptyColumns = columns.where((column) {
+      final columnItems = groupedItems[column.key] ?? [];
+      return columnItems.isNotEmpty;
+    }).toList();
+
+    if (nonEmptyColumns.isEmpty) {
       return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+        child: Text(
+          'No items to display',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: AppSizes.fontSizeMedium,
+          ),
         ),
       );
     }
 
-    if (widget.items.isEmpty && widget.emptyState != null) {
-      return widget.emptyState!;
-    }
+    // Calculate responsive column width
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth =
+        screenWidth - (padding?.horizontal ?? AppSizes.spacing16 * 2);
+    final dynamicColumnWidth = _calculateColumnWidth(
+      availableWidth,
+      nonEmptyColumns.length,
+    );
 
-    // Get paginated items for global pagination
-    final totalItems = widget.items.length;
-    final totalPages = widget.enablePagination
-        ? (totalItems / widget.itemsPerPage).ceil()
-        : 1;
-    final paginatedItems = widget.enablePagination
-        ? _getGlobalPaginatedItems()
-        : widget.items;
-
-    return Column(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widget.columns.map((column) {
-                return Expanded(
-                  child: _buildKanbanColumn(context, column, paginatedItems),
-                );
-              }).toList(),
-            ),
-          ),
+    return Container(
+      padding: padding ?? const EdgeInsets.all(AppSizes.spacing16),
+      height: maxHeight,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: nonEmptyColumns.map((column) {
+            final columnItems = groupedItems[column.key] ?? [];
+            return _buildStatusColumn(column, columnItems, dynamicColumnWidth);
+          }).toList(),
         ),
-        if (widget.enablePagination && totalPages > 1)
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            child: ResultsPagination(
-              currentPage: _currentPage,
-              totalPages: totalPages,
-              totalItems: totalItems,
-              itemsPerPage: widget.itemsPerPage,
-              startItem: ((_currentPage - 1) * widget.itemsPerPage) + 1,
-              endItem: (_currentPage * widget.itemsPerPage) > totalItems
-                  ? totalItems
-                  : _currentPage * widget.itemsPerPage,
-              onPageChanged: _onPageChanged,
-              onItemsPerPageChanged: null, // Fixed items per page for Kanban
-              showItemsPerPageSelector: false, // Don't show selector for Kanban
-              itemLabel: 'devices',
-            ),
-          ),
-      ],
+      ),
     );
   }
 
-  Widget _buildKanbanColumn(
-    BuildContext context,
-    KanbanColumn<T> column,
-    List<T> paginatedItems,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final columnItems = _getColumnItems(column.id, paginatedItems);
+  /// Calculate responsive column width based on available space and number of columns
+  double _calculateColumnWidth(double availableWidth, int columnCount) {
+    if (columnWidth != null) {
+      return columnWidth!;
+    }
 
+    const minColumnWidth = 280.0;
+    const maxColumnWidth = 500.0;
+    const columnSpacing = AppSizes.spacing16;
+
+    // Calculate total spacing between columns
+    final totalSpacing = (columnCount - 1) * columnSpacing;
+    final availableWidthForColumns = availableWidth - totalSpacing;
+
+    // Calculate width per column
+    double calculatedWidth = availableWidthForColumns / columnCount;
+
+    // Smart responsive behavior:
+    // - Single column: Take most of available width (up to max)
+    // - Multiple columns: Ensure readable width while fitting screen
+    if (columnCount == 1) {
+      // Single column gets more space but respects max width
+      calculatedWidth = (availableWidthForColumns * 0.95).clamp(
+        minColumnWidth,
+        maxColumnWidth,
+      );
+    } else if (columnCount == 2) {
+      // Two columns get balanced space
+      calculatedWidth = (availableWidthForColumns / 2).clamp(
+        minColumnWidth,
+        maxColumnWidth,
+      );
+    } else {
+      // Multiple columns: prioritize fitting on screen
+      calculatedWidth = calculatedWidth.clamp(minColumnWidth, maxColumnWidth);
+
+      // If calculated width would make columns too narrow, allow horizontal scroll
+      if (calculatedWidth < minColumnWidth) {
+        calculatedWidth = minColumnWidth;
+      }
+    }
+
+    return calculatedWidth;
+  }
+
+  Map<String, List<T>> _groupItemsByStatus() {
+    final Map<String, List<T>> grouped = {};
+
+    // Initialize with empty lists for all columns
+    for (final column in columns) {
+      grouped[column.key] = [];
+    }
+
+    // Group items by status
+    for (final item in items) {
+      final status = item.status.toLowerCase().trim();
+      String columnKey;
+
+      // Handle empty status
+      if (status.isEmpty) {
+        columnKey = 'none';
+      } else {
+        // Find matching column or default to the first one
+        final matchingColumn = columns.firstWhere(
+          (col) => col.key.toLowerCase() == status,
+          orElse: () => columns.firstWhere(
+            (col) => col.key == 'none',
+            orElse: () => columns.first,
+          ),
+        );
+        columnKey = matchingColumn.key;
+      }
+
+      grouped[columnKey]!.add(item);
+    }
+
+    return grouped;
+  }
+
+  Widget _buildStatusColumn(
+    KanbanColumn column,
+    List<T> items,
+    double effectiveColumnWidth,
+  ) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
+      width: effectiveColumnWidth,
+      margin: const EdgeInsets.only(right: AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.1),
-            blurRadius: 4,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -142,220 +271,297 @@ class _KanbanViewState<T extends Object> extends State<KanbanView<T>> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildColumnHeader(context, column, columnItems.length),
-          Expanded(
-            child: DragTarget<T>(
-              onWillAcceptWithDetails: (item) =>
-                  widget.enableDragDrop,
-              onAcceptWithDetails: (item) {
-                if (widget.onItemMoved != null) {
-                  final fromColumn = widget.getItemColumn(item as T);
-                  if (fromColumn != column.id) {
-                    widget.onItemMoved!(item as T, fromColumn, column.id);
-                  }
-                }
-              },
-              builder: (context, candidateData, rejectedData) {
-                final isAcceptingDrag = candidateData.isNotEmpty;
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+          // Column header
+          Container(
+            padding: const EdgeInsets.all(AppSizes.spacing16),
+            decoration: BoxDecoration(
+              color: column.color.withValues(alpha: 0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppSizes.radiusMedium),
+                topRight: Radius.circular(AppSizes.radiusMedium),
+              ),
+              border: Border(
+                bottom: BorderSide(color: column.color.withValues(alpha: 0.2)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(column.icon, color: column.color, size: 20),
+                const SizedBox(width: AppSizes.spacing8),
+                Expanded(
+                  child: Text(
+                    column.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: column.color,
+                      fontSize: AppSizes.fontSizeMedium,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isAcceptingDrag
-                        ? column.color.withOpacity(0.1)
-                        : Colors.transparent,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(AppSizes.radiusMedium),
+                    color: column.color.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Text(
+                    '${items.length}',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w600,
+                      color: column.color,
                     ),
                   ),
-                  child: _buildColumnContent(context, column, columnItems),
-                );
-              },
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildColumnHeader(
-    BuildContext context,
-    KanbanColumn<T> column,
-    int itemCount,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: column.color.withOpacity(0.1),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSizes.radiusMedium),
-        ),
-        border: Border(
-          bottom: BorderSide(color: column.color.withOpacity(0.3), width: 2),
-        ),
-      ),
-      child: Row(
-        children: [
-          if (column.icon != null) ...[
-            Icon(column.icon, color: column.color, size: AppSizes.iconMedium),
-            const SizedBox(width: AppSizes.spacing8),
-          ],
+          // Items list
           Expanded(
-            child: Text(
-              column.title,
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeMedium,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing8,
-              vertical: AppSizes.spacing4,
-            ),
-            decoration: BoxDecoration(
-              color: column.color,
-              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-            ),
-            child: Text(
-              itemCount.toString(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: AppSizes.fontSizeSmall,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: items.isEmpty
+                ? _buildEmptyState(column)
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSizes.spacing8),
+                    itemCount: enablePagination
+                        ? (items.length > itemsPerPage
+                              ? itemsPerPage
+                              : items.length)
+                        : items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return customItemBuilder?.call(item) ??
+                          _buildItemCard(item);
+                    },
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildColumnContent(
-    BuildContext context,
-    KanbanColumn<T> column,
-    List<T> items,
-  ) {
-    if (items.isEmpty) {
-      return _buildEmptyColumn(context, column);
+  Widget _buildEmptyState(KanbanColumn column) {
+    if (customEmptyBuilder != null) {
+      return customEmptyBuilder!(column.key);
     }
 
-    return ListView.builder(
-      controller: _scrollControllers[column.id],
-      padding: const EdgeInsets.all(AppSizes.spacing12),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            column.icon,
+            size: 48,
+            color: AppColors.textSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: AppSizes.spacing12),
+          Text(
+            column.emptyMessage,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.fontSizeSmall,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 
-        if (widget.enableDragDrop) {
-          return Draggable<T>(
-            data: item,
-            feedback: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-              child: SizedBox(width: 280, child: widget.cardBuilder(item)),
+  Widget _buildItemCard(T item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => onItemTap(item),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with title, status, and actions
+            Row(
+              children: [
+                if (item.icon != null) ...[
+                  Icon(
+                    item.icon!,
+                    color: item.itemColor ?? AppColors.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: AppSizes.spacing8),
+                ],
+                Expanded(
+                  child: Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontSize: AppSizes.fontSizeMedium,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing8),
+                if (item.badge != null) _buildBadge(item.badge!),
+                if (item.statusBadge != null) ...[
+                  const SizedBox(width: AppSizes.spacing4),
+                  item.statusBadge!,
+                ],
+                if (actions.isNotEmpty) ...[
+                  const SizedBox(width: AppSizes.spacing4),
+                  _buildActionsDropdown(item),
+                ],
+              ],
             ),
-            childWhenDragging: Opacity(
-              opacity: 0.5,
-              child: _buildKanbanCard(context, item),
+
+            // Subtitle
+            if (item.subtitle != null) ...[
+              const SizedBox(height: AppSizes.spacing8),
+              Text(
+                item.subtitle!,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.fontSizeSmall,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+
+            // Smart chips
+            if (item.smartChips.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spacing8),
+              ...item.smartChips.map(
+                (chip) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSizes.spacing4),
+                  child: chip,
+                ),
+              ),
+            ],
+
+            // Details
+            if (item.details.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spacing12),
+              ...item.details.map(
+                (detail) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSizes.spacing6),
+                  child: _buildDetailRow(detail),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: AppSizes.fontSizeExtraSmall,
+          color: AppColors.primary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(KanbanDetail detail) {
+    return Row(
+      children: [
+        Icon(
+          detail.icon,
+          size: AppSizes.iconSmall,
+          color: AppColors.textSecondary,
+        ),
+        const SizedBox(width: AppSizes.spacing8),
+        Text(
+          '${detail.label}:',
+          style: const TextStyle(
+            fontSize: AppSizes.fontSizeSmall,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing4),
+        Expanded(
+          child: Text(
+            detail.value,
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeSmall,
+              color: detail.valueColor ?? AppColors.textPrimary,
             ),
-            child: _buildKanbanCard(context, item),
-          );
-        } else {
-          return _buildKanbanCard(context, item);
-        }
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionsDropdown(T item) {
+    if (actions.isEmpty) return const SizedBox.shrink();
+
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_vert,
+        color: AppColors.textSecondary,
+        size: 16,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      itemBuilder: (context) => actions.map((action) {
+        return PopupMenuItem<String>(
+          value: action.key,
+          child: Row(
+            children: [
+              Icon(action.icon, size: 16, color: action.color),
+              const SizedBox(width: AppSizes.spacing8),
+              Text(
+                action.label,
+                style: action.color == AppColors.error
+                    ? TextStyle(color: action.color)
+                    : null,
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+      onSelected: (value) {
+        final action = actions.firstWhere((a) => a.key == value);
+        action.onTap(item);
       },
     );
   }
-
-  Widget _buildKanbanCard(BuildContext context, T item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
-      child: GestureDetector(
-        onTap: () => widget.onItemTapped?.call(item),
-        child: widget.cardBuilder(item),
-      ),
-    );
-  }
-
-  Widget _buildEmptyColumn(BuildContext context, KanbanColumn<T> column) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 48,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: AppSizes.spacing12),
-            Text(
-              'No items in ${column.title}',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: AppSizes.fontSizeMedium,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<T> _getColumnItems(String columnId, List<T> allItems) {
-    return allItems
-        .where((item) => widget.getItemColumn(item) == columnId)
-        .toList();
-  }
-
-  List<T> _getGlobalPaginatedItems() {
-    final startIndex = (_currentPage - 1) * widget.itemsPerPage;
-    final endIndex = startIndex + widget.itemsPerPage;
-
-    return widget.items.sublist(
-      startIndex,
-      endIndex > widget.items.length ? widget.items.length : endIndex,
-    );
-  }
-
-  void _onPageChanged(int newPage) {
-    setState(() {
-      _currentPage = newPage;
-    });
-
-    // Scroll all columns to top
-    for (final controller in _scrollControllers.values) {
-      controller.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-}
-
-/// Represents a column in the Kanban board
-class KanbanColumn<T> {
-  final String id;
-  final String title;
-  final Color color;
-  final IconData? icon;
-  final int? maxItems;
-
-  const KanbanColumn({
-    required this.id,
-    required this.title,
-    required this.color,
-    this.icon,
-    this.maxItems,
-  });
 }

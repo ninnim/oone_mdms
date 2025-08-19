@@ -6,12 +6,14 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../widgets/common/kanban_view.dart';
 import '../../widgets/special_days/special_day_filters_and_actions_v2.dart';
 import '../../widgets/special_days/special_day_form_dialog.dart';
 import '../../widgets/special_days/special_day_detail_form_dialog.dart';
 import '../../widgets/special_days/special_day_table_columns.dart';
 import '../../widgets/special_days/special_day_summary_card.dart';
 import '../../widgets/special_days/special_day_detail_table_columns.dart';
+import '../../widgets/special_days/special_day_kanban_adapter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
@@ -116,11 +118,42 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
   }
 
   void _onSpecialDaySelected(SpecialDay specialDay) {
-    setState(() {
-      _selectedSpecialDayForDetails = specialDay;
-      _isSidebarOpen = true;
-    });
-    _loadSpecialDayDetails(specialDay.id);
+    // Show view dialog instead of sidebar
+    _showViewDialog(specialDay);
+  }
+
+  void _showViewDialog(SpecialDay specialDay) {
+    showDialog(
+      context: context,
+      builder: (context) => SpecialDayFormDialog(
+        specialDay: specialDay,
+        mode: SpecialDayDialogMode.view,
+        onSave: (updatedSpecialDay) {
+          // Handle update logic here
+          _updateSpecialDay(updatedSpecialDay);
+        },
+        onSuccess: () {
+          _loadSpecialDays();
+        },
+      ),
+    );
+  }
+
+  void _updateSpecialDay(SpecialDay specialDay) async {
+    try {
+      await _specialDayService.updateSpecialDay(specialDay);
+      if (mounted) {
+        AppToast.showSuccess(
+          context,
+          message: 'Special day updated successfully',
+        );
+        _loadSpecialDays();
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(context, error: 'Failed to update special day: $e');
+      }
+    }
   }
 
   void _onSidebarClosed() {
@@ -620,7 +653,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-         SizedBox(height: AppSizes.spacing12),
+        SizedBox(height: AppSizes.spacing12),
         SpecialDaySummaryCard(specialDays: _filteredSpecialDays),
         const SizedBox(height: AppSizes.spacing8),
         SpecialDayFiltersAndActionsV2(
@@ -732,343 +765,23 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final groupedSpecialDays = _groupSpecialDaysByStatus();
+    final kanbanItems = _paginatedSpecialDays
+        .map((specialDay) => SpecialDayKanbanItem(specialDay))
+        .toList();
 
-    return Container(
+    return KanbanView<SpecialDayKanbanItem>(
+      items: kanbanItems,
+      columns: SpecialDayKanbanConfig.columns,
+      actions: SpecialDayKanbanConfig.getActions(
+        onView: _onSpecialDaySelected,
+        onEdit: _editSpecialDay,
+        onDelete: _deleteSpecialDay,
+        onManageDetails:
+            _onSpecialDaySelected, // Use same action for managing details
+      ),
+      onItemTap: (item) => _onSpecialDaySelected(item.specialDay),
+      isLoading: _isLoading,
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groupedSpecialDays.entries.map((entry) {
-            return _buildSpecialDayStatusColumn(entry.key, entry.value);
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Map<String, List<SpecialDay>> _groupSpecialDaysByStatus() {
-    final Map<String, List<SpecialDay>> grouped = {
-      'Active': [],
-      'Inactive': [],
-    };
-
-    for (final specialDay in _paginatedSpecialDays) {
-      if (specialDay.active) {
-        grouped['Active']!.add(specialDay);
-      } else {
-        grouped['Inactive']!.add(specialDay);
-      }
-    }
-
-    return grouped;
-  }
-
-  Widget _buildSpecialDayStatusColumn(
-    String status,
-    List<SpecialDay> specialDays,
-  ) {
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (status.toLowerCase()) {
-      case 'active':
-        statusColor = AppColors.success;
-        statusIcon = Icons.check_circle_outlined;
-        break;
-      case 'inactive':
-        statusColor = AppColors.textSecondary;
-        statusIcon = Icons.pause_circle_outlined;
-        break;
-      default:
-        statusColor = AppColors.textSecondary;
-        statusIcon = Icons.help_outline;
-    }
-
-    return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column header
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSizes.radiusMedium),
-                topRight: Radius.circular(AppSizes.radiusMedium),
-              ),
-              border: Border(
-                bottom: BorderSide(color: statusColor.withOpacity(0.2)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(statusIcon, color: statusColor, size: 20),
-                const SizedBox(width: AppSizes.spacing8),
-                Text(
-                  '$status Special Days',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                    fontSize: AppSizes.fontSizeMedium,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  ),
-                  child: Text(
-                    '${specialDays.length}',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Special Day cards
-          Expanded(
-            child: specialDays.isEmpty
-                ? _buildSpecialDayEmptyState(status)
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSizes.spacing8),
-                    itemCount: specialDays.length,
-                    itemBuilder: (context, index) {
-                      return _buildSpecialDayKanbanCard(specialDays[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecialDayEmptyState(String status) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.event_busy_outlined,
-            size: 48,
-            color: AppColors.textSecondary.withOpacity(0.5),
-          ),
-          const SizedBox(height: AppSizes.spacing12),
-          Text(
-            'No ${status.toLowerCase()} special days',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppSizes.fontSizeSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecialDayKanbanCard(SpecialDay specialDay) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _onSpecialDaySelected(specialDay),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with name and actions
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    specialDay.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      fontSize: AppSizes.fontSizeMedium,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                _buildSpecialDayActionsDropdown(specialDay),
-              ],
-            ),
-
-            const SizedBox(height: AppSizes.spacing8),
-
-            // Description
-            Text(
-              specialDay.description.isNotEmpty
-                  ? specialDay.description
-                  : 'No description',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: AppSizes.fontSizeSmall,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            const SizedBox(height: AppSizes.spacing8),
-
-            // Status and details count
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing6,
-                    vertical: AppSizes.spacing2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getSpecialDayStatusColor(
-                      specialDay.active,
-                    ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    border: Border.all(
-                      color: _getSpecialDayStatusColor(
-                        specialDay.active,
-                      ).withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    specialDay.active ? 'Active' : 'Inactive',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeExtraSmall,
-                      color: _getSpecialDayStatusColor(specialDay.active),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing6,
-                    vertical: AppSizes.spacing2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    '${specialDay.specialDayDetails.length} details',
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeExtraSmall,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _getSpecialDayStatusColor(bool active) {
-    return active ? AppColors.success : AppColors.error;
-  }
-
-  Widget _buildSpecialDayActionsDropdown(SpecialDay specialDay) {
-    return PopupMenuButton<String>(
-      icon: const Icon(
-        Icons.more_vert,
-        color: AppColors.textSecondary,
-        size: 16,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-      ),
-      itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'view',
-          child: Row(
-            children: [
-              Icon(Icons.visibility, size: 16, color: AppColors.primary),
-              SizedBox(width: AppSizes.spacing8),
-              Text('View Details'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 16, color: AppColors.warning),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Edit'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 16, color: AppColors.error),
-              SizedBox(width: AppSizes.spacing8),
-              Text('Delete', style: TextStyle(color: AppColors.error)),
-            ],
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        switch (value) {
-          case 'view':
-            _onSpecialDaySelected(specialDay);
-            break;
-          case 'edit':
-            _editSpecialDay(specialDay);
-            break;
-          case 'delete':
-            _deleteSpecialDay(specialDay);
-            break;
-        }
-      },
     );
   }
 
@@ -1259,18 +972,9 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
     if (_isLoadingDetails) {
       return const AppLottieStateWidget.loading(
         message: 'Loading special day details...',
-        lottieSize: 100,
+        lottieSize: 80,
       );
     }
-
-    //EmptyData
-    // if (_specialDayDetails.isEmpty) {
-    //   return AppLottieStateWidget.noData(
-    //     title: 'No Details',
-    //     message: 'This special day has no details yet.',
-    //     lottieSize: 120,
-    //   );
-    // }
 
     List<SpecialDayDetail> sortedDetails = List.from(_specialDayDetails);
     if (_subDetailsSortColumn != null) {
