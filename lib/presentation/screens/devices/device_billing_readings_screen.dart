@@ -6,6 +6,7 @@ import 'package:mdms_clone/core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/blunest_data_table.dart';
@@ -29,7 +30,8 @@ class DeviceBillingReadingsScreen extends StatefulWidget {
 }
 
 class _DeviceBillingReadingsScreenState
-    extends State<DeviceBillingReadingsScreen> {
+    extends State<DeviceBillingReadingsScreen>
+    with ResponsiveMixin {
   late DeviceService _deviceService;
   Map<String, dynamic>? _billingReadings;
   bool _isLoading = true;
@@ -104,207 +106,199 @@ class _DeviceBillingReadingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: Column(
-        children: [
-          // Header section
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isMobile = screenWidth < 768;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          body: Column(
+            children: [
+              // Header section
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+                  ),
+                ),
+                child: Column(
                   children: [
-                    // if (widget.onBack != null) ...[
-                    //   IconButton(
-                    //     icon: const Icon(Icons.arrow_back),
-                    //     onPressed: widget.onBack,
-                    //     tooltip: 'Back to Device Details',
-                    //   ),
-                    //   const SizedBox(width: 16),
-                    // ],
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Device Billing Readings',
-                            style: TextStyle(
-                              fontSize: AppSizes.fontSizeLarge,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1e293b),
-                            ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Device Billing Readings',
+                                style: TextStyle(
+                                  fontSize: AppSizes.fontSizeLarge,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1e293b),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Device: ${widget.device.serialNumber}',
+                                style: const TextStyle(
+                                  fontSize: AppSizes.fontSizeSmall,
+                                  color: Color(0xFF64748b),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Device: ${widget.device.serialNumber}',
-                            style: const TextStyle(
-                              fontSize: AppSizes.fontSizeSmall,
-                              color: Color(0xFF64748b),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        // View Toggle
+                        if (isMobile)
+                          _buildMobileViewToggle()
+                        else
+                          _buildDesktopViewToggle(),
+                        const Spacer(),
+                        _buildActionButtons(),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content section
+              Expanded(
+                child: _isLoading
+                    ? AppLottieStateWidget.loading(
+                        title: 'Loading Billing Readings',
+                        message:
+                            'Please wait while we load the billing readings.',
+                        lottieSize: 80,
+                      )
+                    : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Color(0xFFef4444),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _error!,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFFef4444),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadBillingReadings,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          // Scrollable content area
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: _isTableView
+                                  ? _buildTableView()
+                                  : SingleChildScrollView(
+                                      child: _buildGraphView(),
+                                    ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    // View Toggle - Button style like metrics
-                    _buildViewToggle(),
-                    const Spacer(),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563eb),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: IconButton(
-                        onPressed: _loadBillingReadings,
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        tooltip: 'Refresh Data',
-                        padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF64748b),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: IconButton(
-                        onPressed: _exportReadings,
-                        icon: const Icon(
-                          Icons.download,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        tooltip: 'Export Readings',
-                        padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+        );
+      },
+    );
+  }
 
-          // Content section
-          Expanded(
-            child: _isLoading
-                ? AppLottieStateWidget.loading(
-                    title: 'Loading Billing Readings',
-                    message: 'Please wait while we load the billing readings.',
-                    lottieSize: 80,
-                  )
-                : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Color(0xFFef4444),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _error!,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFFef4444),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadBillingReadings,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
-                    children: [
-                      // Billing Period Info - Sticky Header
-                      // Container(
-                      //   padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                      //   decoration: const BoxDecoration(
-                      //     color: Colors.white,
-                      //     border: Border(
-                      //       bottom: BorderSide(
-                      //         color: Color(0xFFE1E5E9),
-                      //         width: 1,
-                      //       ),
-                      //     ),
-                      //   ),
-                      //   child: AppCard(
-                      //     child: Column(
-                      //       crossAxisAlignment: CrossAxisAlignment.start,
-                      //       children: [
-                      //         const Text(
-                      //           'Billing Period Information',
-                      //           style: TextStyle(
-                      //             fontSize: 18,
-                      //             fontWeight: FontWeight.w600,
-                      //             color: Color(0xFF1e293b),
-                      //           ),
-                      //         ),
-                      //         const SizedBox(height: 16),
-                      //         _buildInfoRow(
-                      //           'Device ID',
-                      //           widget.billingRecord['DeviceId'] ?? 'N/A',
-                      //         ),
-                      //         _buildInfoRow(
-                      //           'Start Time',
-                      //           widget.billingRecord['StartTime'] ?? 'N/A',
-                      //         ),
-                      //         _buildInfoRow(
-                      //           'End Time',
-                      //           widget.billingRecord['EndTime'] ?? 'N/A',
-                      //         ),
-                      //         if (widget.billingRecord['TimeOfUse'] != null)
-                      //           _buildInfoRow(
-                      //             'Time of Use',
-                      //             widget.billingRecord['TimeOfUse']['Name'] ??
-                      //                 'N/A',
-                      //           ),
-                      //       ],
-                      //     ),
-                      //   ),
-                      // ),
-                      // Scrollable content area
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: _isTableView
-                              ? _buildTableView()
-                              : SingleChildScrollView(child: _buildGraphView()),
-                        ),
-                      ),
-                    ],
-                  ),
+  Widget _buildDesktopViewToggle() {
+    return _buildViewToggle();
+  }
+
+  Widget _buildMobileViewToggle() {
+    return Container(
+      height: 36, // Smaller for mobile
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        color: const Color(0xFFF1F5F9),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildViewToggleButton(
+            icon: Icons.table_chart,
+            label: 'Table',
+            isActive: _isTableView,
+            isCompact: true,
+            onTap: () {
+              print('Switching to TABLE view');
+              setState(() => _isTableView = true);
+            },
+          ),
+          _buildViewToggleButton(
+            icon: Icons.bar_chart,
+            label: 'Graph',
+            isActive: !_isTableView,
+            isCompact: true,
+            onTap: () {
+              print('Switching to GRAPH view');
+              setState(() => _isTableView = false);
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2563eb),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: IconButton(
+            onPressed: _loadBillingReadings,
+            icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+            tooltip: 'Refresh Data',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF64748b),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: IconButton(
+            onPressed: _exportReadings,
+            icon: const Icon(Icons.download, color: Colors.white, size: 18),
+            tooltip: 'Export Readings',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+        ),
+      ],
     );
   }
 
@@ -348,6 +342,7 @@ class _DeviceBillingReadingsScreenState
     required String label,
     required bool isActive,
     required VoidCallback onTap,
+    bool isCompact = false,
   }) {
     return InkWell(
       onTap: () {
@@ -357,15 +352,13 @@ class _DeviceBillingReadingsScreenState
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.all(8), // AppSizes.spacing8 equivalent
-        constraints: const BoxConstraints(
-          minWidth: 32, // AppSizes.spacing32 equivalent
-          minHeight: 32, // AppSizes.spacing32 equivalent
+        padding: EdgeInsets.all(isCompact ? 6 : 8),
+        constraints: BoxConstraints(
+          minWidth: isCompact ? 28 : 32,
+          minHeight: isCompact ? 28 : 32,
         ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(
-            8,
-          ), // AppSizes.radiusMedium equivalent
+          borderRadius: BorderRadius.circular(isCompact ? 6 : 8),
           color: isActive ? const Color(0xFF2563eb) : Colors.transparent,
         ),
         child: Row(
@@ -373,18 +366,20 @@ class _DeviceBillingReadingsScreenState
           children: [
             Icon(
               icon,
-              size: 16, // AppSizes.iconSmall equivalent
+              size: isCompact ? 14 : 16,
               color: isActive ? Colors.white : const Color(0xFF64748b),
             ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14, // AppSizes.fontSizeSmall equivalent
-                fontWeight: FontWeight.w500,
-                color: isActive ? Colors.white : const Color(0xFF64748b),
+            if (!isCompact) ...[
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: isCompact ? 12 : 14,
+                  fontWeight: FontWeight.w500,
+                  color: isActive ? Colors.white : const Color(0xFF64748b),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -1501,5 +1496,4 @@ class _DeviceBillingReadingsScreenState
       ),
     );
   }
-
 }

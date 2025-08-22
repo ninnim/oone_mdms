@@ -120,7 +120,7 @@
 }
 
 // Delete Season
-// Method DELETE https://mdms.oone.bz/api/rest/v2/Season/119
+// Method DELETE https://mdms.oone.bz/api/rest/Season/119
 // Response Delete Season
 {
   "Season": {

@@ -147,7 +147,7 @@ class DeviceDetailsDialog extends StatelessWidget {
                       onPressed: () => Navigator.of(context).pop(),
                       text: 'Close',
                       type: AppButtonType.secondary,
-                      size: AppButtonSize.medium,
+                    //  size: AppButtonSize.medium,
                     ),
                     const SizedBox(width: AppSizes.spacing12),
                     AppButton(
@@ -157,7 +157,7 @@ class DeviceDetailsDialog extends StatelessWidget {
                       },
                       text: 'View Full Details',
                       type: AppButtonType.primary,
-                      size: AppButtonSize.medium,
+                    //  size: AppButtonSize.medium,
                     ),
                   ],
                 ),

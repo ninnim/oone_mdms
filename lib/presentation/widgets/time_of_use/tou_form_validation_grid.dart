@@ -88,28 +88,31 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
   @override
   Widget build(BuildContext context) {
-    // If no height is specified, don't set a fixed height - let it expand
-    final containerWidget = Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          _buildHeader(),
-          if (widget.showLegend) _buildLegend(),
-          Expanded(child: _buildGrid()),
-        ],
-      ),
-    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate available space for the grid
+        final availableHeight = constraints.maxHeight;
+        final availableWidth = constraints.maxWidth;
 
-    // Apply height constraint only if height is specified
-    if (widget.height != null) {
-      return SizedBox(height: widget.height, child: containerWidget);
-    } else {
-      return containerWidget;
-    }
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHeader(),
+              if (widget.showLegend) _buildLegend(),
+              Expanded(
+                child: _buildResponsiveGrid(availableWidth, availableHeight),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildHeader() {
@@ -158,36 +161,43 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
               const Spacer(),
               // Show filtered channel info if applicable
               if (filteredChannelName != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing8,
-                    vertical: AppSizes.spacing4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.3),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing8,
+                      vertical: AppSizes.spacing4,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.filter_alt,
-                        size: 12,
-                        color: AppColors.warning,
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.3),
                       ),
-                      const SizedBox(width: AppSizes.spacing4),
-                      Text(
-                        filteredChannelName,
-                        style: TextStyle(
-                          fontSize: AppSizes.fontSizeSmall,
-                          fontWeight: FontWeight.w500,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.filter_alt,
+                          size: 12,
                           color: AppColors.warning,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: AppSizes.spacing4),
+                        Expanded(
+                          child: Text(
+                            filteredChannelName,
+                            style: TextStyle(
+                              fontSize: AppSizes.fontSizeSmall,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.warning,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSizes.spacing8),
@@ -229,49 +239,23 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        //mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Channel and Time Band Legend
-          Container(
-            alignment: Alignment.centerLeft,
-            child: _buildChannelTimeBandLegend(),
+          // Channel and Time Band Legend - Responsive
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
+                alignment: Alignment.centerLeft,
+                child: _buildResponsiveLegend(constraints.maxWidth),
+              );
+            },
           ),
-
-          //  const SizedBox(height: AppSizes.spacing8),
-
-          // Status Legend
-          // Row(
-          //   children: [
-          //     const Text(
-          //       'Status:',
-          //       style: TextStyle(
-          //         fontSize: AppSizes.fontSizeSmall,
-          //         fontWeight: FontWeight.w500,
-          //         color: AppColors.textPrimary,
-          //       ),
-          //     ),
-          //     const SizedBox(width: AppSizes.spacing12),
-          //     _buildLegendItem(
-          //       'Covered',
-          //       AppColors.success.withValues(alpha: 0.8),
-          //     ),
-          //     _buildLegendItem(
-          //       'Overlap',
-          //       AppColors.warning.withValues(alpha: 0.8),
-          //     ),
-          //     _buildLegendItem(
-          //       'Conflict',
-          //       AppColors.error.withValues(alpha: 0.8),
-          //     ),
-          //     _buildLegendItem('Empty', AppColors.surface),
-          //   ],
-          // ),
         ],
       ),
     );
   }
 
-  Widget _buildChannelTimeBandLegend() {
+  Widget _buildResponsiveLegend(double availableWidth) {
     // Get the channels that have data
     final channelsWithData = <int, List<TimeBand>>{};
 
@@ -281,10 +265,8 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
       bool shouldInclude = false;
 
       if (_selectedFilterChannelId != null) {
-        // If a specific channel is selected in filter, only show that channel
         shouldInclude = detail.channelId == _selectedFilterChannelId;
       } else {
-        // If no specific filter selected, show all visible channels
         shouldInclude = _visibleChannelIds.contains(detail.channelId);
       }
 
@@ -316,23 +298,31 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
       '🎨 Legend: Displaying ${channelsWithData.length} channels (filter: $_selectedFilterChannelId): ${channelsWithData.keys.toList()}',
     );
 
+    // Determine layout based on available width
+    final isCompact = availableWidth < 600;
+    final titleFontSize = isCompact ? 12.0 : 18.0;
+    final itemFontSize = isCompact ? 12.0 : 14.0;
+    final colorBoxSize = isCompact ? 12.0 : 14.0;
+    final spacing = isCompact ? 8.0 : 12.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Channel Time Band Colors:',
           style: TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
+            fontSize: titleFontSize,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: AppSizes.spacing8),
+        SizedBox(height: isCompact ? 4 : 6),
 
-        // Display each channel with its time bands
+        // Display channels in a responsive layout
         Wrap(
-          spacing: AppSizes.spacing16,
-          runSpacing: AppSizes.spacing8,
+          spacing: spacing,
+          runSpacing: isCompact ? 4 : 6,
           children: channelsWithData.entries.map((entry) {
             final channelId = entry.key;
             final timeBands = entry.value;
@@ -344,12 +334,12 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
             final channelDisplayName = channel?.code.isNotEmpty == true
                 ? channel!.code
-                : channel?.name ?? 'Channel $channelId';
+                : channel?.name ?? 'CH$channelId';
 
             return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spacing8,
-                vertical: AppSizes.spacing4,
+              padding: EdgeInsets.symmetric(
+                horizontal: isCompact ? 4 : 6,
+                vertical: isCompact ? 2 : 3,
               ),
               decoration: BoxDecoration(
                 color: AppColors.surface,
@@ -359,15 +349,18 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    channelDisplayName,
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                  Flexible(
+                    child: Text(
+                      channelDisplayName,
+                      style: TextStyle(
+                        fontSize: itemFontSize,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: AppSizes.spacing8),
+                  SizedBox(width: isCompact ? 4 : 6),
 
                   // Time band colors
                   ...timeBands.asMap().entries.map((tbEntry) {
@@ -376,15 +369,15 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                     final color = _getChannelTimeBandColor(channelId, tbIndex);
 
                     return Padding(
-                      padding: const EdgeInsets.only(right: AppSizes.spacing4),
+                      padding: const EdgeInsets.only(right: 2),
                       child: Tooltip(
                         message: timeBand.name,
                         child: Container(
-                          width: 16,
-                          height: 16,
+                          width: colorBoxSize,
+                          height: colorBoxSize,
                           decoration: BoxDecoration(
                             color: color,
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: BorderRadius.circular(2),
                             border: Border.all(
                               color: AppColors.border,
                               width: 1,
@@ -422,105 +415,125 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
     return colors[colorIndex];
   }
 
-  Widget _buildLegendItem(String label, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(right: AppSizes.spacing12),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGrid() {
+  Widget _buildResponsiveGrid(double availableWidth, double availableHeight) {
     final days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     final hours = List.generate(24, (index) => index);
 
+    // Calculate responsive sizes based on available space
+    final isCompact = availableWidth < 600;
+    final hourColumnWidth = isCompact ? 24.0 : 32.0;
+    final cellHeight = isCompact ? 22.0 : 28.0;
+    final headerHeight = isCompact ? 22.0 : 28.0;
+    final fontSize = isCompact ? 12.0 : 18.0;
+    final padding = isCompact ? 2.0 : 4.0;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.spacing4),
-      child: Column(
-        children: [
-          // Header row
-          Row(
+      padding: EdgeInsets.all(padding),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: availableHeight - 120, // Account for header and legend
+          minWidth: availableWidth,
+        ),
+        child: IntrinsicHeight(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(width: 32), // Hour column width
-              ...days.map(
-                (day) => Expanded(
-                  child: Container(
-                    height: 24,
-                    alignment: Alignment.center,
-                    child: Text(
-                      day,
-                      style: const TextStyle(
-                        fontSize: AppSizes.fontSizeSmall,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
+              // Header row
+              _buildGridHeader(days, hourColumnWidth, headerHeight, fontSize),
+
+              // Grid rows - with proper overflow handling
+              ...hours.map(
+                (hour) => _buildResponsiveGridRow(
+                  hour,
+                  hourColumnWidth,
+                  cellHeight,
+                  fontSize,
+                  availableWidth,
                 ),
               ),
             ],
           ),
-
-          // Grid rows
-          ...hours.map((hour) => _buildGridRow(hour)),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildGridRow(int hour) {
+  Widget _buildGridHeader(
+    List<String> days,
+    double hourColumnWidth,
+    double headerHeight,
+    double fontSize,
+  ) {
     return Row(
       children: [
-        // Hour label
-        SizedBox(
-          width: 32,
-          height: 24,
-          child: Text(
-            '${hour.toString().padLeft(2, '0')}',
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              fontFamily: 'monospace',
-              fontWeight: FontWeight.w500,
+        SizedBox(width: hourColumnWidth),
+        ...days.map(
+          (day) => Expanded(
+            child: Container(
+              height: headerHeight,
+              alignment: Alignment.center,
+              child: Text(
+                day,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-        ),
-
-        // Day cells
-        ...List.generate(
-          7,
-          (dayIndex) => Expanded(child: _buildGridCell(hour, dayIndex)),
         ),
       ],
     );
   }
 
-  Widget _buildGridCell(int hour, int dayIndex) {
+  Widget _buildResponsiveGridRow(
+    int hour,
+    double hourColumnWidth,
+    double cellHeight,
+    double fontSize,
+    double availableWidth,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        // Hour label
+        SizedBox(
+          width: hourColumnWidth,
+          height: cellHeight,
+          child: Center(
+            child: Text(
+              '${hour.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                fontSize: fontSize,
+                color: AppColors.textSecondary,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+
+        // Day cells - with proper flex and overflow handling
+        ...List.generate(
+          7,
+          (dayIndex) => Expanded(
+            flex: 1,
+            child: _buildResponsiveGridCell(hour, dayIndex, cellHeight),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResponsiveGridCell(int hour, int dayIndex, double cellHeight) {
     final validation = _validateTimeSlot(hour, dayIndex);
     final color = _getCellColor(validation);
 
     return Container(
-      height: 24,
+      height: cellHeight,
       margin: const EdgeInsets.all(0.5),
       decoration: BoxDecoration(
         color: color,

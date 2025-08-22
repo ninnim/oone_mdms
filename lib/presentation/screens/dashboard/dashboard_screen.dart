@@ -75,18 +75,18 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
         ),
-        AppButton(
-          text: 'Add Device',
-          type: AppButtonType.primary,
-          icon: const Icon(
-            Icons.add,
-            size: AppSizes.iconSmall,
-            color: AppColors.textInverse,
-          ),
-          onPressed: () {
-            // Navigate to devices screen or show add modal
-          },
-        ),
+        // AppButton(
+        //   text: 'Add Device',
+        //   type: AppButtonType.primary,
+        //   icon: const Icon(
+        //     Icons.add,
+        //     size: AppSizes.iconSmall,
+        //     color: AppColors.textInverse,
+        //   ),
+        //   onPressed: () {
+        //     // Navigate to devices screen or show add modal
+        //   },
+        // ),
       ],
     );
   }

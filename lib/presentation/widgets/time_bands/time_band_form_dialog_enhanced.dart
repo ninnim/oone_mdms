@@ -4,16 +4,14 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../../core/models/time_band.dart';
-import '../../../core/models/season.dart';
-import '../../../core/models/special_day.dart';
 import '../../../core/services/time_band_service.dart';
-import '../../../core/services/season_service.dart';
-import '../../../core/services/special_day_service.dart';
 import '../../../core/services/service_locator.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_toast.dart';
+import '../../widgets/common/app_dialog_header.dart';
 
 class TimeBandFormDialogEnhanced extends StatefulWidget {
   final TimeBand? timeBand;
@@ -53,8 +51,8 @@ class _TimeBandFormDialogEnhancedState
 
   // Quick time periods with their corresponding start and end times
   final Map<String, Map<String, String>> _quickTimePeriods = {
-    'Day': {'start': '06:00:00', 'end': '18:00:00'},
-    'Night': {'start': '18:00:00', 'end': '06:00:00'},
+    'Day': {'start': '07:00:00', 'end': '19:00:00'},
+    'Night': {'start': '19:00:00', 'end': '07:00:00'},
     'Full Day': {'start': '00:00:00', 'end': '23:59:59'},
   };
 
@@ -83,9 +81,6 @@ class _TimeBandFormDialogEnhancedState
     {'value': 11, 'label': 'November'},
     {'value': 12, 'label': 'December'},
   ];
-
-  List<Season> _availableSeasons = [];
-  List<SpecialDay> _availableSpecialDays = [];
 
   // Custom time input formatter for HH:mm:ss format
   static final _timeInputFormatter = TextInputFormatter.withFunction((
@@ -223,7 +218,6 @@ class _TimeBandFormDialogEnhancedState
     super.initState();
     _isEditMode = !widget.isViewMode;
     _initializeForm();
-    _loadDropdownData();
   }
 
   void _initializeForm() {
@@ -317,29 +311,6 @@ class _TimeBandFormDialogEnhancedState
         });
         break;
       }
-    }
-  }
-
-  Future<void> _loadDropdownData() async {
-    try {
-      final serviceLocator = Provider.of<ServiceLocator>(
-        context,
-        listen: false,
-      );
-      final seasonService = SeasonService(serviceLocator.apiService);
-      final specialDayService = SpecialDayService(serviceLocator.apiService);
-
-      final seasonsResponse = await seasonService.getSeasons();
-      final specialDaysResponse = await specialDayService.getSpecialDays();
-
-      if (mounted) {
-        setState(() {
-          _availableSeasons = seasonsResponse.data ?? [];
-          _availableSpecialDays = specialDaysResponse.data ?? [];
-        });
-      }
-    } catch (e) {
-      print('Error loading dropdown data: $e');
     }
   }
 
@@ -675,298 +646,531 @@ class _TimeBandFormDialogEnhancedState
 
   @override
   Widget build(BuildContext context) {
+    // Use ResponsiveHelper for consistent responsive behavior
+    final dialogConstraints = ResponsiveHelper.getDialogConstraints(context);
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
     final bool isReadOnly = widget.isViewMode && !_isEditMode;
-    final String dialogTitle = widget.isViewMode && !_isEditMode
-        ? 'View Time Band Details'
-        : widget.timeBand != null
-        ? 'Edit Time Band'
-        : 'Create Time Band';
+
+    // Dialog configuration based on mode
+    DialogType dialogType;
+    String dialogTitle;
+    String dialogSubtitle;
+
+    if (widget.timeBand == null) {
+      dialogType = DialogType.create;
+      dialogTitle = 'Create Time Band';
+      dialogSubtitle =
+          'Define time periods with quick select options or custom time ranges';
+    } else if (isReadOnly) {
+      dialogType = DialogType.view;
+      dialogTitle = 'View Time Band';
+      dialogSubtitle = 'Review time band configuration and applied attributes';
+    } else {
+      dialogType = DialogType.edit;
+      dialogTitle = 'Edit Time Band';
+      dialogSubtitle = 'Update time band settings and time configurations';
+    }
 
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       ),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.width * 0.8,
+      child: ConstrainedBox(
+        constraints: dialogConstraints,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    dialogTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
+            AppDialogHeader(
+              type: dialogType,
+              title: dialogTitle,
+              subtitle: dialogSubtitle,
+              onClose: () => Navigator.of(context).pop(),
             ),
 
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Basic Information
-                      Text(
-                        'Basic Information',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: AppSizes.spacing12),
-
-                      AppInputField(
-                        label: 'Name',
-                        controller: _nameController,
-                        enabled: !isReadOnly,
-                        required: true,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Name is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSizes.spacing16),
-
-                      // Time Configuration
-                      Text(
-                        'Time Configuration',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: AppSizes.spacing12),
-
-                      // Quick Time Selection
-                      _buildQuickTimeSelector(),
-
-                      // Time range fields
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AppInputField(
-                              label: 'Start Time',
-                              controller: _startTimeController,
-                              enabled: !isReadOnly && !_isQuickTimeSelected,
-                              required: true,
-                              hintText: 'HH:mm:ss (24-hour)',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [_timeInputFormatter],
-                              suffixIcon: isReadOnly
-                                  ? const Icon(
-                                      Icons.access_time,
-                                      color: Colors.grey,
-                                      size: AppSizes.iconSmall,
-                                    )
-                                  : _isQuickTimeSelected
-                                  ? Icon(
-                                      Icons.lock,
-                                      color: AppColors.warning,
-                                      size: AppSizes.iconSmall,
-                                    )
-                                  : IconButton(
-                                      icon: const Icon(Icons.access_time),
-                                      iconSize: AppSizes.iconSmall,
-                                      onPressed: () =>
-                                          _selectTime(_startTimeController),
-                                    ),
-                              validator: (value) {
-                                // Skip validation if quick time is selected (fields are auto-populated)
-                                if (_isQuickTimeSelected) {
-                                  return null;
-                                }
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Start time is required';
-                                }
-                                // Validate time format
-                                return _validateTimeFormat(value);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.spacing16),
-                          Expanded(
-                            child: AppInputField(
-                              label: 'End Time',
-                              controller: _endTimeController,
-                              enabled: !isReadOnly && !_isQuickTimeSelected,
-                              required: true,
-                              hintText: 'HH:mm:ss (24-hour)',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [_timeInputFormatter],
-                              suffixIcon: isReadOnly
-                                  ? const Icon(
-                                      size: AppSizes.iconSmall,
-                                      Icons.access_time,
-                                      color: Colors.grey,
-                                    )
-                                  : _isQuickTimeSelected
-                                  ? Icon(
-                                      Icons.lock,
-                                      color: AppColors.warning,
-                                      size: AppSizes.iconSmall,
-                                    )
-                                  : IconButton(
-                                      icon: const Icon(Icons.access_time),
-                                      iconSize: AppSizes.iconSmall,
-                                      onPressed: () =>
-                                          _selectTime(_endTimeController),
-                                    ),
-                              validator: (value) {
-                                // Skip validation if quick time is selected (fields are auto-populated)
-                                if (_isQuickTimeSelected) {
-                                  return null;
-                                }
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'End time is required';
-                                }
-                                // Validate time format
-                                return _validateTimeFormat(value);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSizes.spacing24),
-
-                      // Time Band Attributes
-                      Text(
-                        'Time Band Attributes',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: AppSizes.spacing12),
-
-                      // Days of Week
-                      _buildMultiSelectChips(
-                        'Days of Week',
-                        _daysOfWeekOptions,
-                        _selectedDaysOfWeek,
-                        (selectedValues) {
-                          setState(() {
-                            _selectedDaysOfWeek = selectedValues;
-                          });
-                          _generateDescription(); // Regenerate description
-                        },
-                        enabled: !isReadOnly,
-                      ),
-                      const SizedBox(height: AppSizes.spacing16),
-
-                      // Months of Year
-                      _buildMultiSelectChips(
-                        'Months of Year',
-                        _monthsOfYearOptions,
-                        _selectedMonthsOfYear,
-                        (selectedValues) {
-                          setState(() {
-                            _selectedMonthsOfYear = selectedValues;
-                          });
-                          _generateDescription(); // Regenerate description
-                        },
-                        enabled: !isReadOnly,
-                      ),
-                      const SizedBox(height: AppSizes.spacing24),
-
-                      // Description (moved to bottom)
-                      Text(
-                        'Description',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: AppSizes.spacing12),
-
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AppSizes.spacing12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(
-                            AppSizes.radiusSmall,
-                          ),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Description (Auto-generated)',
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: AppSizes.spacing8),
-                            Text(
-                              _getDisplayDescription().isEmpty
-                                  ? 'Description will be auto-generated based on your selections...'
-                                  : _getDisplayDescription(),
-                              style: TextStyle(
-                                fontSize: AppSizes.fontSizeMedium,
-                                color: _getDisplayDescription().isEmpty
-                                    ? AppColors.textSecondary
-                                    : AppColors.textPrimary,
-                                fontStyle: _getDisplayDescription().isEmpty
-                                    ? FontStyle.italic
-                                    : FontStyle.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            // Body
+            Expanded(child: _buildBody()),
 
             // Footer
             Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppButton(
-                    text: 'Cancel',
-                    type: AppButtonType.outline,
-                    onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.border.withOpacity(0.1),
+                    width: 1,
                   ),
-                  const SizedBox(width: AppSizes.spacing12),
-                  if (isReadOnly && !_isEditMode)
-                    AppButton(
-                      text: 'Edit',
-                      onPressed: () {
-                        setState(() {
-                          _isEditMode = true;
-                        });
-                      },
-                    )
-                  else
-                    AppButton(
-                      text: widget.timeBand != null ? 'Update' : 'Create',
-                      onPressed: _save,
-                      isLoading: _isLoading,
-                    ),
-                ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSizes.radiusMedium),
+                  bottomRight: Radius.circular(AppSizes.radiusMedium),
+                ),
               ),
+              child: isMobile ? _buildMobileFooter() : _buildDesktopFooter(),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Responsive body with form content
+  Widget _buildBody() {
+    final bool isReadOnly = widget.isViewMode && !_isEditMode;
+
+    return Container(
+      color: AppColors.background,
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBasicInformationSection(isReadOnly),
+              SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+              _buildTimeConfigurationSection(isReadOnly),
+              SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+              _buildAttributesSection(isReadOnly),
+              SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+              _buildDescriptionSection(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Mobile footer - vertical button layout
+  Widget _buildMobileFooter() {
+    final bool isReadOnly = widget.isViewMode && !_isEditMode;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (isReadOnly && !_isEditMode)
+          AppButton(
+            text: 'Edit',
+            onPressed: () {
+              setState(() {
+                _isEditMode = true;
+              });
+            },
+          )
+        else
+          AppButton(
+            text: _isLoading
+                ? 'Saving...'
+                : (widget.timeBand != null ? 'Update' : 'Create'),
+            onPressed: _isLoading ? null : _save,
+            isLoading: _isLoading,
+          ),
+        const SizedBox(height: AppSizes.spacing8),
+        AppButton(
+          text: isReadOnly ? 'Close' : 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  // Desktop footer - horizontal button layout
+  Widget _buildDesktopFooter() {
+    final bool isReadOnly = widget.isViewMode && !_isEditMode;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AppButton(
+          text: isReadOnly ? 'Close' : 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+        if (isReadOnly && !_isEditMode)
+          AppButton(
+            text: 'Edit',
+            onPressed: () {
+              setState(() {
+                _isEditMode = true;
+              });
+            },
+          )
+        else
+          AppButton(
+            text: _isLoading
+                ? 'Saving...'
+                : (widget.timeBand != null ? 'Update' : 'Create'),
+            onPressed: _isLoading ? null : _save,
+            isLoading: _isLoading,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBasicInformationSection(bool isReadOnly) {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Basic Information',
+            style: TextStyle(
+              fontSize: isMobile
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+          AppInputField(
+            label: 'Name',
+            controller: _nameController,
+            enabled: !isReadOnly,
+            required: true,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Name is required';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeConfigurationSection(bool isReadOnly) {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Time Configuration',
+            style: TextStyle(
+              fontSize: isMobile
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Quick Time Selection
+          _buildQuickTimeSelector(),
+
+          // Time range fields (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    AppInputField(
+                      label: 'Start Time',
+                      controller: _startTimeController,
+                      enabled: !isReadOnly && !_isQuickTimeSelected,
+                      required: true,
+                      hintText: 'HH:mm:ss (24-hour)',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [_timeInputFormatter],
+                      suffixIcon: isReadOnly
+                          ? const Icon(
+                              Icons.access_time,
+                              color: Colors.grey,
+                              size: AppSizes.iconSmall,
+                            )
+                          : _isQuickTimeSelected
+                          ? Icon(
+                              Icons.lock,
+                              color: AppColors.warning,
+                              size: AppSizes.iconSmall,
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.access_time),
+                              iconSize: AppSizes.iconSmall,
+                              onPressed: () =>
+                                  _selectTime(_startTimeController),
+                            ),
+                      validator: (value) {
+                        // Skip validation if quick time is selected (fields are auto-populated)
+                        if (_isQuickTimeSelected) {
+                          return null;
+                        }
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Start time is required';
+                        }
+                        // Validate time format
+                        return _validateTimeFormat(value);
+                      },
+                    ),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    AppInputField(
+                      label: 'End Time',
+                      controller: _endTimeController,
+                      enabled: !isReadOnly && !_isQuickTimeSelected,
+                      required: true,
+                      hintText: 'HH:mm:ss (24-hour)',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [_timeInputFormatter],
+                      suffixIcon: isReadOnly
+                          ? const Icon(
+                              size: AppSizes.iconSmall,
+                              Icons.access_time,
+                              color: Colors.grey,
+                            )
+                          : _isQuickTimeSelected
+                          ? Icon(
+                              Icons.lock,
+                              color: AppColors.warning,
+                              size: AppSizes.iconSmall,
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.access_time),
+                              iconSize: AppSizes.iconSmall,
+                              onPressed: () => _selectTime(_endTimeController),
+                            ),
+                      validator: (value) {
+                        // Skip validation if quick time is selected (fields are auto-populated)
+                        if (_isQuickTimeSelected) {
+                          return null;
+                        }
+                        if (value == null || value.trim().isEmpty) {
+                          return 'End time is required';
+                        }
+                        // Validate time format
+                        return _validateTimeFormat(value);
+                      },
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: AppInputField(
+                        label: 'Start Time',
+                        controller: _startTimeController,
+                        enabled: !isReadOnly && !_isQuickTimeSelected,
+                        required: true,
+                        hintText: 'HH:mm:ss (24-hour)',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_timeInputFormatter],
+                        suffixIcon: isReadOnly
+                            ? const Icon(
+                                Icons.access_time,
+                                color: Colors.grey,
+                                size: AppSizes.iconSmall,
+                              )
+                            : _isQuickTimeSelected
+                            ? Icon(
+                                Icons.lock,
+                                color: AppColors.warning,
+                                size: AppSizes.iconSmall,
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.access_time),
+                                iconSize: AppSizes.iconSmall,
+                                onPressed: () =>
+                                    _selectTime(_startTimeController),
+                              ),
+                        validator: (value) {
+                          // Skip validation if quick time is selected (fields are auto-populated)
+                          if (_isQuickTimeSelected) {
+                            return null;
+                          }
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Start time is required';
+                          }
+                          // Validate time format
+                          return _validateTimeFormat(value);
+                        },
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(
+                      child: AppInputField(
+                        label: 'End Time',
+                        controller: _endTimeController,
+                        enabled: !isReadOnly && !_isQuickTimeSelected,
+                        required: true,
+                        hintText: 'HH:mm:ss (24-hour)',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_timeInputFormatter],
+                        suffixIcon: isReadOnly
+                            ? const Icon(
+                                size: AppSizes.iconSmall,
+                                Icons.access_time,
+                                color: Colors.grey,
+                              )
+                            : _isQuickTimeSelected
+                            ? Icon(
+                                Icons.lock,
+                                color: AppColors.warning,
+                                size: AppSizes.iconSmall,
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.access_time),
+                                iconSize: AppSizes.iconSmall,
+                                onPressed: () =>
+                                    _selectTime(_endTimeController),
+                              ),
+                        validator: (value) {
+                          // Skip validation if quick time is selected (fields are auto-populated)
+                          if (_isQuickTimeSelected) {
+                            return null;
+                          }
+                          if (value == null || value.trim().isEmpty) {
+                            return 'End time is required';
+                          }
+                          // Validate time format
+                          return _validateTimeFormat(value);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttributesSection(bool isReadOnly) {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Time Band Attributes',
+            style: TextStyle(
+              fontSize: isMobile
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Days of Week
+          _buildMultiSelectChips(
+            'Days of Week',
+            _daysOfWeekOptions,
+            _selectedDaysOfWeek,
+            (selectedValues) {
+              setState(() {
+                _selectedDaysOfWeek = selectedValues;
+              });
+              _generateDescription(); // Regenerate description
+            },
+            enabled: !isReadOnly,
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Months of Year
+          _buildMultiSelectChips(
+            'Months of Year',
+            _monthsOfYearOptions,
+            _selectedMonthsOfYear,
+            (selectedValues) {
+              setState(() {
+                _selectedMonthsOfYear = selectedValues;
+              });
+              _generateDescription(); // Regenerate description
+            },
+            enabled: !isReadOnly,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Description',
+            style: TextStyle(
+              fontSize: ResponsiveHelper.shouldUseCompactUI(context)
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              border: Border.all(color: AppColors.border.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Description (Auto-generated)',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeSmall,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spacing8),
+                Text(
+                  _getDisplayDescription().isEmpty
+                      ? 'Description will be auto-generated based on your selections...'
+                      : _getDisplayDescription(),
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeMedium,
+                    color: _getDisplayDescription().isEmpty
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
+                    fontStyle: _getDisplayDescription().isEmpty
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

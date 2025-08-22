@@ -6,10 +6,12 @@ import '../../../core/models/device_group.dart';
 import '../../../core/models/device.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../../core/services/device_group_service.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_toast.dart';
+import '../../widgets/common/app_dialog_header.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
@@ -17,11 +19,13 @@ import '../../widgets/common/results_pagination.dart';
 class CreateEditDeviceGroupDialog extends StatefulWidget {
   final DeviceGroup? deviceGroup;
   final VoidCallback? onSaved;
+  final bool isReadOnly; // New parameter for view-only mode
 
   const CreateEditDeviceGroupDialog({
     super.key,
     this.deviceGroup,
     this.onSaved,
+    this.isReadOnly = false,
   });
 
   @override
@@ -42,6 +46,7 @@ class _CreateEditDeviceGroupDialogState
   bool _isActive = true;
   bool _isLoadingDevices = false;
   bool _isSearching = false; // Add search indicator
+  bool _isInEditMode = false; // Track if we're in edit mode
 
   List<Device> _availableDevices = [];
   Set<Device> _selectedDevices = {};
@@ -70,6 +75,9 @@ class _CreateEditDeviceGroupDialogState
       context,
       listen: false,
     );
+
+    // Initialize edit mode based on read-only state
+    _isInEditMode = !widget.isReadOnly;
 
     // Initialize search query
     _deviceSearchQuery = '%%'; // Default search to get all devices
@@ -243,6 +251,17 @@ class _CreateEditDeviceGroupDialogState
     }
   }
 
+  // Mode tracking helpers
+  bool get _isEditMode => _isInEditMode;
+  bool get _isViewMode => widget.isReadOnly && !_isInEditMode;
+  bool get _isCreateMode => widget.deviceGroup == null;
+
+  void _switchToEditMode() {
+    setState(() {
+      _isInEditMode = true;
+    });
+  }
+
   Future<void> _saveDeviceGroup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -313,6 +332,8 @@ class _CreateEditDeviceGroupDialogState
   }
 
   Widget _buildDeviceSelectionSection() {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
     // Safe pagination calculation to avoid clamp errors
     final totalPages = _totalDevices > 0
         ? (_totalDevices / _deviceItemsPerPage).ceil()
@@ -327,63 +348,72 @@ class _CreateEditDeviceGroupDialogState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header, Search field and selected count in one row
-        // Header
-        const Text(
-          'Select Devices',
-          style: TextStyle(
-            fontSize: AppSizes.fontSizeLarge,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppSizes.spacing16),
-
+        // Section Header
         Row(
           children: [
-            // Search field - styled exactly like device screen
             Expanded(
-              child: AppInputField(
-                controller: _searchController,
-                hintText: 'Search devices...',
-                onChanged: _onSearchChanged,
-                enabled: !_isLoading && !_isLoadingDevices,
-                // prefixIcon: _isSearching
-                //     ? const SizedBox(
-                //         width: 16,
-                //         height: 16,
-                //         child: CircularProgressIndicator(strokeWidth: 2),
-                //       )
-                //     : const Icon(Icons.search, size: 20),
+              child: Text(
+                'Device Selection',
+                style: TextStyle(
+                  fontSize: isMobile
+                      ? AppSizes.fontSizeMedium
+                      : AppSizes.fontSizeLarge,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
-            // const SizedBox(width: AppSizes.spacing16),
-            // const Spacer(),
-
-            // // Selected count
-            // StatusChip(
-            //   text: '${_selectedDevices.length} selected',
-            //   type: StatusChipType.info,
-            //   // compact: true,
-            // ),
+            if (_selectedDevices.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing8,
+                  vertical: AppSizes.spacing4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                ),
+                child: Text(
+                  '${_selectedDevices.length} selected',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeSmall,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
           ],
         ),
-        const SizedBox(height: AppSizes.spacing16),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-        // Device selection table
+        // Search field
+        AppInputField.search(
+          controller: _searchController,
+          hintText: 'Search devices by serial number, model, or type...',
+          onChanged: _onSearchChanged,
+          enabled: _isEditMode && !_isLoading && !_isLoadingDevices,
+          prefixIcon: Icon(Icons.search, size: AppSizes.iconSmall),
+        ),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+        // Device table container with responsive height
         Container(
-          height: 400,
+          height: isMobile ? 300 : 400,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+            color: AppColors.surface.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            border: Border.all(color: AppColors.border.withOpacity(0.5)),
           ),
           child: _isLoadingDevices || _isSearching
               ? AppLottieStateWidget.loading(lottieSize: 80)
               : _availableDevices.isEmpty
               ? AppLottieStateWidget.noData(
                   title: 'No Devices Found',
-                  message: 'No devices match your search criteria.',
-                  lottieSize: 100,
+                  message: _deviceSearchQuery.contains('%%')
+                      ? 'No devices available for selection.'
+                      : 'No devices match your search criteria.',
+                  lottieSize: 80,
                   titleColor: AppColors.primary,
                   messageColor: AppColors.textSecondary,
                 )
@@ -393,7 +423,7 @@ class _CreateEditDeviceGroupDialogState
                       child: BluNestDataTable<Device>(
                         columns: _buildDeviceTableColumns(),
                         data: _availableDevices,
-                        enableMultiSelect: true,
+                        enableMultiSelect: _isEditMode,
                         selectedItems: _selectedDevices
                             .where(
                               (selected) => _availableDevices.any(
@@ -402,37 +432,38 @@ class _CreateEditDeviceGroupDialogState
                             )
                             .toSet(),
                         onSelectionChanged: (selectedItems) {
-                          setState(() {
-                            // Remove deselected items from current page
-                            final currentPageDeviceIds = _availableDevices
-                                .map((d) => d.id)
-                                .toSet();
-                            _selectedDevices.removeWhere(
-                              (device) =>
-                                  currentPageDeviceIds.contains(device.id),
-                            );
+                          if (_isEditMode) {
+                            setState(() {
+                              // Remove deselected items from current page
+                              final currentPageDeviceIds = _availableDevices
+                                  .map((d) => d.id)
+                                  .toSet();
+                              _selectedDevices.removeWhere(
+                                (device) =>
+                                    currentPageDeviceIds.contains(device.id),
+                              );
 
-                            // Add newly selected items
-                            _selectedDevices.addAll(selectedItems);
-                          });
+                              // Add newly selected items
+                              _selectedDevices.addAll(selectedItems);
+                            });
+                          }
                         },
-                        // Add sorting functionality
                         sortBy: _sortBy,
                         sortAscending: _sortAscending,
                         onSort: _onSort,
-                        // Add column visibility functionality
                         hiddenColumns: _hiddenColumns,
                         onColumnVisibilityChanged: _onColumnVisibilityChanged,
                         isLoading: false,
                         totalItemsCount: _totalDevices,
-                        onSelectAllItems: _fetchAllAvailableDevices,
+                        onSelectAllItems: _isEditMode
+                            ? _fetchAllAvailableDevices
+                            : null,
                       ),
                     ),
 
-                    // Pagination - show if we have devices, matching device_groups_screen behavior
+                    // Pagination
                     if (_totalDevices > 0)
                       Container(
-                        //padding: const EdgeInsets.all(AppSizes.spacing16),
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           border: Border(
@@ -447,13 +478,7 @@ class _CreateEditDeviceGroupDialogState
                           totalPages: totalPages,
                           totalItems: _totalDevices,
                           itemsPerPage: _deviceItemsPerPage,
-                          itemsPerPageOptions: const [
-                            5,
-                            10,
-                            20,
-                            25,
-                            50,
-                          ], // Include 25 to match _deviceItemsPerPage default
+                          itemsPerPageOptions: const [5, 10, 20, 25, 50],
                           startItem: startIndex,
                           endItem: endIndex,
                           itemLabel: 'devices',
@@ -480,14 +505,17 @@ class _CreateEditDeviceGroupDialogState
   }
 
   List<BluNestTableColumn<Device>> _buildDeviceTableColumns() {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
     return [
       BluNestTableColumn<Device>(
         key: 'serialNumber',
         title: 'Serial Number',
-        flex: 2,
+        flex: isMobile ? 2 : 2,
         sortable: true,
         builder: (device) => Text(
           device.serialNumber.isNotEmpty ? device.serialNumber : 'Unknown',
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             color: AppColors.primary,
@@ -497,30 +525,31 @@ class _CreateEditDeviceGroupDialogState
       BluNestTableColumn<Device>(
         key: 'model',
         title: 'Model',
-        flex: 2,
+        flex: isMobile ? 2 : 2,
         sortable: true,
         builder: (device) => Text(
           device.model.isNotEmpty ? device.model : 'None',
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: AppColors.textPrimary),
         ),
       ),
-      BluNestTableColumn<Device>(
-        key: 'deviceType',
-        title: 'Type',
-        flex: 1,
-        sortable: true,
-        builder: (device) => device.deviceType.isNotEmpty
-            ? StatusChip(
-                text: device.deviceType,
-                type: StatusChipType.info,
-                compact: true,
-              )
-            : const Text('-'),
-      ),
+      // BluNestTableColumn<Device>(
+      //   key: 'deviceType',
+      //   title: 'Type',
+      //   flex: isMobile ? 1 : 1,
+      //   sortable: true,
+      //   builder: (device) => device.deviceType.isNotEmpty
+      //       ? StatusChip(
+      //           text: device.deviceType,
+      //           type: StatusChipType.info,
+      //           compact: true,
+      //         )
+      //       : const Text('-'),
+      // ),
       BluNestTableColumn<Device>(
         key: 'status',
         title: 'Status',
-        flex: 1,
+        flex: isMobile ? 1 : 1,
         sortable: true,
         builder: (device) => Container(
           alignment: Alignment.centerLeft,
@@ -533,16 +562,14 @@ class _CreateEditDeviceGroupDialogState
                 : device.status == 'None'
                 ? StatusChipType.none
                 : StatusChipType.none,
-            //  height: AppSizes.spacing40,
             compact: true,
-            //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           ),
         ),
       ),
       BluNestTableColumn<Device>(
         key: 'linkStatus',
         title: 'Link Status',
-        flex: 1,
+        flex: isMobile ? 1 : 1,
         sortable: true,
         builder: (device) => Container(
           alignment: Alignment.centerLeft,
@@ -556,8 +583,6 @@ class _CreateEditDeviceGroupDialogState
                 ? StatusChipType.none
                 : StatusChipType.none,
             compact: true,
-            //  height: AppSizes.spacing40,
-            //padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
           ),
         ),
       ),
@@ -566,135 +591,212 @@ class _CreateEditDeviceGroupDialogState
 
   @override
   Widget build(BuildContext context) {
+    // Use ResponsiveHelper for consistent responsive behavior
+    final dialogConstraints = ResponsiveHelper.getDialogConstraints(context);
+
+    // Dialog configuration based on mode
+    DialogType dialogType;
+    String dialogTitle;
+    String dialogSubtitle;
+
+    if (_isCreateMode) {
+      dialogType = DialogType.create;
+      dialogTitle = 'Create Device Group';
+      dialogSubtitle = 'Group devices for easier management and control';
+    } else if (_isViewMode) {
+      dialogType = DialogType.view;
+      dialogTitle = 'Device Group Details';
+      dialogSubtitle = 'View device group information and assigned devices';
+    } else {
+      dialogType = DialogType.edit;
+      dialogTitle = 'Edit Device Group';
+      dialogSubtitle = 'Modify device group settings and device assignments';
+    }
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
-      child: SizedBox(
-        // width: 800,
-        // height: MediaQuery.of(context).size.height * 0.85,
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.9,
-        //  constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
+      child: ConstrainedBox(
+        constraints: dialogConstraints,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    '${widget.deviceGroup == null ? 'Add' : 'Edit'} Device Group',
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  // const SizedBox(width: AppSizes.spacing8),
-                  // StatusChip(
-                  //   text: '${_selectedDevices.length} devices',
-                  //   type: StatusChipType.info,
-                  //   compact: true,
-                  // ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      foregroundColor: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+            AppDialogHeader(
+              type: dialogType,
+              title: dialogTitle,
+              subtitle: dialogSubtitle,
+              onClose: () => Navigator.of(context).pop(),
             ),
-            // Body
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Group Information - Single Row Layout
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AppInputField(
-                              label: 'Group Name',
-                              controller: _nameController,
-                              hintText: 'Enter device group name',
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Group name is required';
-                                }
-                                if (value.trim().length < 2) {
-                                  return 'Group name must be at least 2 characters';
-                                }
-                                return null;
-                              },
-                              enabled: !_isLoading,
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.spacing16),
-                          Expanded(
-                            child: AppInputField(
-                              label: 'Description',
-                              controller: _descriptionController,
-                              hintText: 'Enter group description (optional)',
-                              enabled: !_isLoading,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSizes.spacing16),
-
-                      // Device Selection Section
-                      _buildDeviceSelectionSection(),
-                    ],
-                  ),
-                ),
+                physics: const BouncingScrollPhysics(),
+                child: _buildBody(),
               ),
             ),
-            // Footer
             Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
+              padding: ResponsiveHelper.getPadding(context),
               decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    text: 'Cancel',
-                    type: AppButtonType.outline,
-                  ),
-                  const SizedBox(width: AppSizes.spacing12),
-                  AppButton(
-                    onPressed: _isLoading ? null : _saveDeviceGroup,
-                    text: _isLoading
-                        ? 'Saving...'
-                        : (widget.deviceGroup == null
-                              ? 'Create Group'
-                              : 'Update Group'),
-                    type: AppButtonType.primary,
-                    isLoading: _isLoading,
-                  ),
-                ],
-              ),
+              child: ResponsiveHelper.shouldUseCompactUI(context)
+                  ? _buildMobileFooter()
+                  : _buildDesktopFooter(),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    return Container(
+      padding: ResponsiveHelper.getPadding(context),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Group Information Section
+            _buildGroupInformationSection(),
+            SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+
+            // Device Selection Section
+            _buildDeviceSelectionSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupInformationSection() {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Group Information',
+          style: TextStyle(
+            fontSize: isMobile
+                ? AppSizes.fontSizeMedium
+                : AppSizes.fontSizeLarge,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+        // Responsive layout for form fields
+        isMobile
+            ? Column(
+                children: [
+                  AppInputField(
+                    label: 'Group Name',
+                    controller: _nameController,
+                    hintText: 'Enter device group name',
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Group name is required';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Group name must be at least 2 characters';
+                      }
+                      return null;
+                    },
+                    enabled: _isEditMode && !_isLoading,
+                  ),
+                  SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                  AppInputField(
+                    label: 'Description',
+                    controller: _descriptionController,
+                    hintText: 'Enter group description (optional)',
+                    enabled: _isEditMode && !_isLoading,
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: AppInputField(
+                      label: 'Group Name',
+                      controller: _nameController,
+                      hintText: 'Enter device group name',
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Group name is required';
+                        }
+                        if (value.trim().length < 2) {
+                          return 'Group name must be at least 2 characters';
+                        }
+                        return null;
+                      },
+                      enabled: _isEditMode && !_isLoading,
+                    ),
+                  ),
+                  SizedBox(width: ResponsiveHelper.getSpacing(context) * 2),
+                  Expanded(
+                    child: AppInputField(
+                      label: 'Description',
+                      controller: _descriptionController,
+                      hintText: 'Enter group description (optional)',
+                      enabled: _isEditMode && !_isLoading,
+                    ),
+                  ),
+                ],
+              ),
+      ],
+    );
+  }
+
+  // Mobile footer - vertical button layout
+  Widget _buildMobileFooter() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_isViewMode)
+          AppButton(text: 'Edit', onPressed: _switchToEditMode)
+        else
+          AppButton(
+            text: _isLoading
+                ? 'Saving...'
+                : (_isCreateMode ? 'Create Group' : 'Update Group'),
+            onPressed: _isLoading ? null : _saveDeviceGroup,
+            isLoading: _isLoading,
+          ),
+        const SizedBox(height: AppSizes.spacing8),
+        AppButton(
+          text: 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  // Desktop footer - horizontal button layout
+  Widget _buildDesktopFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AppButton(
+          text: 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+        if (_isViewMode)
+          AppButton(text: 'Edit', onPressed: _switchToEditMode)
+        else
+          AppButton(
+            text: _isLoading
+                ? 'Saving...'
+                : (_isCreateMode ? 'Create Group' : 'Update Group'),
+            onPressed: _isLoading ? null : _saveDeviceGroup,
+            isLoading: _isLoading,
+          ),
+      ],
     );
   }
 }

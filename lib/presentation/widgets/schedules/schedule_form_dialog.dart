@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../../core/models/schedule.dart';
 import '../../../core/models/site.dart';
 import '../../../core/models/device.dart';
@@ -12,11 +14,11 @@ import '../../../core/services/device_service.dart';
 import '../../../core/services/device_group_service.dart';
 import '../../../core/services/time_of_use_service.dart';
 import '../../../core/services/service_locator.dart';
-import '../common/app_card.dart';
 import '../common/app_button.dart';
 import '../common/app_input_field.dart';
 import '../common/app_dropdown_field.dart';
 import '../common/app_toast.dart';
+import '../common/app_dialog_header.dart';
 import '../common/custom_single_date_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -171,9 +173,9 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
 
       final results = await Future.wait([
         _siteService.getSites(),
-        _deviceService.getDevices(),
-        _deviceGroupService.getDeviceGroups(),
-        _timeOfUseService.getTimeOfUse(),
+        _deviceService.getDevices(limit: 1000),
+        _deviceGroupService.getDeviceGroups(limit: 1000),
+        _timeOfUseService.getTimeOfUse(limit: 1000),
       ]);
 
       if (mounted) {
@@ -355,129 +357,67 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Use ResponsiveHelper for consistent responsive behavior
+    final dialogConstraints = ResponsiveHelper.getDialogConstraints(context);
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    // Dialog configuration based on mode
+    DialogType dialogType;
+    String dialogTitle;
+    String dialogSubtitle;
+
+    if (_currentMode == 'create') {
+      dialogType = DialogType.create;
+      dialogTitle = 'Create Schedule';
+      dialogSubtitle =
+          'Set up automated billing schedules for devices and groups';
+    } else if (_currentMode == 'view') {
+      dialogType = DialogType.view;
+      dialogTitle = 'View Schedule';
+      dialogSubtitle = 'Review schedule configuration and execution details';
+    } else {
+      dialogType = DialogType.edit;
+      dialogTitle = 'Edit Schedule';
+      dialogSubtitle = 'Update schedule configuration and settings';
+    }
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: MediaQuery.of(context).size.height * 0.95,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      child: ConstrainedBox(
+        constraints: dialogConstraints,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    _currentMode == 'view'
-                        ? 'View Schedule'
-                        : (_currentMode == 'create'
-                              ? 'Create Schedule'
-                              : 'Edit Schedule'),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFFF8F9FA),
-                      foregroundColor: const Color(0xFF64748b),
-                    ),
-                  ),
-                ],
-              ),
+            AppDialogHeader(
+              type: dialogType,
+              title: dialogTitle,
+              subtitle: dialogSubtitle,
+              onClose: () => Navigator.of(context).pop(),
             ),
 
-            // Content
-            Expanded(
-              child: Container(
-                color: const Color(0xFFF8FAFC),
-                padding: const EdgeInsets.all(24),
-                child: _isLoadingData
-                    ? const Center(child: CircularProgressIndicator())
-                    : Form(
-                        key: _formKey,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              _buildSchedulingConfigSection(),
-                              const SizedBox(height: 32),
-                              _buildTargetConfigSection(),
-                              const SizedBox(height: 32),
-                              _buildScheduleSettingsSection(),
-                            ],
-                          ),
-                        ),
-                      ),
-              ),
-            ),
+            // Body
+            Expanded(child: _buildBody()),
 
             // Footer
             Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
+              padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
                 border: Border(
-                  top: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+                  top: BorderSide(
+                    color: AppColors.border.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSizes.radiusMedium),
+                  bottomRight: Radius.circular(AppSizes.radiusMedium),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SizedBox(
-                    width: AppSizes.buttonWidth,
-                    child: AppButton(
-                      size: AppButtonSize.small,
-                      text: _isViewMode ? 'Close' : 'Cancel',
-                      type: AppButtonType.outline,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  if (_isViewMode)
-                    SizedBox(
-                      width: AppSizes.buttonWidth,
-                      child: AppButton(
-                        size: AppButtonSize.small,
-                        text: 'Edit',
-                        type: AppButtonType.primary,
-                        onPressed: _switchToEditMode,
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      width: AppSizes.buttonWidth,
-                      child: AppButton(
-                        size: AppButtonSize.small,
-                        text: _isLoading
-                            ? 'Saving...'
-                            : (widget.schedule == null
-                                  ? 'Create Schedule'
-                                  : 'Update Schedule'),
-                        type: AppButtonType.primary,
-                        onPressed: _isLoading ? null : _saveSchedule,
-                      ),
-                    ),
-                ],
-              ),
+              child: isMobile ? _buildMobileFooter() : _buildDesktopFooter(),
             ),
           ],
         ),
@@ -485,150 +425,337 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
     );
   }
 
+  // Responsive body with form content
+  Widget _buildBody() {
+    return Container(
+      color: AppColors.background,
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: _isLoadingData
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSchedulingConfigSection(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+                    _buildTargetConfigSection(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+                    _buildScheduleSettingsSection(),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  // Mobile footer - vertical button layout
+  Widget _buildMobileFooter() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_isViewMode)
+          AppButton(text: 'Edit', onPressed: _switchToEditMode)
+        else
+          AppButton(
+            text: _isLoading
+                ? 'Saving...'
+                : (widget.schedule == null
+                      ? 'Create Schedule'
+                      : 'Update Schedule'),
+            onPressed: _isLoading ? null : _saveSchedule,
+            isLoading: _isLoading,
+          ),
+        const SizedBox(height: AppSizes.spacing8),
+        AppButton(
+          text: _isViewMode ? 'Close' : 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  // Desktop footer - horizontal button layout
+  Widget _buildDesktopFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AppButton(
+          text: _isViewMode ? 'Close' : 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+        if (_isViewMode)
+          AppButton(text: 'Edit', onPressed: _switchToEditMode)
+        else
+          AppButton(
+            text: _isLoading
+                ? 'Saving...'
+                : (widget.schedule == null
+                      ? 'Create Schedule'
+                      : 'Update Schedule'),
+            onPressed: _isLoading ? null : _saveSchedule,
+            isLoading: _isLoading,
+          ),
+      ],
+    );
+  }
+
   Widget _buildSchedulingConfigSection() {
-    return AppCard(
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Schedule Configuration',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: isMobile
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-          // First row: Code and Name (2 columns)
-          Row(
-            children: [
-              Expanded(
-                child: AppInputField(
-                  controller: _codeController,
-                  label: 'Schedule Code *',
-                  hintText: 'Enter unique schedule code',
-                  readOnly: _isViewMode,
-                  validator: (value) {
-                    if (_isViewMode) return null;
-                    if (value?.trim().isEmpty ?? true) {
-                      return 'Schedule code is required';
-                    }
-                    if (value!.trim().length < 3) {
-                      return 'Code must be at least 3 characters';
-                    }
-                    return null;
-                  },
+          // First row: Code and Name (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    AppInputField(
+                      controller: _codeController,
+                      label: 'Schedule Code *',
+                      hintText: 'Enter unique schedule code',
+                      readOnly: _isViewMode,
+                      validator: (value) {
+                        if (_isViewMode) return null;
+                        if (value?.trim().isEmpty ?? true) {
+                          return 'Schedule code is required';
+                        }
+                        if (value!.trim().length < 3) {
+                          return 'Code must be at least 3 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    AppInputField(
+                      controller: _nameController,
+                      label: 'Schedule Name *',
+                      hintText: 'Enter descriptive name',
+                      readOnly: _isViewMode,
+                      validator: (value) {
+                        if (_isViewMode) return null;
+                        if (value?.trim().isEmpty ?? true) {
+                          return 'Schedule name is required';
+                        }
+                        // if (value!.trim().length < 5) {
+                        //   return 'Name must be at least 5 characters';
+                        // }
+                        return null;
+                      },
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: AppInputField(
+                        controller: _codeController,
+                        label: 'Schedule Code *',
+                        hintText: 'Enter unique schedule code',
+                        readOnly: _isViewMode,
+                        validator: (value) {
+                          if (_isViewMode) return null;
+                          if (value?.trim().isEmpty ?? true) {
+                            return 'Schedule code is required';
+                          }
+                          if (value!.trim().length < 3) {
+                            return 'Code must be at least 3 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(
+                      child: AppInputField(
+                        controller: _nameController,
+                        label: 'Schedule Name *',
+                        hintText: 'Enter descriptive name',
+                        readOnly: _isViewMode,
+                        validator: (value) {
+                          if (_isViewMode) return null;
+                          if (value?.trim().isEmpty ?? true) {
+                            return 'Schedule name is required';
+                          }
+                          // if (value!.trim().length < 5) {
+                          //   return 'Name must be at least 5 characters';
+                          // }
+                          // return null;
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AppInputField(
-                  controller: _nameController,
-                  label: 'Schedule Name *',
-                  hintText: 'Enter descriptive name',
-                  readOnly: _isViewMode,
-                  validator: (value) {
-                    if (_isViewMode) return null;
-                    if (value?.trim().isEmpty ?? true) {
-                      return 'Schedule name is required';
-                    }
-                    if (value!.trim().length < 5) {
-                      return 'Name must be at least 5 characters';
-                    }
-                    return null;
-                  },
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Second row: Billing Interval and Start Billing Date (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    _buildIntervalDropdown(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildDatePickerField(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildIntervalDropdown()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(child: _buildDatePickerField()),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-          // Second row: Billing Interval and Start Billing Date (2 columns)
-          Row(
-            children: [
-              Expanded(child: _buildIntervalDropdown()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildDatePickerField()),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Third row: Last Execute Date and Next Execute Date (2 columns)
-          Row(
-            children: [
-              Expanded(child: _buildLastExecuteDateDisplay()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildNextExecuteDateDisplay()),
-            ],
-          ),
+          // Third row: Last Execute Date and Next Execute Date (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    _buildLastExecuteDateDisplay(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildNextExecuteDateDisplay(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildLastExecuteDateDisplay()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(child: _buildNextExecuteDateDisplay()),
+                  ],
+                ),
         ],
       ),
     );
   }
 
   Widget _buildTargetConfigSection() {
-    return AppCard(
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Target Configuration',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: isMobile
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-          // First row: Target Type and dynamic selection
-          Row(
-            children: [
-              Expanded(child: _buildTargetTypeDropdown()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildTargetSelectionField()),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // First row: Target Type and dynamic selection (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    _buildTargetTypeDropdown(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildTargetSelectionField(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildTargetTypeDropdown()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(child: _buildTargetSelectionField()),
+                  ],
+                ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-          // Second row: Site and Time of Use
-          Row(
-            children: [
-              Expanded(child: _buildSiteDropdown()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildTimeOfUseDropdown()),
-            ],
-          ),
+          // Second row: Site and Time of Use (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    _buildSiteDropdown(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildTimeOfUseDropdown(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildSiteDropdown()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(child: _buildTimeOfUseDropdown()),
+                  ],
+                ),
         ],
       ),
     );
   }
 
   Widget _buildScheduleSettingsSection() {
-    return AppCard(
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Schedule Settings',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: isMobile
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-          // Single row: Retry Count and Active Schedule Toggle
-          Row(
-            children: [
-              Expanded(child: _buildRetryCountField()),
-              // const SizedBox(width: 32),
-              const Spacer(flex: 3),
-              Expanded(child: _buildActiveToggleField()),
-            ],
-          ),
+          // Retry Count and Active Schedule Toggle (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    _buildRetryCountField(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildActiveToggleField(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildRetryCountField()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context) * 2),
+                    Expanded(child: _buildActiveToggleField()),
+                  ],
+                ),
         ],
       ),
     );
@@ -791,6 +918,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
           child: Text(
             displayName,
             style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            overflow: TextOverflow.ellipsis,
           ),
         );
       }).toList(),
@@ -817,6 +945,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
           child: Text(
             displayName,
             style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            overflow: TextOverflow.ellipsis,
           ),
         );
       }).toList(),
@@ -880,6 +1009,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
           child: Text(
             displayName,
             style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            overflow: TextOverflow.ellipsis,
           ),
         );
       }).toList(),
@@ -908,6 +1038,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
           child: Text(
             displayName,
             style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            overflow: TextOverflow.ellipsis,
           ),
         );
       }).toList(),
@@ -925,21 +1056,21 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Retry Count',
           style: TextStyle(
             fontSize: AppSizes.fontSizeMedium,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF374151),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           height: 36,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -965,8 +1096,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     height: 36,
                     decoration: BoxDecoration(
                       color: _isViewMode || retryCount <= 1
-                          ? const Color(0xFFF3F4F6)
-                          : const Color(0xFFF9FAFB),
+                          ? AppColors.background
+                          : AppColors.surface,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(18),
                         bottomLeft: Radius.circular(18),
@@ -975,8 +1106,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     child: Icon(
                       Icons.remove,
                       color: _isViewMode || retryCount <= 1
-                          ? const Color(0xFFD1D5DB)
-                          : const Color(0xFF6B7280),
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
                       size: 16,
                     ),
                   ),
@@ -987,23 +1118,20 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                 width: 60,
                 height: AppSizes.inputHeight,
                 alignment: Alignment.center,
-
                 child: TextFormField(
                   controller: _retryCountController,
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   readOnly: _isViewMode,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
+                    color: AppColors.textPrimary,
                   ),
-
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     fillColor: Colors.transparent,
                     contentPadding: EdgeInsets.zero,
-                    //isDense: true,
                   ),
                   onChanged: (value) {
                     final count = int.tryParse(value);
@@ -1055,8 +1183,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     height: 36,
                     decoration: BoxDecoration(
                       color: _isViewMode || retryCount >= 9
-                          ? const Color(0xFFF3F4F6)
-                          : const Color(0xFFF9FAFB),
+                          ? AppColors.background
+                          : AppColors.surface,
                       borderRadius: const BorderRadius.only(
                         topRight: Radius.circular(18),
                         bottomRight: Radius.circular(18),
@@ -1065,8 +1193,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     child: Icon(
                       Icons.add,
                       color: _isViewMode || retryCount >= 9
-                          ? const Color(0xFFD1D5DB)
-                          : const Color(0xFF6B7280),
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
                       size: 16,
                     ),
                   ),
@@ -1083,12 +1211,12 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Active Schedule',
           style: TextStyle(
             fontSize: AppSizes.fontSizeMedium,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF374151),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -1108,9 +1236,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                 height: 30,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: _isActive
-                      ? const Color(0xFF3B82F6)
-                      : const Color(0xFFE5E7EB),
+                  color: _isActive ? AppColors.primary : AppColors.border,
                 ),
                 child: AnimatedAlign(
                   duration: const Duration(milliseconds: 200),
@@ -1121,9 +1247,9 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     width: 28,
                     height: 28,
                     margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: AppColors.surface,
                     ),
                   ),
                 ),
@@ -1135,7 +1261,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
               style: TextStyle(
                 fontSize: AppSizes.fontSizeMedium,
                 fontWeight: FontWeight.w500,
-                color: _isActive ? Color(0xFF3B82F6) : const Color(0xFF6B7280),
+                color: _isActive ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
           ],

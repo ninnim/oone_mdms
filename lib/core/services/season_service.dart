@@ -227,7 +227,7 @@ class SeasonService {
     try {
       print('🔄 SeasonService: Deleting season ID: $id');
 
-      final response = await _apiService.delete('/api/rest/v2/Season/$id');
+      final response = await _apiService.delete('/api/rest/Season/$id');
 
       print('📥 SeasonService: Response status: ${response.statusCode}');
 

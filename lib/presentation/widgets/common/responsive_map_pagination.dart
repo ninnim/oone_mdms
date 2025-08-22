@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -348,17 +349,7 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
           ),
         ),
 
-        if (widget.isLoading) ...[
-          const SizedBox(width: AppSizes.spacing8),
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.5,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-          ),
-        ],
+        if (widget.isLoading) ...[AppLottieStateWidget.loading(lottieSize: 80)],
       ],
     );
   }

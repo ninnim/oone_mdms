@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
@@ -16,6 +18,7 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/models/season.dart';
 import '../../../core/services/season_service.dart';
+import '../../../core/utils/responsive_helper.dart';
 
 class SeasonsScreen extends StatefulWidget {
   const SeasonsScreen({super.key});
@@ -24,26 +27,40 @@ class SeasonsScreen extends StatefulWidget {
   State<SeasonsScreen> createState() => _SeasonsScreenState();
 }
 
-class _SeasonsScreenState extends State<SeasonsScreen> {
-  late final SeasonService _seasonService;
+class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
+  SeasonService? _seasonService;
 
   // Data state
   bool _isLoading = false;
   List<Season> _seasons = [];
   Set<Season> _selectedSeasons = {};
   String _errorMessage = '';
+  bool _isInitialized = false; // Track if data has been loaded initially
 
-  // Pagination
+  // Pagination - SERVER-SIDE
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalItems = 0;
   int _itemsPerPage = 25;
 
-  // View and filter state
+  // View and filter state - REAL-TIME API
   SeasonViewMode _currentView = SeasonViewMode.table;
   String _searchQuery = '';
+  String? _selectedStatus;
   bool _showActiveOnly = false;
   List<String> _hiddenColumns = ['id'];
+
+  // Responsive UI state
+  bool _summaryCardCollapsed = false;
+  bool _isKanbanView = false;
+  SeasonViewMode?
+  _previousViewModeBeforeMobile; // Track previous view mode before mobile switch
+  bool?
+  _previousSummaryStateBeforeMobile; // Track previous summary state before mobile switch
+  final TextEditingController _searchController = TextEditingController();
+
+  // Search delay timer
+  Timer? _searchTimer;
 
   // Sorting state
   String? _sortBy;
@@ -57,8 +74,101 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _seasonService = Provider.of<SeasonService>(context, listen: false);
-    _loadSeasons();
+    _seasonService ??= Provider.of<SeasonService>(context, listen: false);
+
+    // Only load data on first initialization, not on every dependency change (like screen resize)
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadSeasons();
+      print('🚀 SeasonsScreen: Initial data load triggered');
+    } else {
+      print(
+        '📱 SeasonsScreen: Dependencies changed (likely screen resize) - NO API call',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void handleResponsiveStateChange() {
+    if (!mounted) return;
+
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = mediaQuery.size.width < 768;
+    final isTablet =
+        mediaQuery.size.width >= 768 && mediaQuery.size.width < 1024;
+
+    // Auto-collapse summary card on mobile, keep visible but allow toggle
+    if (isMobile && !_summaryCardCollapsed) {
+      // Save previous summary state before collapsing for mobile
+      if (_previousSummaryStateBeforeMobile == null) {
+        _previousSummaryStateBeforeMobile = _summaryCardCollapsed;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _summaryCardCollapsed = true; // Default to collapsed on mobile
+          });
+        }
+      });
+    }
+
+    // Auto-expand summary card on desktop - restore previous state
+    if (!isMobile && !isTablet) {
+      final shouldExpand =
+          _previousSummaryStateBeforeMobile == false ||
+          (_previousSummaryStateBeforeMobile == null && _summaryCardCollapsed);
+      if (shouldExpand) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _summaryCardCollapsed =
+                  _previousSummaryStateBeforeMobile ?? false;
+              _previousSummaryStateBeforeMobile = null; // Reset tracking
+            });
+          }
+        });
+      }
+    }
+
+    // Auto-switch to kanban view on mobile
+    if (isMobile && !_isKanbanView) {
+      // Save previous view mode before switching to mobile kanban
+      if (_previousViewModeBeforeMobile == null) {
+        _previousViewModeBeforeMobile = _currentView;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = true;
+            _currentView = SeasonViewMode.kanban;
+          });
+        }
+      });
+    }
+
+    // Auto-switch back to previous view mode on desktop
+    if (!isMobile && _isKanbanView && _previousViewModeBeforeMobile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = false;
+            _currentView = _previousViewModeBeforeMobile!;
+            _previousViewModeBeforeMobile = null; // Reset tracking
+          });
+        }
+      });
+    }
+
+    print(
+      '📱 SeasonsScreen: Responsive state updated (mobile: $isMobile, kanban: $_isKanbanView, view: $_currentView) - UI ONLY, no API calls',
+    );
   }
 
   Future<void> _loadSeasons() async {
@@ -69,11 +179,11 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
 
     try {
       print(
-        '🔄 SeasonsScreen: Loading seasons (page: $_currentPage, search: "$_searchQuery")',
+        '🔄 SeasonsScreen: Loading seasons (page: $_currentPage, search: "$_searchQuery", formatted: "${_searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%'}")',
       );
 
-      final response = await _seasonService.getSeasons(
-        search: _searchQuery.isNotEmpty ? _searchQuery : '%%',
+      final response = await _seasonService!.getSeasons(
+        search: _searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%',
         offset: (_currentPage - 1) * _itemsPerPage,
         limit: _itemsPerPage,
       );
@@ -111,36 +221,62 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
     }
   }
 
-  void _onSearch(String query) {
-    if (_searchQuery != query) {
-      setState(() {
-        _searchQuery = query;
-        _currentPage = 1;
-      });
-      _loadSeasons();
-    }
+  // Search Event Handler - with delay to avoid excessive API calls
+  void _onSearchChanged(String query) {
+    // Cancel any existing timer
+    _searchTimer?.cancel();
+
+    // Update search query immediately for UI responsiveness
+    setState(() {
+      _searchQuery = query;
+    });
+
+    // Set a delay before triggering the API call
+    _searchTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _currentPage = 1; // Reset to first page when search changes
+        });
+        print(
+          '🔍 SeasonsScreen: Search triggered for: "$query" (formatted: "%$query%")',
+        );
+        _loadSeasons(); // Trigger API call after delay
+      }
+    });
   }
 
-  void _onFilterChange({bool? showActiveOnly}) {
+  void _onStatusFilterChanged(String? status) {
     bool shouldReload = false;
+    bool newShowActiveOnly = status?.toLowerCase() == 'active';
 
-    if (showActiveOnly != null && _showActiveOnly != showActiveOnly) {
+    if (_showActiveOnly != newShowActiveOnly) {
       setState(() {
-        _showActiveOnly = showActiveOnly;
-        _currentPage = 1;
+        _showActiveOnly = newShowActiveOnly;
+        _selectedStatus = status;
+        _currentPage = 1; // Reset to first page
       });
       shouldReload = true;
     }
 
     if (shouldReload) {
-      _loadSeasons();
+      _loadSeasons(); // Trigger API call immediately
     }
   }
 
   void _onViewModeChanged(SeasonViewMode mode) {
     setState(() {
       _currentView = mode;
+      // Update kanban view state based on the new mode
+      _isKanbanView = (mode == SeasonViewMode.kanban);
+
+      // If user manually changes view mode, reset mobile tracking
+      if (MediaQuery.of(context).size.width >= 768) {
+        _previousViewModeBeforeMobile = null;
+      }
     });
+    print(
+      '🔄 SeasonsScreen: View mode changed to $mode (kanban: $_isKanbanView)',
+    );
   }
 
   void _onItemsPerPageChanged(int itemsPerPage) {
@@ -163,7 +299,10 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
       _sortBy = columnKey;
       _sortAscending = ascending;
     });
-    _applySorting();
+    print(
+      '🔄 SeasonsScreen: Sort changed to $columnKey (ascending: $ascending)',
+    );
+    _loadSeasons(); // Reload data with new sort
   }
 
   void _applySorting() {
@@ -228,7 +367,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
   Future<void> _handleCreateSeason(Season season) async {
     try {
       print('🔄 SeasonsScreen: Creating season: ${season.name}');
-      final response = await _seasonService.createSeason(season);
+      final response = await _seasonService!.createSeason(season);
 
       if (!response.success) {
         throw Exception(response.message ?? 'Failed to create season');
@@ -244,7 +383,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
   Future<void> _handleUpdateSeason(Season season) async {
     try {
       print('🔄 SeasonsScreen: Updating season: ${season.name}');
-      final response = await _seasonService.updateSeason(season);
+      final response = await _seasonService!.updateSeason(season);
 
       if (!response.success) {
         throw Exception(response.message ?? 'Failed to update season');
@@ -272,7 +411,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
     if (confirmed == true) {
       try {
         print('🔄 SeasonsScreen: Deleting season: ${season.name}');
-        final response = await _seasonService.deleteSeason(season.id);
+        final response = await _seasonService!.deleteSeason(season.id);
 
         if (!response.success) {
           throw Exception(response.message ?? 'Failed to delete season');
@@ -312,14 +451,29 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
   Future<List<Season>> _fetchAllSeasons() async {
     try {
       // Fetch all seasons without pagination
-      final response = await _seasonService.getSeasons(
-        search: _searchQuery.isNotEmpty ? _searchQuery : '%%',
+      final response = await _seasonService!.getSeasons(
+        search: _searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%',
         offset: 0,
         limit: 10000, // Large limit to get all items
       );
 
       if (response.success && response.data != null) {
-        return response.data!;
+        // Apply same filters as current view
+        List<Season> filtered = List.from(response.data!);
+
+        // Apply search filter
+        if (_searchQuery.isNotEmpty) {
+          filtered = filtered.where((season) {
+            return season.name.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                ) ||
+                season.description.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                );
+          }).toList();
+        }
+
+        return filtered;
       } else {
         throw Exception(response.message ?? 'Failed to fetch all seasons');
       }
@@ -330,151 +484,444 @@ class _SeasonsScreenState extends State<SeasonsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Summary Card FIRST (like special days screen)
+            if (isMobile)
+              _buildCollapsibleSummaryCard()
+            else
+              _buildDesktopSummaryCard(),
+            // Header/Filters AFTER summary card
+            if (isMobile) _buildMobileHeader() else _buildDesktopHeader(),
+            // Content
+            Expanded(
+              child: Container(width: double.infinity, child: _buildContent()),
+            ),
+            // Pagination - direct call like other screens
+            Container(width: double.infinity, child: _buildPagination()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: Column(
         children: [
-          // Summary Card
           const SizedBox(height: AppSizes.spacing8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-            child: SeasonSummaryCard(seasons: _seasons),
+          // Filters and Actions
+          SeasonFiltersAndActionsV2(
+            currentViewMode: _currentView,
+            onViewModeChanged: _onViewModeChanged,
+            onSearchChanged: _onSearchChanged,
+            onStatusFilterChanged: _onStatusFilterChanged,
+            onAddSeason: _createSeason,
+            onRefresh: _loadSeasons,
+            selectedStatus: _selectedStatus,
           ),
+          const SizedBox(height: AppSizes.spacing24),
+        ],
+      ),
+    );
+  }
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-            child: _buildHeader(),
+  Widget _buildDesktopSummaryCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: SeasonSummaryCard(seasons: _seasons),
+    );
+  }
+
+  Widget _buildCollapsibleSummaryCard() {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isTablet =
+        MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
+
+    // Responsive sizing
+    final headerFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final collapsedHeight = isMobile ? 60.0 : (isTablet ? 60.0 : 70.0);
+    final expandedHeight = isMobile ? 180.0 : (isTablet ? 160.0 : 180.0);
+    final headerHeight = isMobile ? 50.0 : (isTablet ? 45.0 : 50.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(
+        left: AppSizes.spacing16,
+        right: AppSizes.spacing16,
+        top: AppSizes.spacing8,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: _summaryCardCollapsed ? collapsedHeight : expandedHeight,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+            boxShadow: [AppSizes.shadowSmall],
           ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with toggle button
+              SizedBox(
+                height: headerHeight,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile
+                        ? AppSizes.paddingSmall
+                        : AppSizes.paddingMedium,
+                    vertical: AppSizes.paddingSmall,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        color: AppColors.primary,
+                        size: AppSizes.iconSmall,
+                      ),
+                      SizedBox(
+                        width: isMobile ? AppSizes.spacing4 : AppSizes.spacing8,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Summary',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                fontSize: headerFontSize,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _summaryCardCollapsed = !_summaryCardCollapsed;
+                          });
+                        },
+                        icon: Icon(
+                          _summaryCardCollapsed
+                              ? Icons.expand_more
+                              : Icons.expand_less,
+                          color: AppColors.textSecondary,
+                          size: AppSizes.iconSmall,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32,
+                          minHeight: isMobile ? 28 : 32,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Expanded summary content
+              if (!_summaryCardCollapsed)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      0,
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      AppSizes.paddingSmall,
+                    ),
+                    child: SeasonSummaryCard(seasons: _seasons),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-          Expanded(child: _buildContent()),
-          // Always show pagination area, even if empty (no padding)
-          ResultsPagination(
-            currentPage: _currentPage,
-            totalPages: _totalPages,
-            totalItems: _totalItems,
-            itemsPerPage: _itemsPerPage,
+  Widget _buildMobileHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: Container(
+        height: AppSizes.cardMobile,
+        alignment: Alignment.centerLeft,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16,
+          vertical: AppSizes.spacing8,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.spacing8),
+          color: AppColors.surface,
+          boxShadow: [AppSizes.shadowSmall],
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _buildMobileSearchBar()),
+            const SizedBox(width: AppSizes.spacing8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: _buildMobileMoreActionsButton(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            /// itemsPerPageOptions: const [5, 10, 20, 25, 50],
-            startItem: (_currentPage - 1) * _itemsPerPage + 1,
-            endItem: (_currentPage * _itemsPerPage) > _totalItems
-                ? _totalItems
-                : _currentPage * _itemsPerPage,
-            onPageChanged: _onPageChanged,
-            onItemsPerPageChanged: _onItemsPerPageChanged,
-            showItemsPerPageSelector: true,
+  Widget _buildMobileSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: AppInputField.search(
+        hintText: 'Search seasons...',
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        prefixIcon: const Icon(Icons.search, size: AppSizes.iconSmall),
+        enabled: true,
+      ),
+    );
+  }
+
+  Widget _buildMobileMoreActionsButton() {
+    return Container(
+      height: 36,
+      width: 36,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.spacing8),
+      ),
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+        onSelected: (value) {
+          switch (value) {
+            case 'add':
+              _createSeason();
+              break;
+            case 'refresh':
+              _loadSeasons();
+              break;
+            case 'kanban':
+              _onViewModeChanged(SeasonViewMode.kanban);
+              break;
+            case 'table':
+              _onViewModeChanged(SeasonViewMode.table);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'add',
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 18),
+                SizedBox(width: 8),
+                Text('Add Season'),
+              ],
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'refresh',
+            child: Row(
+              children: [
+                Icon(Icons.refresh, size: 18),
+                SizedBox(width: 8),
+                Text('Refresh'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'kanban',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.view_kanban,
+                  size: 18,
+                  color: _currentView == SeasonViewMode.kanban
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Kanban View',
+                  style: TextStyle(
+                    color: _currentView == SeasonViewMode.kanban
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'table',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.table_chart,
+                  size: 18,
+                  color: _currentView == SeasonViewMode.table
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Table View',
+                  style: TextStyle(
+                    color: _currentView == SeasonViewMode.table
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        // Breadcrumb
-        // const BreadcrumbNavigation(),
-        const SizedBox(height: AppSizes.spacing8),
+  Widget _buildPagination() {
+    final startItem = ((_currentPage - 1) * _itemsPerPage) + 1;
+    final endItem = ((_currentPage - 1) * _itemsPerPage + _itemsPerPage).clamp(
+      0,
+      _totalItems,
+    );
 
-        // Filters and Actions
-        SeasonFiltersAndActionsV2(
-          currentViewMode: _currentView,
-          onViewModeChanged: _onViewModeChanged,
-          onSearchChanged: _onSearch,
-          onStatusFilterChanged: (status) =>
-              _onFilterChange(showActiveOnly: status == 'active'),
-          onAddSeason: _createSeason,
-          onRefresh: _loadSeasons,
-          selectedStatus: _showActiveOnly ? 'active' : null,
-        ),
-
-        const SizedBox(height: AppSizes.spacing24),
-      ],
+    return ResultsPagination(
+      currentPage: _currentPage,
+      totalPages: _totalPages,
+      itemsPerPage: _itemsPerPage,
+      totalItems: _totalItems,
+      startItem: startItem,
+      endItem: endItem,
+      onPageChanged: _onPageChanged,
+      onItemsPerPageChanged: _onItemsPerPageChanged,
+      showItemsPerPageSelector: true,
+      itemsPerPageOptions: const [5, 10, 20, 50, 100],
     );
   }
 
   Widget _buildContent() {
-    // Loading state
+    // Show full-screen loading only if no data exists yet
     if (_isLoading && _seasons.isEmpty) {
-      return const AppLottieStateWidget.loading(
-        // title: 'Loading Seasons',
-        lottieSize: 80,
-        //  message: 'Please wait while we fetch your season configurations...',
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Seasons',
+          lottieSize: 80,
+          message: 'Please wait while we fetch your seasons.',
+        ),
       );
     }
 
-    // Error state
     if (_errorMessage.isNotEmpty && _seasons.isEmpty) {
       return AppLottieStateWidget.error(
-        title: 'Failed to Load Seasons',
+        title: 'Error Loading Seasons',
         message: _errorMessage,
         buttonText: 'Try Again',
         onButtonPressed: _loadSeasons,
       );
     }
 
-    // No data state
-    if (_seasons.isEmpty) {
+    if (_seasons.isEmpty && !_isLoading) {
       return AppLottieStateWidget.noData(
-        title: 'No Seasons Found',
+        title: _searchQuery.isNotEmpty ? 'No Results Found' : 'No Seasons',
         message: _searchQuery.isNotEmpty
-            ? 'No seasons match your search criteria. Try adjusting your filters.'
-            : 'No seasons have been configured yet. Click "Create Season" to get started.',
+            ? 'No seasons match your search criteria.'
+            : 'Start by creating your first season.',
         buttonText: 'Create Season',
         onButtonPressed: _createSeason,
       );
     }
 
-    // Content based on view mode
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-      child: _currentView == SeasonViewMode.table
-          ? _buildTableView()
-          : _buildKanbanView(),
-    );
+    return _buildViewContent();
+  }
+
+  Widget _buildViewContent() {
+    return (_currentView == SeasonViewMode.table && !_isKanbanView)
+        ? _buildTableView()
+        : _buildKanbanView();
   }
 
   Widget _buildTableView() {
-    return BluNestDataTable<Season>(
-      columns: SeasonTableColumns.buildAllColumns(
-        onEdit: _editSeason,
-        onDelete: _handleDeleteSeason,
-        onView: _viewSeasonDetails,
-        currentPage: _currentPage,
-        itemsPerPage: _itemsPerPage,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: BluNestDataTable<Season>(
+        columns: SeasonTableColumns.buildAllColumns(
+          onEdit: _editSeason,
+          onDelete: _handleDeleteSeason,
+          onView: _viewSeasonDetails,
+          currentPage: _currentPage,
+          itemsPerPage: _itemsPerPage,
+          data: _seasons,
+        ),
         data: _seasons,
+        onRowTap: _viewSeasonDetails,
+        enableMultiSelect: true,
+        selectedItems: _selectedSeasons,
+        onSelectionChanged: (selectedItems) {
+          setState(() {
+            _selectedSeasons = selectedItems;
+          });
+        },
+        hiddenColumns: _hiddenColumns,
+        onColumnVisibilityChanged: (hiddenColumns) {
+          setState(() {
+            _hiddenColumns = hiddenColumns;
+          });
+        },
+        sortBy: _sortBy,
+        sortAscending: _sortAscending,
+        onSort: _onSort,
+        isLoading: _isLoading,
+        totalItemsCount: _totalItems,
+        onSelectAllItems: _fetchAllSeasons,
+        emptyState: AppLottieStateWidget.noData(
+          title: 'No Seasons',
+          message: 'No seasons found for the current filter criteria.',
+          lottieSize: 120,
+        ),
       ),
-      data: _seasons,
-      onRowTap: _viewSeasonDetails,
-      enableMultiSelect: true,
-      selectedItems: _selectedSeasons,
-      onSelectionChanged: (selectedItems) {
-        setState(() {
-          _selectedSeasons = selectedItems;
-        });
-      },
-      hiddenColumns: _hiddenColumns,
-      onColumnVisibilityChanged: (hiddenColumns) {
-        setState(() {
-          _hiddenColumns = hiddenColumns;
-        });
-      },
-      sortBy: _sortBy,
-      sortAscending: _sortAscending,
-      onSort: _onSort,
-      isLoading: _isLoading,
-      totalItemsCount: _totalItems,
-      onSelectAllItems: _fetchAllSeasons,
     );
   }
 
   Widget _buildKanbanView() {
-    return SeasonsKanbanView(
-      seasons: _seasons,
-      onItemTap: _viewSeasonDetails,
-      onItemEdit: _editSeason,
-      onItemDelete: _handleDeleteSeason,
-      isLoading: _isLoading,
-      searchQuery: _searchQuery,
+    if (_isLoading && _seasons.isEmpty) {
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Seasons',
+          lottieSize: 80,
+          message: 'Please wait while we fetch your seasons.',
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: SeasonsKanbanView(
+        seasons: _seasons,
+        onItemTap: _viewSeasonDetails,
+        onItemEdit: _editSeason,
+        onItemDelete: _handleDeleteSeason,
+        isLoading: _isLoading,
+        searchQuery: _searchQuery,
+      ),
     );
   }
 }

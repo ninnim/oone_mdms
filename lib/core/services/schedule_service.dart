@@ -11,14 +11,24 @@ class ScheduleService {
 
   // Get all schedules
   Future<ApiResponse<List<Schedule>>> getSchedules({
-    String search = ApiConstants.defaultSearch,
+    String? search,
     int offset = ApiConstants.defaultOffset,
     int limit = ApiConstants.defaultLimit,
   }) async {
     try {
+      // Build query parameters - only include search if it has a value
+      final queryParameters = <String, dynamic>{
+        'offset': offset,
+        'limit': limit,
+      };
+
+      if (search != null && search.trim().isNotEmpty) {
+        queryParameters['search'] = search.trim();
+      }
+
       final response = await _apiService.get(
         '/core/api/rest/v1/Schedule',
-        queryParameters: {'offset': offset, 'limit': limit},
+        queryParameters: queryParameters,
       );
 
       final data = response.data;

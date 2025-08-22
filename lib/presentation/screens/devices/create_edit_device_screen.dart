@@ -5,14 +5,16 @@ import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
 import '../../../core/models/schedule.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
 import '../../../core/services/service_locator.dart';
-import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_dropdown_field.dart';
+import '../../widgets/common/app_dialog_header.dart';
 
 import '../../widgets/devices/interactive_map_dialog.dart';
 
@@ -41,8 +43,12 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
   bool _isSaving = false;
   bool _isLoadingDeviceGroups = false;
   bool _isLoadingSchedules = false;
+  bool _isLoadingStatusOptions = false;
   bool _deviceGroupsLoaded = false;
   bool _schedulesLoaded = false;
+
+  // Mode tracking
+  bool get _isCreateMode => widget.device == null;
 
   // Pagination states
   int _deviceGroupsPage = 1;
@@ -64,10 +70,10 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
   // Form data
   String _selectedDeviceType = 'None';
-  String _selectedLinkStatus = 'None';
-  String _selectedStatus = 'None';
   int? _selectedDeviceGroupId;
   int? _selectedScheduleId;
+  String _selectedStatus = 'None';
+  String _selectedLinkStatus = 'None';
   Address? _selectedAddress;
 
   // Dropdown data
@@ -77,15 +83,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
   // Device type options
   final List<String> _deviceTypes = ['None', 'Smart Meter', 'IoT'];
 
-  // Link status options
-  final List<String> _linkStatusOptions = ['None', 'MULTIDRIVE', 'E-POWER'];
-
-  // Status options
-  final List<String> _statusOptions = [
-    'None',
-    'Commissioned',
-    'Decommissioned',
-  ];
+  // Status options (will be populated from API or defaults)
+  List<String> _statusOptions = ['None'];
+  List<String> _linkStatusOptions = ['None'];
 
   @override
   void initState() {
@@ -107,6 +107,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
     // Load dropdown data immediately to ensure proper display
     _loadDeviceGroups();
     _loadSchedules();
+    _loadStatusOptions();
   }
 
   @override
@@ -127,10 +128,21 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
     _selectedDeviceType = device.deviceType.isNotEmpty
         ? device.deviceType
         : 'None';
+
+    // Populate actual status values from device
+    _selectedStatus = device.status.isNotEmpty ? device.status : 'None';
     _selectedLinkStatus = device.linkStatus.isNotEmpty
         ? device.linkStatus
         : 'None';
-    _selectedStatus = device.status.isNotEmpty ? device.status : 'None';
+
+    // Add the current device's statuses to the options if they're not already there
+    if (!_statusOptions.contains(_selectedStatus)) {
+      _statusOptions.add(_selectedStatus);
+    }
+    if (!_linkStatusOptions.contains(_selectedLinkStatus)) {
+      _linkStatusOptions.add(_selectedLinkStatus);
+    }
+
     _selectedDeviceGroupId = device.deviceGroupId != 0
         ? device.deviceGroupId
         : null;
@@ -273,7 +285,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
       final schedulesResponse = await _scheduleService.getSchedules(
         limit: _schedulesLimit,
         offset: loadMore ? (_schedulesPage - 1) * _schedulesLimit : 0,
-        search: _scheduleSearchQuery.isNotEmpty ? _scheduleSearchQuery : '',
+        search: _scheduleSearchQuery.isNotEmpty ? _scheduleSearchQuery : null,
       );
 
       if (schedulesResponse.success && mounted) {
@@ -323,6 +335,133 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
     }
   }
 
+  Future<void> _loadStatusOptions() async {
+    if (_isLoadingStatusOptions) return;
+
+    setState(() {
+      _isLoadingStatusOptions = true;
+    });
+
+    try {
+      // Try to get status options from existing devices in the system
+      final devicesResponse = await _deviceService.getDevices(
+        limit: 100, // Get a sample of devices to extract status values
+      );
+
+      List<String> statusOptions = ['None'];
+      List<String> linkStatusOptions = ['None'];
+
+      if (devicesResponse.success && devicesResponse.data != null) {
+        // Extract unique status values from existing devices
+        final devices = devicesResponse.data!;
+        final statusSet = <String>{};
+        final linkStatusSet = <String>{};
+
+        for (final device in devices) {
+          if (device.status.isNotEmpty && device.status != 'None') {
+            statusSet.add(device.status);
+          }
+          if (device.linkStatus.isNotEmpty && device.linkStatus != 'None') {
+            linkStatusSet.add(device.linkStatus);
+          }
+        }
+
+        // Add found statuses to options
+        statusOptions.addAll(statusSet.toList()..sort());
+        linkStatusOptions.addAll(linkStatusSet.toList()..sort());
+
+        if (kDebugMode) {
+          print('Loaded status options from API: $statusOptions');
+          print('Loaded link status options from API: $linkStatusOptions');
+        }
+      }
+
+      // Fallback to default options if no statuses found from API
+      if (statusOptions.length == 1) {
+        statusOptions.addAll([
+          'Active',
+          'Inactive',
+          'Connected',
+          'Disconnected',
+          'Online',
+          'Offline',
+          'Error',
+          'Maintenance',
+        ]);
+      }
+
+      if (linkStatusOptions.length == 1) {
+        linkStatusOptions.addAll([
+          'Linked',
+          'Unlinked',
+          'Pending',
+          'Failed',
+          'Synchronized',
+          'Out of Sync',
+        ]);
+      }
+
+      if (mounted) {
+        setState(() {
+          _statusOptions = statusOptions;
+          _linkStatusOptions = linkStatusOptions;
+
+          // Ensure selected values are in the options
+          if (!_statusOptions.contains(_selectedStatus)) {
+            _statusOptions.add(_selectedStatus);
+          }
+          if (!_linkStatusOptions.contains(_selectedLinkStatus)) {
+            _linkStatusOptions.add(_selectedLinkStatus);
+          }
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading status options from API: $e');
+      }
+
+      // Fallback to default options on error
+      if (mounted) {
+        setState(() {
+          _statusOptions = [
+            'None',
+            'Active',
+            'Inactive',
+            'Connected',
+            'Disconnected',
+            'Online',
+            'Offline',
+            'Error',
+            'Maintenance',
+          ];
+          _linkStatusOptions = [
+            'None',
+            'Linked',
+            'Unlinked',
+            'Pending',
+            'Failed',
+            'Synchronized',
+            'Out of Sync',
+          ];
+
+          // Ensure selected values are in the options
+          if (!_statusOptions.contains(_selectedStatus)) {
+            _statusOptions.add(_selectedStatus);
+          }
+          if (!_linkStatusOptions.contains(_selectedLinkStatus)) {
+            _linkStatusOptions.add(_selectedLinkStatus);
+          }
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingStatusOptions = false;
+        });
+      }
+    }
+  }
+
   Future<void> _saveDevice() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -333,7 +472,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
     });
 
     try {
-      // Create device object
+      // Create device object - preserve original status values since they're view-only
       final device = Device(
         id: widget.device?.id ?? '',
         serialNumber: _serialNumberController.text.trim(),
@@ -341,10 +480,11 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
         model: _modelController.text.trim(),
         deviceType: _selectedDeviceType == 'None' ? '' : _selectedDeviceType,
         manufacturer: widget.device?.manufacturer ?? '',
-        status: _selectedStatus == 'None' ? 'None' : _selectedStatus,
-        linkStatus: _selectedLinkStatus == 'None'
-            ? 'None'
-            : _selectedLinkStatus,
+        status:
+            widget.device?.status ?? 'None', // Keep original status - view only
+        linkStatus:
+            widget.device?.linkStatus ??
+            'None', // Keep original link status - view only
         active: true,
         deviceGroupId: _selectedDeviceGroupId ?? 0, // 0 means "None"
         addressId: widget.device?.addressId ?? '',
@@ -357,18 +497,25 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
       if (kDebugMode) {
         print('devicejob${device.toJson()}');
       }
+
       // Save device
       final response = widget.device == null
           ? await _deviceService.createDevice(device)
           : await _deviceService.updateDevice(device);
 
       if (response.success) {
-        // If LinkStatus is not None, trigger link to HES
-        if (_selectedLinkStatus != 'None' && response.data != null) {
+        // Link to HES only for CREATE mode (new devices)
+        if (widget.device == null && response.data != null) {
           try {
             await _deviceService.linkDeviceToHES(response.data!.id ?? '');
+            if (kDebugMode) {
+              print('Device linked to HES successfully');
+            }
           } catch (e) {
-            // Error linking to HES - continue even if HES linking fails
+            if (kDebugMode) {
+              print('Error linking device to HES: $e');
+            }
+            // Continue even if HES linking fails - don't block the success flow
           }
         }
 
@@ -377,7 +524,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             context,
             title: widget.device == null ? 'Device Created' : 'Device Updated',
             message: widget.device == null
-                ? 'Device created successfully'
+                ? 'Device created and linked to HES successfully'
                 : 'Device updated successfully',
           );
 
@@ -410,110 +557,54 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Use ResponsiveHelper for consistent responsive behavior
+    final dialogConstraints = ResponsiveHelper.getDialogConstraints(context);
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    // Dialog configuration
+    const dialogType = DialogType.create;
+    final dialogTitle = _isCreateMode ? 'Create Device' : 'Edit Device';
+    final dialogSubtitle = _isCreateMode
+        ? 'Add a new device to your system'
+        : 'Update device information and settings';
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.width * 0.8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      child: ConstrainedBox(
+        constraints: dialogConstraints,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    widget.device == null ? 'Create Device' : 'Edit Device',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFFF8F9FA),
-                      foregroundColor: const Color(0xFF64748b),
-                    ),
-                  ),
-                ],
-              ),
+            AppDialogHeader(
+              type: dialogType,
+              title: dialogTitle,
+              subtitle: dialogSubtitle,
+              onClose: () => Navigator.of(context).pop(),
             ),
 
-            // Content
-            Expanded(
-              child: Container(
-                color: const Color(0xFFF8FAFC),
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        _buildGeneralInfoSection(),
-                        const SizedBox(height: 32),
-                        _buildLocationSection(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            // Body
+            Expanded(child: _buildBody()),
 
             // Footer
             Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
+              padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
                 border: Border(
-                  top: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+                  top: BorderSide(
+                    color: AppColors.border.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSizes.radiusMedium),
+                  bottomRight: Radius.circular(AppSizes.radiusMedium),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SizedBox(
-                    width: AppSizes.buttonWidth,
-                    child: AppButton(
-                      size: AppButtonSize.small,
-                      text: 'Cancel',
-                      type: AppButtonType.outline,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  SizedBox(
-                    width: AppSizes.buttonW,
-                    child: AppButton(
-                      size: AppButtonSize.small,
-                      text: _isSaving
-                          ? 'Saving...'
-                          : (widget.device == null
-                                ? 'Create Device'
-                                : 'Update Device'),
-                      type: AppButtonType.primary,
-                      onPressed: _isSaving ? null : _saveDevice,
-                    ),
-                  ),
-                ],
-              ),
+              child: isMobile ? _buildMobileFooter() : _buildDesktopFooter(),
             ),
           ],
         ),
@@ -521,143 +612,369 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
     );
   }
 
+  // Responsive body with form content
+  Widget _buildBody() {
+    return Container(
+      color: AppColors.background,
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGeneralInfoSection(),
+              SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+              _buildLocationSection(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Mobile footer - vertical button layout
+  Widget _buildMobileFooter() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppButton(
+          text: _isSaving
+              ? 'Saving...'
+              : (_isCreateMode ? 'Create Device' : 'Update Device'),
+          onPressed: _isSaving ? null : _saveDevice,
+          isLoading: _isSaving,
+        ),
+        const SizedBox(height: AppSizes.spacing8),
+        AppButton(
+          text: 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  // Desktop footer - horizontal button layout
+  Widget _buildDesktopFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AppButton(
+          text: 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+        AppButton(
+          text: _isSaving
+              ? 'Saving...'
+              : (_isCreateMode ? 'Create Device' : 'Update Device'),
+          onPressed: _isSaving ? null : _saveDevice,
+          isLoading: _isSaving,
+        ),
+      ],
+    );
+  }
+
   Widget _buildGeneralInfoSection() {
-    return AppCard(
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'General Information',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // First row: Serial Number and Model (2 columns)
           Row(
             children: [
-              Expanded(
-                child: AppInputField(
-                  controller: _serialNumberController,
-                  label: 'Serial Number *',
-                  hintText: 'Enter device serial number',
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Serial number is required';
-                    }
-                    return null;
-                  },
+              Text(
+                'General Information',
+                style: TextStyle(
+                  fontSize: isMobile
+                      ? AppSizes.fontSizeMedium
+                      : AppSizes.fontSizeLarge,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AppInputField(
-                  controller: _modelController,
-                  label: 'Model',
-                  hintText: 'Enter device model (optional)',
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Serial number is required for device identification.',
+                textStyle: const TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  color: Colors.white,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.textPrimary.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                preferBelow: false,
+                child: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-          // Second row: Device Type, Device Group, and Schedule (3 columns)
+          // First row: Serial Number and Model (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    AppInputField(
+                      controller: _serialNumberController,
+                      label: 'Serial Number *',
+                      hintText: 'Enter device serial number',
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Serial number is required';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    AppInputField(
+                      controller: _modelController,
+                      label: 'Model',
+                      hintText: 'Enter model',
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: AppInputField(
+                        controller: _serialNumberController,
+                        label: 'Serial Number *',
+                        hintText: 'Enter device serial number',
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Serial number is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(
+                      child: AppInputField(
+                        controller: _modelController,
+                        label: 'Model',
+                        hintText: 'Enter model',
+                      ),
+                    ),
+                  ],
+                ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Dropdowns section (responsive layout)
+          isMobile
+              ? Column(
+                  children: [
+                    _buildDeviceTypeDropdown(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildDeviceGroupDropdown(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildScheduleDropdown(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildDeviceTypeDropdown()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(child: _buildDeviceGroupDropdown()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(child: _buildScheduleDropdown()),
+                  ],
+                ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+
+          // Integration HES Section Header
           Row(
             children: [
-              Expanded(child: _buildDeviceTypeDropdown()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildDeviceGroupDropdown()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildScheduleDropdown()),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Integration HES Section
-          const Text(
-            'Integration HES',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Link Status and Status in a row
-          Row(
-            children: [
-              Expanded(child: _buildLinkStatusDropdown()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatusDropdown()),
-            ],
-          ),
-          if (_selectedLinkStatus != 'None') ...[
-            const SizedBox(height: 4),
-            Text(
-              'Device will be linked to HES when saved',
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeSmall,
-                color: Color(0xFF2563eb),
+              Text(
+                'Integration HES',
+                style: TextStyle(
+                  fontSize: isMobile
+                      ? AppSizes.fontSizeSmall
+                      : AppSizes.fontSizeMedium,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Tooltip(
+                message: _isCreateMode
+                    ? 'When the device is created. Status and link status will be managed by the HES system.'
+                    : 'This device is integrated with HES.',
+                textStyle: const TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  color: Colors.white,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.textPrimary.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                preferBelow: false,
+                child: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              if (_isLoadingStatusOptions && !_isCreateMode) ...[
+                SizedBox(width: ResponsiveHelper.getSpacing(context) / 2),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Link Status and Status (responsive layout)
+          isMobile
+              ? Column(
+                  children: [
+                    _buildLinkStatusDropdown(),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    _buildStatusDropdown(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildLinkStatusDropdown()),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(child: _buildStatusDropdown()),
+                  ],
+                ),
         ],
       ),
     );
   }
 
   Widget _buildLocationSection() {
-    return AppCard(
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Device Location',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1e293b),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Coordinates input
           Row(
             children: [
-              Expanded(
-                child: AppInputField(
-                  controller: _latitudeController,
-                  label: 'Latitude',
-                  hintText: 'Enter latitude',
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  onChanged: (value) {
-                    _updateMapFromCoordinates();
-                  },
+              Text(
+                'Device Location',
+                style: TextStyle(
+                  fontSize: isMobile
+                      ? AppSizes.fontSizeMedium
+                      : AppSizes.fontSizeLarge,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AppInputField(
-                  controller: _longitudeController,
-                  label: 'Longitude',
-                  hintText: 'Enter longitude',
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  onChanged: (value) {
-                    _updateMapFromCoordinates();
-                  },
+              const SizedBox(width: 8),
+              Tooltip(
+                message:
+                    'Enter coordinates manually or interactive map to select a location.',
+                textStyle: const TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  color: Colors.white,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.textPrimary.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                preferBelow: false,
+                child: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Coordinates input (responsive layout)
+          isMobile
+              ? Column(
+                  children: [
+                    AppInputField(
+                      controller: _latitudeController,
+                      label: 'Latitude',
+                      hintText: 'Enter latitude',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      onChanged: (value) {
+                        _updateMapFromCoordinates();
+                      },
+                    ),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    AppInputField(
+                      controller: _longitudeController,
+                      label: 'Longitude',
+                      hintText: 'Enter longitude',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      onChanged: (value) {
+                        _updateMapFromCoordinates();
+                      },
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: AppInputField(
+                        controller: _latitudeController,
+                        label: 'Latitude',
+                        hintText: 'Enter latitude',
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (value) {
+                          _updateMapFromCoordinates();
+                        },
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(
+                      child: AppInputField(
+                        controller: _longitudeController,
+                        label: 'Longitude',
+                        hintText: 'Enter longitude',
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (value) {
+                          _updateMapFromCoordinates();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
           // Address text input with map dialog
           AppInputField(
@@ -667,38 +984,52 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             maxLines: 2,
             readOnly: true,
             onTap: _openMapDialog,
-            suffixIcon: IconButton(
-              onPressed: _openMapDialog,
-              icon: const Icon(Icons.map, color: Color(0xFF2563eb)),
-              tooltip: 'Open Map Selector',
+            suffixIcon: Tooltip(
+              message: 'Open interactive map to select device location',
+              textStyle: const TextStyle(
+                fontSize: AppSizes.fontSizeSmall,
+                color: Colors.white,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.textPrimary.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+              ),
+              child: IconButton(
+                onPressed: _openMapDialog,
+                icon: Icon(Icons.map, color: AppColors.primary),
+                tooltip: '', // Empty to prevent default tooltip
+              ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
           // Location coordinates display
           if (_selectedAddress?.latitude != null &&
               _selectedAddress?.longitude != null)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                border: Border.all(color: AppColors.border.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.pin_drop,
-                    color: Color(0xFF64748b),
+                    color: AppColors.textSecondary,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Coordinates: ${_selectedAddress!.latitude!.toStringAsFixed(6)}, ${_selectedAddress!.longitude!.toStringAsFixed(6)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF374151),
+                  Expanded(
+                    child: Text(
+                      'Coordinates: ${_selectedAddress!.latitude!.toStringAsFixed(6)}, ${_selectedAddress!.longitude!.toStringAsFixed(6)}',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -729,6 +1060,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             child: Text(
               group.name ?? 'None',
               style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+              overflow: TextOverflow.ellipsis,
             ),
           );
         }),
@@ -776,6 +1108,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             child: Text(
               schedule.name ?? 'Unnamed Schedule',
               style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+              overflow: TextOverflow.ellipsis,
             ),
           );
         }),
@@ -830,74 +1163,66 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppSearchableDropdown<String>(
-          label: 'Link Status',
-          hintText: 'None',
-          value: _selectedLinkStatus,
-          height: AppSizes.inputHeight,
-          items: _linkStatusOptions.map((status) {
-            return DropdownMenuItem<String>(
-              value: status,
-              child: Text(
-                status,
-                style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+        Row(
+          children: [
+            Expanded(
+              child: AppSearchableDropdown<String>(
+                label: 'Link Status',
+                hintText: 'None',
+                value: _selectedLinkStatus,
+                height: AppSizes.inputHeight,
+                enabled: false, // Always disabled - view only
+                items: _linkStatusOptions.map((status) {
+                  return DropdownMenuItem<String>(
+                    value: status,
+                    child: Text(
+                      status,
+                      style: const TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: null, // Always null - view only
               ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedLinkStatus = value ?? 'None';
-            });
-          },
+            ),
+          ],
         ),
-        // if (_selectedLinkStatus != 'None') ...[
-        //   const SizedBox(height: 4),
-        //   Text(
-        //     'Device will be linked to HES when saved',
-        //     style: const TextStyle(
-        //       fontSize: AppSizes.fontSizeSmall,
-        //       color: Color(0xFF2563eb),
-        //     ),
-        //   ),
-        // ],
       ],
     );
   }
 
   Widget _buildStatusDropdown() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppSearchableDropdown<String>(
-          label: 'Status',
-          hintText: 'None',
-          value: _selectedStatus,
-          height: AppSizes.inputHeight,
-          items: _statusOptions.map((status) {
-            return DropdownMenuItem<String>(
-              value: status,
-              child: Text(
-                status,
-                style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+        Row(
+          children: [
+            Expanded(
+              child: AppSearchableDropdown<String>(
+                label: 'Status',
+                hintText: 'None',
+                value: _selectedStatus,
+                height: AppSizes.inputHeight,
+                enabled: false, // Always disabled - view only
+                items: _statusOptions.map((status) {
+                  return DropdownMenuItem<String>(
+                    value: status,
+                    child: Text(
+                      status,
+                      style: const TextStyle(
+                        fontSize: AppSizes.fontSizeSmall,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: null, // Always null - view only
               ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedStatus = value ?? 'None';
-            });
-          },
+            ),
+          ],
         ),
-        if (_selectedLinkStatus != 'None') ...[
-          const SizedBox(height: 4),
-          Container(),
-          // Text(
-          //   'Device will be linked to HES when saved',
-          //   style: const TextStyle(
-          //     fontSize: AppSizes.fontSizeSmall,
-          //     color: Color(0xFF2563eb),
-          //   ),
-          // ),
-        ],
       ],
     );
   }

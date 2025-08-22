@@ -10,7 +10,9 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/services/device_group_service.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
@@ -28,14 +30,16 @@ class DeviceGroupsScreen extends StatefulWidget {
   State<DeviceGroupsScreen> createState() => _DeviceGroupsScreenState();
 }
 
-class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
-  late final DeviceGroupService _deviceGroupService;
+class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
+    with ResponsiveMixin {
+  DeviceGroupService? _deviceGroupService;
 
   // Data
   List<DeviceGroup> _deviceGroups = [];
   List<DeviceGroup> _filteredDeviceGroups = [];
   bool _isLoading = true;
   String? _errorMessage;
+  bool _isInitialized = false; // Track if data has been loaded initially
 
   // State
   DeviceGroupViewMode _currentViewMode = DeviceGroupViewMode.table;
@@ -54,20 +58,128 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   int _totalPages = 1;
   Timer? _debounceTimer;
 
+  // Responsive UI state
+  bool _summaryCardCollapsed = false;
+  bool _isKanbanView = false;
+  DeviceGroupViewMode?
+  _previousViewModeBeforeMobile; // Track previous view mode before mobile switch
+  bool?
+  _previousSummaryStateBeforeMobile; // Track previous summary state before mobile switch
+
+  // Search delay timer
+  Timer? _searchTimer;
+
   @override
   void initState() {
     super.initState();
-    _deviceGroupService = DeviceGroupService(ServiceLocator().apiService);
-    _loadDeviceGroups();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Initialize service only once
+    if (_deviceGroupService == null) {
+      _deviceGroupService = DeviceGroupService(ServiceLocator().apiService);
+    }
+
+    // Only load data on first initialization, not on every dependency change (like screen resize)
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadDeviceGroups();
+      print('🚀 DeviceGroupsScreen: Initial data load triggered');
+    } else {
+      print(
+        '📱 DeviceGroupsScreen: Dependencies changed (likely screen resize) - NO API call',
+      );
+    }
   }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _searchTimer?.cancel();
     super.dispose();
   }
 
+  @override
+  void handleResponsiveStateChange() {
+    if (!mounted) return;
+
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = mediaQuery.size.width < 768;
+    final isTablet =
+        mediaQuery.size.width >= 768 && mediaQuery.size.width < 1024;
+
+    // Auto-collapse summary card on mobile, keep visible but allow toggle
+    if (isMobile &&
+        !_summaryCardCollapsed &&
+        _previousSummaryStateBeforeMobile == null) {
+      // Save previous summary state before collapsing for mobile
+      _previousSummaryStateBeforeMobile = _summaryCardCollapsed;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _summaryCardCollapsed = true; // Default to collapsed on mobile
+          });
+          print('📱 Auto-collapsed summary card for mobile');
+        }
+      });
+    }
+
+    // Auto-expand summary card on desktop - restore previous state
+    if (!isMobile && !isTablet && _previousSummaryStateBeforeMobile != null) {
+      final shouldExpand = _previousSummaryStateBeforeMobile == false;
+      if (shouldExpand) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _summaryCardCollapsed = _previousSummaryStateBeforeMobile!;
+              _previousSummaryStateBeforeMobile = null; // Reset tracking
+            });
+            print('📱 Auto-expanded summary card for desktop');
+          }
+        });
+      }
+    }
+
+    // Auto-switch to kanban view on mobile
+    if (isMobile && !_isKanbanView) {
+      // Save previous view mode before switching to mobile kanban
+      if (_previousViewModeBeforeMobile == null) {
+        _previousViewModeBeforeMobile = _currentViewMode;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = true;
+            _currentViewMode = DeviceGroupViewMode.kanban;
+          });
+        }
+      });
+    }
+
+    // Auto-switch back to previous view mode on desktop
+    if (!isMobile && _isKanbanView && _previousViewModeBeforeMobile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = false;
+            _currentViewMode = _previousViewModeBeforeMobile!;
+            _previousViewModeBeforeMobile = null; // Reset tracking
+          });
+        }
+      });
+    }
+
+    print(
+      '📱 DeviceGroupsScreen: Responsive state updated (mobile: $isMobile, kanban: $_isKanbanView, view: $_currentViewMode) - UI ONLY, no API calls',
+    );
+  }
+
   Future<void> _loadDeviceGroups() async {
+    if (_deviceGroupService == null) return;
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -81,7 +193,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
           ? ApiConstants.defaultSearch
           : '%$_searchQuery%';
 
-      final response = await _deviceGroupService.getDeviceGroups(
+      final response = await _deviceGroupService!.getDeviceGroups(
         search: search,
         offset: offset,
         limit: _itemsPerPage,
@@ -116,14 +228,15 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
 
   void _onSearchChanged(String query) {
     // Cancel the previous timer
-    _debounceTimer?.cancel();
+    _searchTimer?.cancel();
 
     // Set a new timer to delay the search
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+    _searchTimer = Timer(const Duration(milliseconds: 500), () {
       setState(() {
         _searchQuery = query;
         _currentPage = 1; // Reset to first page when searching
       });
+      print('🔍 DeviceGroupsScreen: Search triggered for: "$query"');
       _loadDeviceGroups(); // Trigger API call
     });
   }
@@ -151,7 +264,17 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   void _onViewModeChanged(DeviceGroupViewMode viewMode) {
     setState(() {
       _currentViewMode = viewMode;
+      // Update kanban view state based on the new mode
+      _isKanbanView = (viewMode == DeviceGroupViewMode.kanban);
+
+      // If user manually changes view mode, reset mobile tracking
+      if (MediaQuery.of(context).size.width >= 768) {
+        _previousViewModeBeforeMobile = null;
+      }
     });
+    print(
+      '🔄 DeviceGroupsScreen: View mode changed to $viewMode (kanban: $_isKanbanView)',
+    );
   }
 
   void _handleSort(String column, bool ascending) {
@@ -256,7 +379,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
 
     if (confirmed == true) {
       try {
-        final response = await _deviceGroupService.deleteDeviceGroup(
+        final response = await _deviceGroupService!.deleteDeviceGroup(
           deviceGroup.id!,
         );
 
@@ -303,9 +426,11 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
   }
 
   Future<List<DeviceGroup>> _fetchAllDeviceGroups() async {
+    if (_deviceGroupService == null) return [];
+
     try {
       // Fetch all device groups without pagination
-      final response = await _deviceGroupService.getDeviceGroups(
+      final response = await _deviceGroupService!.getDeviceGroups(
         search: _searchQuery.isEmpty
             ? ApiConstants.defaultSearch
             : '%$_searchQuery%',
@@ -327,39 +452,331 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12),
-            child: _buildHeader(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isMobile = screenWidth < 768;
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Summary Card FIRST (like schedule screen)
+                if (isMobile)
+                  _buildCollapsibleSummaryCard()
+                else
+                  _buildDesktopSummaryCard(),
+                // Header/Filters AFTER summary card
+                if (isMobile) _buildMobileHeader() else _buildDesktopHeader(),
+                // Content
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    child: _buildContent(),
+                  ),
+                ),
+                // Pagination - direct call like other screens
+                Container(width: double.infinity, child: _buildPagination()),
+              ],
+            ),
           ),
-          Expanded(child: _buildContent()),
-          _buildPagination(), // Always show pagination for consistency
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSizes.spacing8),
+          // Filters and Actions
+          DeviceGroupFiltersAndActionsV2(
+            onSearchChanged: _onSearchChanged,
+            onStatusFilterChanged: _onStatusFilterChanged,
+            onViewModeChanged: _onViewModeChanged,
+            onAddDeviceGroup: _createDeviceGroup,
+            onRefresh: _loadDeviceGroups,
+            onExport: () {},
+            onImport: () {},
+            currentViewMode: _currentViewMode,
+            selectedStatus: null, // We can add status filtering later
+          ),
+          const SizedBox(height: AppSizes.spacing24),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        SizedBox(height: AppSizes.spacing12),
-        DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
-        const SizedBox(height: AppSizes.spacing8),
-        DeviceGroupFiltersAndActionsV2(
-          onSearchChanged: _onSearchChanged,
-          onStatusFilterChanged: _onStatusFilterChanged,
-          onViewModeChanged: _onViewModeChanged,
-          onAddDeviceGroup: _createDeviceGroup,
-          onRefresh: _loadDeviceGroups,
-          onExport: () {},
-          onImport: () {},
-          currentViewMode: _currentViewMode,
-          selectedStatus: null, // We can add status filtering later
+  Widget _buildDesktopSummaryCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: DeviceGroupSummaryCard(deviceGroups: _filteredDeviceGroups),
+    );
+  }
+
+  Widget _buildCollapsibleSummaryCard() {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isTablet =
+        MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
+
+    // Responsive sizing
+    final headerFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final collapsedHeight = isMobile ? 60.0 : (isTablet ? 60.0 : 70.0);
+    final expandedHeight = isMobile ? 180.0 : (isTablet ? 160.0 : 180.0);
+    final headerHeight = isMobile ? 50.0 : (isTablet ? 45.0 : 50.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(
+        left: AppSizes.spacing16,
+        right: AppSizes.spacing16,
+        top: AppSizes.spacing8,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: _summaryCardCollapsed ? collapsedHeight : expandedHeight,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+            boxShadow: [AppSizes.shadowSmall],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with toggle button
+              SizedBox(
+                height: headerHeight,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile
+                        ? AppSizes.paddingSmall
+                        : AppSizes.paddingMedium,
+                    vertical: AppSizes.paddingSmall,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.group_work,
+                        color: AppColors.primary,
+                        size: AppSizes.iconSmall,
+                      ),
+                      SizedBox(
+                        width: isMobile ? AppSizes.spacing4 : AppSizes.spacing8,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Summary',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                fontSize: headerFontSize,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _summaryCardCollapsed = !_summaryCardCollapsed;
+                            // Reset mobile tracking when user manually toggles
+                            _previousSummaryStateBeforeMobile = null;
+                          });
+                          print(
+                            '📱 Summary card toggled: collapsed=$_summaryCardCollapsed',
+                          );
+                        },
+                        icon: Icon(
+                          _summaryCardCollapsed
+                              ? Icons.expand_more
+                              : Icons.expand_less,
+                          color: AppColors.textSecondary,
+                          size: AppSizes.iconSmall,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32,
+                          minHeight: isMobile ? 28 : 32,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Expanded summary content
+              if (!_summaryCardCollapsed)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      0,
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      AppSizes.paddingSmall,
+                    ),
+                    child: DeviceGroupSummaryCard(
+                      deviceGroups: _filteredDeviceGroups,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildMobileHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: Container(
+        height: AppSizes.cardMobile,
+        alignment: Alignment.centerLeft,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16,
+          vertical: AppSizes.spacing8,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.spacing8),
+          color: AppColors.surface,
+          boxShadow: [AppSizes.shadowSmall],
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _buildMobileSearchBar()),
+            const SizedBox(width: AppSizes.spacing8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: _buildMobileMoreActionsButton(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: AppInputField.search(
+        hintText: 'Search device groups...',
+        onChanged: _onSearchChanged,
+        prefixIcon: const Icon(Icons.search, size: AppSizes.iconSmall),
+        enabled: true,
+      ),
+    );
+  }
+
+  Widget _buildMobileMoreActionsButton() {
+    return Container(
+      height: 36,
+      width: 36,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.spacing8),
+      ),
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+        onSelected: (value) {
+          switch (value) {
+            case 'add':
+              _createDeviceGroup();
+              break;
+            case 'refresh':
+              _loadDeviceGroups();
+              break;
+            case 'kanban':
+              _onViewModeChanged(DeviceGroupViewMode.kanban);
+              break;
+            case 'table':
+              _onViewModeChanged(DeviceGroupViewMode.table);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'add',
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 18),
+                SizedBox(width: 8),
+                Text('Add Device Group'),
+              ],
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'refresh',
+            child: Row(
+              children: [
+                Icon(Icons.refresh, size: 18),
+                SizedBox(width: 8),
+                Text('Refresh'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'kanban',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.view_kanban,
+                  size: 18,
+                  color: _currentViewMode == DeviceGroupViewMode.kanban
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Kanban View',
+                  style: TextStyle(
+                    color: _currentViewMode == DeviceGroupViewMode.kanban
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'table',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.table_chart,
+                  size: 18,
+                  color: _currentViewMode == DeviceGroupViewMode.table
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Table View',
+                  style: TextStyle(
+                    color: _currentViewMode == DeviceGroupViewMode.table
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -369,8 +786,10 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       return const Center(
         child: AppLottieStateWidget.loading(
           title: 'Loading Device Groups',
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+          message: 'Please wait while we fetch your device groups...',
           lottieSize: 80,
-          message: 'Please wait while we fetch your device groups.',
         ),
       );
     }
@@ -397,45 +816,44 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-      child: _buildViewContent(),
-    );
+    return _buildViewContent();
   }
 
   Widget _buildViewContent() {
-    switch (_currentViewMode) {
-      case DeviceGroupViewMode.table:
-        return _buildTableView();
-      case DeviceGroupViewMode.kanban:
-        return _buildKanbanView();
-    }
+    return (_currentViewMode == DeviceGroupViewMode.table && !_isKanbanView)
+        ? _buildTableView()
+        : _buildKanbanView();
   }
 
   Widget _buildTableView() {
-    return BluNestDataTable<DeviceGroup>(
-      columns: _buildTableColumns(),
-      data: _filteredDeviceGroups,
-      onRowTap: _viewDeviceGroup,
-      enableMultiSelect: true,
-      selectedItems: _selectedDeviceGroups,
-      onSelectionChanged: (selectedItems) {
-        setState(() {
-          _selectedDeviceGroups = selectedItems;
-        });
-      },
-      hiddenColumns: _hiddenColumns,
-      onColumnVisibilityChanged: (hiddenColumns) {
-        setState(() {
-          _hiddenColumns = hiddenColumns;
-        });
-      },
-      sortBy: _sortBy,
-      sortAscending: _sortAscending,
-      onSort: _handleSort,
-      isLoading: _isLoading,
-      totalItemsCount: _totalItems,
-      onSelectAllItems: _fetchAllDeviceGroups,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: _buildDeviceGroupTable(),
+    );
+  }
+
+  Widget _buildKanbanView() {
+    if (_isLoading && _deviceGroups.isEmpty) {
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Device Groups',
+          lottieSize: 80,
+          message: 'Please wait while we fetch your device groups.',
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: DeviceGroupKanbanView(
+        deviceGroups: _filteredDeviceGroups,
+        onDeviceGroupSelected: _viewDeviceGroup,
+        onDeviceGroupEdit: _editDeviceGroup,
+        onDeviceGroupDelete: _deleteDeviceGroup,
+        onDeviceGroupView: _viewDeviceGroup,
+        onManageDevices: _manageDevices,
+        isLoading: _isLoading,
+      ),
     );
   }
 
@@ -616,15 +1034,35 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
     ];
   }
 
-  Widget _buildKanbanView() {
-    return DeviceGroupKanbanView(
-      deviceGroups: _filteredDeviceGroups,
-      onDeviceGroupSelected: _viewDeviceGroup,
-      onDeviceGroupEdit: _editDeviceGroup,
-      onDeviceGroupDelete: _deleteDeviceGroup,
-      onDeviceGroupView: _viewDeviceGroup,
-      onManageDevices: _manageDevices,
+  Widget _buildDeviceGroupTable() {
+    return BluNestDataTable<DeviceGroup>(
+      columns: _buildTableColumns(),
+      data: _filteredDeviceGroups,
+      onRowTap: _viewDeviceGroup,
+      enableMultiSelect: true,
+      selectedItems: _selectedDeviceGroups,
+      onSelectionChanged: (selectedItems) {
+        setState(() {
+          _selectedDeviceGroups = selectedItems;
+        });
+      },
+      hiddenColumns: _hiddenColumns,
+      onColumnVisibilityChanged: (hiddenColumns) {
+        setState(() {
+          _hiddenColumns = hiddenColumns;
+        });
+      },
+      sortBy: _sortBy,
+      sortAscending: _sortAscending,
+      onSort: _handleSort,
       isLoading: _isLoading,
+      totalItemsCount: _totalItems,
+      onSelectAllItems: _fetchAllDeviceGroups,
+      emptyState: AppLottieStateWidget.noData(
+        title: 'No Device Groups',
+        message: 'No device groups found for the current filter criteria.',
+        lottieSize: 120,
+      ),
     );
   }
 
@@ -634,7 +1072,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen> {
       totalPages: _totalPages,
       totalItems: _totalItems,
       itemsPerPage: _itemsPerPage,
-     // itemsPerPageOptions: const [5, 10, 20, 25, 50],
+      itemsPerPageOptions: const [5, 10, 20, 25, 50],
       startItem: (_currentPage - 1) * _itemsPerPage + 1,
       endItem: (_currentPage * _itemsPerPage > _totalItems)
           ? _totalItems

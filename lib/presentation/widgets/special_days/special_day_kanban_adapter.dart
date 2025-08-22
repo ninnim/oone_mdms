@@ -102,18 +102,18 @@ class SpecialDayKanbanItem extends KanbanItem {
       );
     }
 
-    // Add date range info if we have details
-    if (specialDay.specialDayDetails.isNotEmpty) {
-      final firstDetail = specialDay.specialDayDetails.first;
-      details.add(
-        KanbanDetail(
-          icon: Icons.date_range,
-          label: 'Example Date',
-          value: firstDetail.dateRangeDisplay,
-          valueColor: AppColors.primary,
-        ),
-      );
-    }
+    // // Add date range info if we have details
+    // if (specialDay.specialDayDetails.isNotEmpty) {
+    //   final firstDetail = specialDay.specialDayDetails.first;
+    //   details.add(
+    //     KanbanDetail(
+    //       icon: Icons.date_range,
+    //       label: 'Example Date',
+    //       value: firstDetail.dateRangeDisplay,
+    //       valueColor: AppColors.primary,
+    //     ),
+    //   );
+    // }
 
     return details;
   }
@@ -269,18 +269,18 @@ class SpecialDayKanbanConfig {
       );
     }
 
-    if (onManageDetails != null) {
-      actions.add(
-        KanbanAction(
-          key: 'details',
-          label: 'Manage Details',
-          icon: Icons.list,
-          color: AppColors.info,
-          onTap: (item) =>
-              onManageDetails((item as SpecialDayKanbanItem).specialDay),
-        ),
-      );
-    }
+    // if (onManageDetails != null) {
+    //   actions.add(
+    //     KanbanAction(
+    //       key: 'details',
+    //       label: 'Manage Details',
+    //       icon: Icons.list,
+    //       color: AppColors.info,
+    //       onTap: (item) =>
+    //           onManageDetails((item as SpecialDayKanbanItem).specialDay),
+    //     ),
+    //   );
+    // }
 
     if (onDelete != null) {
       actions.add(

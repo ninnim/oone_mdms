@@ -20,7 +20,7 @@ class AppButton extends StatelessWidget {
     this.text,
     this.onPressed,
     this.type = AppButtonType.primary,
-    this.size = AppButtonSize.medium,
+    this.size = AppButtonSize.small,
     this.isLoading = false,
     this.icon,
     this.fullWidth = false,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -121,7 +122,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: AppLottieStateWidget.loading(lottieSize: 80));
     }
 
     final groupedItems = _groupItemsByStatus();
@@ -156,14 +157,23 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
     return Container(
       padding: padding ?? const EdgeInsets.all(AppSizes.spacing16),
       height: maxHeight,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: nonEmptyColumns.map((column) {
-            final columnItems = groupedItems[column.key] ?? [];
-            return _buildStatusColumn(column, columnItems, dynamicColumnWidth);
-          }).toList(),
+      child: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: nonEmptyColumns.length == 1
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
+            children: nonEmptyColumns.map((column) {
+              final columnItems = groupedItems[column.key] ?? [];
+              return _buildStatusColumn(
+                column,
+                columnItems,
+                dynamicColumnWidth,
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
@@ -176,7 +186,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
     }
 
     const minColumnWidth = 280.0;
-    const maxColumnWidth = 500.0;
+    const maxColumnWidth = 450.0;
     const columnSpacing = AppSizes.spacing16;
 
     // Calculate total spacing between columns
@@ -186,29 +196,56 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
     // Calculate width per column
     double calculatedWidth = availableWidthForColumns / columnCount;
 
-    // Smart responsive behavior:
-    // - Single column: Take most of available width (up to max)
-    // - Multiple columns: Ensure readable width while fitting screen
-    if (columnCount == 1) {
-      // Single column gets more space but respects max width
-      calculatedWidth = (availableWidthForColumns * 0.95).clamp(
-        minColumnWidth,
-        maxColumnWidth,
-      );
-    } else if (columnCount == 2) {
-      // Two columns get balanced space
-      calculatedWidth = (availableWidthForColumns / 2).clamp(
-        minColumnWidth,
-        maxColumnWidth,
-      );
-    } else {
-      // Multiple columns: prioritize fitting on screen
-      calculatedWidth = calculatedWidth.clamp(minColumnWidth, maxColumnWidth);
-
-      // If calculated width would make columns too narrow, allow horizontal scroll
-      if (calculatedWidth < minColumnWidth) {
+    // Smart responsive behavior based on screen size and column count:
+    if (availableWidth < 768) {
+      // Mobile: Prioritize readability, allow horizontal scroll if needed
+      if (columnCount == 1) {
+        calculatedWidth = (availableWidthForColumns * 0.95).clamp(
+          minColumnWidth,
+          maxColumnWidth,
+        );
+      } else {
+        // For multiple columns on mobile, use minimum width to ensure readability
         calculatedWidth = minColumnWidth;
       }
+    } else if (availableWidth < 1024) {
+      // Tablet: Balance between fitting columns and readability
+      if (columnCount <= 2) {
+        calculatedWidth = (availableWidthForColumns / columnCount).clamp(
+          minColumnWidth,
+          maxColumnWidth,
+        );
+      } else {
+        calculatedWidth = calculatedWidth.clamp(
+          minColumnWidth,
+          maxColumnWidth * 0.8,
+        );
+      }
+    } else {
+      // Desktop: Try to fit all columns while maintaining readability
+      if (columnCount == 1) {
+        // Single column gets centered with comfortable width
+        calculatedWidth = (availableWidthForColumns * 0.6).clamp(
+          minColumnWidth,
+          maxColumnWidth,
+        );
+      } else if (columnCount <= 3) {
+        calculatedWidth = (availableWidthForColumns / columnCount).clamp(
+          minColumnWidth,
+          maxColumnWidth,
+        );
+      } else {
+        // For many columns, allow horizontal scroll with reasonable width
+        calculatedWidth = calculatedWidth.clamp(
+          minColumnWidth,
+          maxColumnWidth * 0.9,
+        );
+      }
+    }
+
+    // Ensure minimum width is respected
+    if (calculatedWidth < minColumnWidth) {
+      calculatedWidth = minColumnWidth;
     }
 
     return calculatedWidth;
@@ -260,13 +297,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [AppSizes.shadowSmall],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,13 +414,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [AppSizes.shadowSmall],
       ),
       child: InkWell(
         onTap: () => onItemTap(item),

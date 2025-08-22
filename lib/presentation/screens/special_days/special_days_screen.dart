@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/app_toast.dart';
@@ -9,16 +11,15 @@ import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/kanban_view.dart';
 import '../../widgets/special_days/special_day_filters_and_actions_v2.dart';
 import '../../widgets/special_days/special_day_form_dialog.dart';
-import '../../widgets/special_days/special_day_detail_form_dialog.dart';
 import '../../widgets/special_days/special_day_table_columns.dart';
 import '../../widgets/special_days/special_day_summary_card.dart';
-import '../../widgets/special_days/special_day_detail_table_columns.dart';
 import '../../widgets/special_days/special_day_kanban_adapter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/models/special_day.dart';
 import '../../../core/services/special_day_service.dart';
+import '../../../core/utils/responsive_helper.dart';
 
 class SpecialDaysScreen extends StatefulWidget {
   final Function(List<String>)? onBreadcrumbUpdate;
@@ -29,31 +30,41 @@ class SpecialDaysScreen extends StatefulWidget {
   State<SpecialDaysScreen> createState() => _SpecialDaysScreenState();
 }
 
-class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
+class _SpecialDaysScreenState extends State<SpecialDaysScreen>
+    with ResponsiveMixin {
   late SpecialDayService _specialDayService;
 
-  // State management
+  // State management - SERVER-SIDE PAGINATION
   List<SpecialDay> _specialDays = [];
-  List<SpecialDay> _filteredSpecialDays = [];
   Set<SpecialDay> _selectedSpecialDays = {};
 
   bool _isLoading = false;
-  String? _errorMessage;
+  String _errorMessage = '';
+  bool _isInitialized = false; // Track if data has been loaded initially
 
-  // Filtering & Search
+  // Pagination - SERVER-SIDE
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
+  int _itemsPerPage = 25;
+
+  // Filtering & Search - REAL-TIME API
   String _searchQuery = '';
+  String? _selectedStatus;
+  bool _showActiveOnly = false;
 
   // View Mode
   SpecialDayViewMode _currentViewMode = SpecialDayViewMode.table;
 
-  // Sidebar state
-  bool _isSidebarOpen = false;
-  SpecialDay? _selectedSpecialDayForDetails;
-  List<SpecialDayDetail> _specialDayDetails = [];
-  bool _isLoadingDetails = false;
+  bool _summaryCardCollapsed = false;
+  bool _isKanbanView = false;
+  final TextEditingController _searchController = TextEditingController();
 
-  // Sorting
-  String _sortBy = 'name';
+  // Search delay timer
+  Timer? _searchTimer;
+
+  // Sorting - SERVER-SIDE
+  String? _sortBy;
   bool _sortAscending = true;
 
   // Table Configuration
@@ -67,40 +78,134 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
   ];
   List<String> _hiddenColumns = [];
 
-  // Sub-details table sorting
-  String? _subDetailsSortColumn;
-  bool _subDetailsSortAscending = true;
-
-  // Pagination
-  int _currentPage = 1;
-  int _itemsPerPage = 10;
-  int get _totalPages => (_filteredSpecialDays.length / _itemsPerPage).ceil();
-  int get _offset => (_currentPage - 1) * _itemsPerPage;
-  List<SpecialDay> get _paginatedSpecialDays {
-    final start = _offset;
-    final end = (start + _itemsPerPage).clamp(0, _filteredSpecialDays.length);
-    return _filteredSpecialDays.sublist(start, end);
-  }
-
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _specialDayService = Provider.of<SpecialDayService>(context, listen: false);
-    _loadSpecialDays();
+
+    // Only load data on first initialization, not on every dependency change (like screen resize)
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadSpecialDays();
+      print('🚀 SpecialDaysScreen: Initial data load triggered');
+    } else {
+      print(
+        '📱 SpecialDaysScreen: Dependencies changed (likely screen resize) - NO API call',
+      );
+    }
   }
 
   @override
   void dispose() {
+    _searchTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
-  // Event Handlers
+  @override
+  void handleResponsiveStateChange() {
+    if (!mounted) return;
+
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = mediaQuery.size.width < 768;
+    final isTablet =
+        mediaQuery.size.width >= 768 && mediaQuery.size.width < 1024;
+
+    // Auto-collapse summary card on mobile, keep visible but allow toggle
+    if (isMobile && !_summaryCardCollapsed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _summaryCardCollapsed = true; // Default to collapsed on mobile
+          });
+        }
+      });
+    }
+
+    // Auto-expand summary card on desktop
+    if (!isMobile && !isTablet && _summaryCardCollapsed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _summaryCardCollapsed = false; // Default to expanded on desktop
+          });
+        }
+      });
+    }
+
+    // Auto-switch to kanban view on mobile
+    if (isMobile && !_isKanbanView) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = true;
+          });
+        }
+      });
+    }
+
+    // Auto-switch back to table view on desktop (optional)
+    if (!isMobile && _isKanbanView) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = false;
+          });
+        }
+      });
+    }
+
+    print(
+      '📱 SpecialDaysScreen: Responsive state updated (mobile: $isMobile) - UI ONLY, no API calls',
+    );
+  }
+
+  // Event Handlers - REAL-TIME API TRIGGERS
+  // Search Event Handler - with delay to avoid excessive API calls
   void _onSearchChanged(String query) {
+    // Cancel any existing timer
+    _searchTimer?.cancel();
+
+    // Update search query immediately for UI responsiveness
     setState(() {
       _searchQuery = query;
-      _currentPage = 1;
     });
-    _applyFilters();
+
+    // Set a delay before triggering the API call
+    _searchTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _currentPage = 1; // Reset to first page when search changes
+        });
+        print(
+          '🔍 SpecialDaysScreen: Search triggered for: "$query" (formatted: "%$query%")',
+        );
+        _loadSpecialDays(); // Trigger API call after delay
+      }
+    });
+  }
+
+  void _onStatusFilterChanged(String? status) {
+    bool shouldReload = false;
+    bool newShowActiveOnly = status?.toLowerCase() == 'active';
+
+    if (_showActiveOnly != newShowActiveOnly) {
+      setState(() {
+        _showActiveOnly = newShowActiveOnly;
+        _selectedStatus = status;
+        _currentPage = 1; // Reset to first page
+      });
+      shouldReload = true;
+    }
+
+    if (shouldReload) {
+      _loadSpecialDays(); // Trigger API call immediately
+    }
   }
 
   void _onViewModeChanged(SpecialDayViewMode mode) {
@@ -109,20 +214,65 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
     });
   }
 
-  void _handleSort(String column, bool ascending) {
+  void _applySorting() {
+    if (_sortBy == null || _specialDays.isEmpty) return;
+
     setState(() {
-      _sortBy = column;
+      _specialDays.sort((a, b) {
+        int comparison = 0;
+
+        switch (_sortBy) {
+          case 'name':
+            comparison = a.name.compareTo(b.name);
+            break;
+          case 'description':
+            comparison = a.description.compareTo(b.description);
+            break;
+          case 'active':
+            comparison = a.active.toString().compareTo(b.active.toString());
+            break;
+          default:
+            comparison = 0;
+        }
+
+        return _sortAscending ? comparison : -comparison;
+      });
+    });
+  }
+
+  // Sorting Event Handler - triggers API call
+  void _handleSort(String sortField, bool ascending) {
+    setState(() {
+      _sortBy = sortField;
       _sortAscending = ascending;
     });
-    _applyFilters();
+    print(
+      '🔄 SpecialDaysScreen: Sort changed to $sortField (ascending: $ascending)',
+    );
+    _loadSpecialDays(); // Reload data with new sort
+  }
+
+  void _onPageChanged(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+    _loadSpecialDays(); // Trigger API call for new page
+  }
+
+  void _onItemsPerPageChanged(int itemsPerPage) {
+    setState(() {
+      _itemsPerPage = itemsPerPage;
+      _currentPage = 1; // Reset to first page
+    });
+    _loadSpecialDays(); // Trigger API call with new page size
   }
 
   void _onSpecialDaySelected(SpecialDay specialDay) {
-    // Show view dialog instead of sidebar
-    _showViewDialog(specialDay);
+    // Show view dialog
+    _viewSpecialDayDetails(specialDay);
   }
 
-  void _showViewDialog(SpecialDay specialDay) {
+  void _viewSpecialDayDetails(SpecialDay specialDay) {
     showDialog(
       context: context,
       builder: (context) => SpecialDayFormDialog(
@@ -130,7 +280,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
         mode: SpecialDayDialogMode.view,
         onSave: (updatedSpecialDay) {
           // Handle update logic here
-          _updateSpecialDay(updatedSpecialDay);
+          _handleUpdateSpecialDay(updatedSpecialDay);
         },
         onSuccess: () {
           _loadSpecialDays();
@@ -139,238 +289,109 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
     );
   }
 
-  void _updateSpecialDay(SpecialDay specialDay) async {
-    try {
-      await _specialDayService.updateSpecialDay(specialDay);
-      if (mounted) {
-        AppToast.showSuccess(
-          context,
-          message: 'Special day updated successfully',
-        );
-        _loadSpecialDays();
-      }
-    } catch (e) {
-      if (mounted) {
-        AppToast.showError(context, error: 'Failed to update special day: $e');
-      }
-    }
-  }
-
-  void _onSidebarClosed() {
-    setState(() {
-      _isSidebarOpen = false;
-      _selectedSpecialDayForDetails = null;
-      _specialDayDetails = [];
-    });
-  }
-
-  void _toggleSidebar() {
-    setState(() {
-      _isSidebarOpen = !_isSidebarOpen;
-    });
-
-    // If we're opening the sidebar and have a selected special day, refresh its details
-    if (_isSidebarOpen && _selectedSpecialDayForDetails != null) {
-      _loadSpecialDayDetails(_selectedSpecialDayForDetails!.id);
-    }
-  }
-
-  void _closeSidebarCompletely() {
-    setState(() {
-      _isSidebarOpen = false;
-      _selectedSpecialDayForDetails = null;
-      _specialDayDetails = [];
-    });
-  }
-
-  // Data loading and processing
+  // Data loading and processing - REAL-TIME API CALLS
   Future<void> _loadSpecialDays() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      _errorMessage = '';
     });
 
     try {
-      final response = await _specialDayService.getSpecialDays(
-        search: _searchQuery.isEmpty ? '%%' : '%$_searchQuery%',
-        offset: 0,
-        limit: 1000, // Load all for local filtering
-      );
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          if (response.success && response.data != null) {
-            _specialDays = response.data!;
-            print('🔄 Loaded ${_specialDays.length} special days from API');
-            _applyFilters();
-          } else {
-            _errorMessage = response.message ?? 'Failed to load special days';
-            _specialDays = [];
-            _filteredSpecialDays = [];
-            print('❌ Failed to load special days: $_errorMessage');
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Network error: Please check your connection';
-          _specialDays = [];
-          _filteredSpecialDays = [];
-        });
-      }
-    }
-  }
-
-  Future<void> _loadSpecialDayDetails(int specialDayId) async {
-    setState(() {
-      _isLoadingDetails = true;
-    });
-
-    try {
-      final response = await _specialDayService.getSpecialDayById(
-        specialDayId,
-        includeSpecialDayDetail: true,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isLoadingDetails = false;
-          if (response.success && response.data != null) {
-            _specialDayDetails = response.data!.specialDayDetails;
-          } else {
-            _specialDayDetails = [];
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingDetails = false;
-          _specialDayDetails = [];
-        });
-      }
-    }
-  }
-
-  void _applyFilters() {
-    List<SpecialDay> filtered = List.from(_specialDays);
-
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((specialDay) {
-        return specialDay.name.toLowerCase().contains(
-              _searchQuery.toLowerCase(),
-            ) ||
-            specialDay.description.toLowerCase().contains(
-              _searchQuery.toLowerCase(),
-            );
-      }).toList();
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) {
-      int result = 0;
-      switch (_sortBy) {
-        case 'name':
-          result = a.name.compareTo(b.name);
-          break;
-        case 'description':
-          result = a.description.compareTo(b.description);
-          break;
-        case 'active':
-          result = a.active.toString().compareTo(b.active.toString());
-          break;
-        default:
-          result = a.name.compareTo(b.name);
-      }
-      return _sortAscending ? result : -result;
-    });
-
-    setState(() {
-      _filteredSpecialDays = filtered;
-      // Reset to first page if current page is beyond the new total
-      final newTotalPages = (_filteredSpecialDays.length / _itemsPerPage)
-          .ceil();
-      if (_currentPage > newTotalPages && newTotalPages > 0) {
-        _currentPage = 1;
-      }
       print(
-        '🔄 Applied filters: ${_filteredSpecialDays.length} items, $_totalPages pages',
+        '🔄 SpecialDaysScreen: Loading special days (page: $_currentPage, search: "$_searchQuery", formatted: "${_searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%'}")',
       );
-    });
+
+      final response = await _specialDayService.getSpecialDays(
+        search: _searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%',
+        offset: (_currentPage - 1) * _itemsPerPage,
+        limit: _itemsPerPage,
+      );
+
+      if (response.success && response.data != null) {
+        setState(() {
+          _specialDays = response.data!;
+          // Get total from pagination info, fallback to data length if not available
+          _totalItems = response.paging?.item.total ?? response.data!.length;
+          _totalPages = _totalItems > 0
+              ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
+              : 1;
+          _isLoading = false;
+        });
+
+        // Apply any existing sorting
+        _applySorting();
+
+        print(
+          '✅ SpecialDaysScreen: Loaded ${_specialDays.length} special days (total: $_totalItems)',
+        );
+      } else {
+        setState(() {
+          _errorMessage = response.message ?? 'Failed to load special days';
+          _isLoading = false;
+        });
+        print('❌ SpecialDaysScreen: Load failed: $_errorMessage');
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading special days: $e';
+        _isLoading = false;
+      });
+      print('❌ SpecialDaysScreen: Exception loading special days: $e');
+    }
   }
 
-  // CRUD Operations
-  Future<void> _createSpecialDay() async {
+  // CRUD Operations - with API triggers
+  void _createSpecialDay() {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (context) => SpecialDayFormDialog(
-        onSave: (specialDay) async {
-          final response = await _specialDayService.createSpecialDay(
-            specialDay,
-          );
-          if (response.success) {
-            await _loadSpecialDays();
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Success',
-                message: 'Special day created successfully',
-                type: ToastType.success,
-              );
-            }
-          } else {
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Error',
-                message: response.message ?? 'Failed to create special day',
-                type: ToastType.error,
-              );
-            }
-          }
-        },
+        onSave: _handleCreateSpecialDay,
+        onSuccess: _loadSpecialDays,
       ),
     );
   }
 
-  Future<void> _editSpecialDay(SpecialDay specialDay) async {
+  void _editSpecialDay(SpecialDay specialDay) {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (context) => SpecialDayFormDialog(
         specialDay: specialDay,
-        onSave: (specialDay) async {
-          final response = await _specialDayService.updateSpecialDay(
-            specialDay,
-          );
-          if (response.success) {
-            await _loadSpecialDays();
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Success',
-                message: 'Special day updated successfully',
-                type: ToastType.success,
-              );
-            }
-          } else {
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Error',
-                message: response.message ?? 'Failed to update special day',
-                type: ToastType.error,
-              );
-            }
-          }
-        },
+        onSave: _handleUpdateSpecialDay,
+        onSuccess: _loadSpecialDays,
       ),
     );
+  }
+
+  Future<void> _handleCreateSpecialDay(SpecialDay specialDay) async {
+    try {
+      print('🔄 SpecialDaysScreen: Creating special day: ${specialDay.name}');
+      final response = await _specialDayService.createSpecialDay(specialDay);
+
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to create special day');
+      }
+
+      print('✅ SpecialDaysScreen: Special day created successfully');
+    } catch (e) {
+      print('❌ SpecialDaysScreen: Error creating special day: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _handleUpdateSpecialDay(SpecialDay specialDay) async {
+    try {
+      print('🔄 SpecialDaysScreen: Updating special day: ${specialDay.name}');
+      final response = await _specialDayService.updateSpecialDay(specialDay);
+
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to update special day');
+      }
+
+      print('✅ SpecialDaysScreen: Special day updated successfully');
+    } catch (e) {
+      print('❌ SpecialDaysScreen: Error updating special day: $e');
+      rethrow;
+    }
   }
 
   Future<void> _deleteSpecialDay(SpecialDay specialDay) async {
@@ -424,16 +445,16 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
                   'Special day "${specialDay.name}" has been successfully deleted.',
             );
 
-            print('🗑️ Reloading special days list...');
+            //  print('🗑️ Reloading special days list...');
             await _loadSpecialDays();
 
-            // Close sidebar if this special day was selected
-            if (_selectedSpecialDayForDetails?.id == specialDay.id) {
-              print('🗑️ Closing sidebar as deleted item was selected');
-              _onSidebarClosed();
-            }
+            // // Close sidebar if this special day was selected
+            // if (_selectedSpecialDayForDetails?.id == specialDay.id) {
+            //   print('🗑️ Closing sidebar as deleted item was selected');
+            //   _onSidebarClosed();
+            // }
           } else {
-            print('🗑️ Delete failed, showing error toast');
+            // print('🗑️ Delete failed, showing error toast');
             AppToast.showError(
               context,
               error: response.message ?? 'Failed to delete special day',
@@ -443,7 +464,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
           }
         }
       } catch (e) {
-        print('🗑️ Delete operation threw exception: $e');
+        //  print('🗑️ Delete operation threw exception: $e');
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -467,7 +488,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
     try {
       // Fetch all special days without pagination
       final response = await _specialDayService.getSpecialDays(
-        search: _searchQuery.isEmpty ? '%%' : '%$_searchQuery%',
+        search: _searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%',
         offset: 0,
         limit: 10000, // Large limit to get all items
       );
@@ -497,176 +518,6 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
     }
   }
 
-  // Special Day Detail CRUD Operations
-  Future<void> _createSpecialDayDetail(SpecialDay specialDay) async {
-    final availableParentSpecialDays = [
-      specialDay,
-    ]; // Only allow current special day as parent
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => SpecialDayDetailFormDialog(
-        availableParentSpecialDays: availableParentSpecialDays,
-        preferredParentId: specialDay.id, // Auto-select the current special day
-        onSave: (detail) async {
-          final response = await _specialDayService.createSpecialDayDetail(
-            detail,
-          );
-          if (response.success) {
-            _loadSpecialDayDetails(specialDay.id);
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Success',
-                message: 'Special day detail created successfully',
-                type: ToastType.success,
-              );
-            }
-          } else {
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Error',
-                message:
-                    response.message ?? 'Failed to create special day detail',
-                type: ToastType.error,
-              );
-            }
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _editSpecialDayDetail(SpecialDayDetail detail) async {
-    final availableParentSpecialDays = [
-      _selectedSpecialDayForDetails!,
-    ]; // Only allow current special day as parent
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => SpecialDayDetailFormDialog(
-        specialDayDetail: detail,
-        availableParentSpecialDays: availableParentSpecialDays,
-        preferredParentId: _selectedSpecialDayForDetails!.id,
-        onSave: (detail) async {
-          final response = await _specialDayService.updateSpecialDayDetail(
-            detail,
-          );
-          if (response.success) {
-            _loadSpecialDayDetails(_selectedSpecialDayForDetails!.id);
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Success',
-                message: 'Special day detail updated successfully',
-                type: ToastType.success,
-              );
-            }
-          } else {
-            if (mounted) {
-              AppToast.show(
-                context,
-                title: 'Error',
-                message:
-                    response.message ?? 'Failed to update special day detail',
-                type: ToastType.error,
-              );
-            }
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _deleteSpecialDayDetail(SpecialDayDetail detail) async {
-    print(
-      '🗑️ Delete special day detail called for: ${detail.name} (ID: ${detail.id})',
-    );
-
-    final confirm = await AppConfirmDialog.show(
-      context,
-      title: 'Delete Special Day Detail',
-      message:
-          'Are you sure you want to delete this special day detail? This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      confirmType: AppButtonType.danger,
-      icon: Icons.delete_outline,
-    );
-
-    print('🗑️ Delete detail confirmation result: $confirm');
-
-    if (confirm == true) {
-      print(
-        '🗑️ Starting delete operation for special day detail ID: ${detail.id}',
-      );
-
-      try {
-        print('🗑️ Calling API delete detail service...');
-        final response = await _specialDayService.deleteSpecialDayDetail(
-          detail.id,
-        );
-
-        print(
-          '🗑️ Delete detail API response: success=${response.success}, message=${response.message}',
-        );
-
-        if (mounted) {
-          if (response.success) {
-            print('🗑️ Delete detail successful, showing success toast');
-            AppToast.showSuccess(
-              context,
-              title: 'Detail Deleted',
-              message: 'Special day detail has been successfully deleted.',
-            );
-            // Refresh special day details
-            print('🗑️ Reloading special day details...');
-            _loadSpecialDayDetails(_selectedSpecialDayForDetails!.id);
-          } else {
-            print('🗑️ Delete detail failed, showing error toast');
-            AppToast.showError(
-              context,
-              error: response.message ?? 'Failed to delete special day detail',
-              title: 'Delete Failed',
-              errorContext: 'special_day_detail_delete',
-            );
-          }
-        }
-      } catch (e) {
-        print('🗑️ Delete detail operation threw exception: $e');
-        if (mounted) {
-          AppToast.showError(
-            context,
-            error: 'Network error: Please check your connection',
-            title: 'Connection Error',
-            errorContext: 'special_day_detail_delete_network',
-          );
-        }
-      }
-    }
-  }
-
-  // UI Builders
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        SizedBox(height: AppSizes.spacing12),
-        SpecialDaySummaryCard(specialDays: _filteredSpecialDays),
-        const SizedBox(height: AppSizes.spacing8),
-        SpecialDayFiltersAndActionsV2(
-          onSearchChanged: _onSearchChanged,
-          onViewModeChanged: _onViewModeChanged,
-          onAddSpecialDay: _createSpecialDay,
-          onRefresh: _refreshData,
-          currentViewMode: _currentViewMode,
-        ),
-      ],
-    );
-  }
-
   Widget _buildContent() {
     // Show full-screen loading only if no data exists yet
     if (_isLoading && _specialDays.isEmpty) {
@@ -679,16 +530,16 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       );
     }
 
-    if (_errorMessage != null && _specialDays.isEmpty) {
+    if (_errorMessage.isNotEmpty && _specialDays.isEmpty) {
       return AppLottieStateWidget.error(
         title: 'Error Loading Special Days',
-        message: _errorMessage!,
+        message: _errorMessage,
         buttonText: 'Try Again',
         onButtonPressed: _loadSpecialDays,
       );
     }
 
-    if (_filteredSpecialDays.isEmpty && !_isLoading) {
+    if (_specialDays.isEmpty && !_isLoading) {
       return AppLottieStateWidget.noData(
         title: _searchQuery.isNotEmpty ? 'No Results Found' : 'No Special Days',
         message: _searchQuery.isNotEmpty
@@ -699,14 +550,11 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      child: _buildViewContent(),
-    );
+    return _buildViewContent();
   }
 
   Widget _buildViewContent() {
-    return _currentViewMode == SpecialDayViewMode.table
+    return (_currentViewMode == SpecialDayViewMode.table && !_isKanbanView)
         ? _buildTableView()
         : _buildKanbanView();
   }
@@ -714,7 +562,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
   Widget _buildTableView() {
     return BluNestDataTable<SpecialDay>(
       columns: _buildTableColumns(),
-      data: _paginatedSpecialDays,
+      data: _specialDays,
       isLoading: _isLoading,
       onSort: _handleSort,
       sortBy: _sortBy,
@@ -733,7 +581,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
           _hiddenColumns = hiddenColumns;
         });
       },
-      totalItemsCount: _filteredSpecialDays.length,
+      totalItemsCount: _totalItems,
       onSelectAllItems: _fetchAllSpecialDays,
       emptyState: AppLottieStateWidget.noData(
         title: 'No Special Days',
@@ -756,16 +604,22 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
       onView: _onSpecialDaySelected,
       currentPage: _currentPage,
       itemsPerPage: _itemsPerPage,
-      specialDays: _paginatedSpecialDays,
+      specialDays: _specialDays,
     );
   }
 
   Widget _buildKanbanView() {
     if (_isLoading && _specialDays.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Special Days',
+          lottieSize: 80,
+          message: 'Please wait while we fetch your special days.',
+        ),
+      );
     }
 
-    final kanbanItems = _paginatedSpecialDays
+    final kanbanItems = _specialDays
         .map((specialDay) => SpecialDayKanbanItem(specialDay))
         .toList();
 
@@ -776,306 +630,348 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen> {
         onView: _onSpecialDaySelected,
         onEdit: _editSpecialDay,
         onDelete: _deleteSpecialDay,
-        onManageDetails:
-            _onSpecialDaySelected, // Use same action for managing details
+        onManageDetails: _onSpecialDaySelected,
       ),
       onItemTap: (item) => _onSpecialDaySelected(item.specialDay),
       isLoading: _isLoading,
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-    );
-  }
-
-  Widget _buildPagination() {
-    final startItem = (_currentPage - 1) * _itemsPerPage + 1;
-    final endItem = (_currentPage * _itemsPerPage) > _filteredSpecialDays.length
-        ? _filteredSpecialDays.length
-        : _currentPage * _itemsPerPage;
-
-    return ResultsPagination(
-      currentPage: _currentPage,
-      totalPages: _totalPages,
-      totalItems: _filteredSpecialDays.length,
-      itemsPerPage: _itemsPerPage,
-      startItem: startItem,
-      endItem: endItem,
-      onPageChanged: (page) {
-        setState(() {
-          _currentPage = page;
-        });
-        _loadSpecialDays();
-      },
-      onItemsPerPageChanged: (newItemsPerPage) {
-        setState(() {
-          _itemsPerPage = newItemsPerPage;
-          _currentPage = 1;
-        });
-        _loadSpecialDays();
-      },
-      // itemLabel: 'special days',
-      showItemsPerPageSelector: true,
-    );
-  }
-
-  Widget _buildSidebarContent() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSizes.spacing8),
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(AppSizes.spacing8),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border)),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: _toggleSidebar,
-                  icon: Icon(
-                    _isSidebarOpen
-                        ? Icons.keyboard_arrow_right
-                        : Icons.keyboard_arrow_left,
-                    size: AppSizes.iconSmall,
-                  ),
-                  tooltip: _isSidebarOpen
-                      ? 'Collapse sidebar'
-                      : 'Expand sidebar',
-
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.textSecondary,
-                    padding: const EdgeInsets.all(6),
-                    minimumSize: const Size(30, 30),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                      side: BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                ),
-                if (_isSidebarOpen) ...[
-                  const SizedBox(width: AppSizes.spacing8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Special Day Details',
-                          style: TextStyle(fontSize: AppSizes.fontSizeLarge),
-                        ),
-                        const SizedBox(height: AppSizes.spacing4),
-                        Text(
-                          'Parent: ${_selectedSpecialDayForDetails?.name ?? ''}',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.7),
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AppButton(
-                    text: 'Add Detail',
-                    onPressed: () =>
-                        _createSpecialDayDetail(_selectedSpecialDayForDetails!),
-                    type: AppButtonType.primary,
-                    size: AppButtonSize.small,
-                    icon: const Icon(Icons.add, size: AppSizes.iconSmall),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          // Content
-          if (_isSidebarOpen)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: _buildSpecialDayDetailsTable(),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCollapsedSidebar() {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Collapsed header with expand button
-          IconButton(
-            onPressed: _toggleSidebar,
-            icon: const Icon(Icons.keyboard_arrow_left, size: 20),
-            tooltip: 'Expand sidebar',
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.textSecondary,
-              padding: const EdgeInsets.all(6),
-              minimumSize: const Size(28, 28),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-                side: BorderSide(color: AppColors.border),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: AppSizes.spacing16),
-          // Vertical text showing site name (without Expanded)
-          if (_selectedSpecialDayForDetails != null)
-            SizedBox(
-              height: 200, // Fixed height instead of Expanded
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: Text(
-                  _selectedSpecialDayForDetails!.name,
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeLarge,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          const SizedBox(height: AppSizes.spacing8),
-
-          // Close button
-          IconButton(
-            onPressed: _closeSidebarCompletely,
-            icon: const Icon(Icons.close, size: AppSizes.iconSmall),
-            tooltip: 'Close sidebar',
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.textTertiary,
-              padding: const EdgeInsets.all(4),
-              minimumSize: const Size(30, 30),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-                side: BorderSide(color: AppColors.borderLight),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecialDayDetailsTable() {
-    if (_isLoadingDetails) {
-      return const AppLottieStateWidget.loading(
-        message: 'Loading special day details...',
-        lottieSize: 80,
-      );
-    }
-
-    List<SpecialDayDetail> sortedDetails = List.from(_specialDayDetails);
-    if (_subDetailsSortColumn != null) {
-      sortedDetails.sort((a, b) {
-        int result = 0;
-        switch (_subDetailsSortColumn) {
-          case 'name':
-            result = a.name.compareTo(b.name);
-            break;
-          case 'startDate':
-            result = a.startDate.compareTo(b.startDate);
-            break;
-          case 'endDate':
-            result = a.endDate.compareTo(b.endDate);
-            break;
-          case 'description':
-            result = a.description.compareTo(b.description);
-            break;
-          default:
-            result = a.name.compareTo(b.name);
-        }
-        return _subDetailsSortAscending ? result : -result;
-      });
-    }
-
-    final columns = SpecialDayDetailTableColumns.getBluNestColumns(
-      context: context,
-      onEdit: _editSpecialDayDetail,
-      onDelete: _deleteSpecialDayDetail,
-      sortColumn: _subDetailsSortColumn,
-      sortAscending: _subDetailsSortAscending,
-      specialDayDetails: sortedDetails,
-    );
-
-    print(
-      '🔄 Building special day details table with ${sortedDetails.length} items',
-    );
-
-    return BluNestDataTable<SpecialDayDetail>(
-      key: ValueKey(
-        'special_day_details_table_${_selectedSpecialDayForDetails?.id}_${_specialDayDetails.length}',
-      ),
-      columns: columns,
-      data: sortedDetails,
-      isLoading: _isLoadingDetails,
-      sortBy: _subDetailsSortColumn,
-      sortAscending: _subDetailsSortAscending,
-      onSort: (column, ascending) {
-        print(
-          '🔄 Special day details table sort changed: $column, ascending: $ascending',
-        );
-        setState(() {
-          _subDetailsSortColumn = column;
-          _subDetailsSortAscending = ascending;
-        });
-      },
-      emptyState: AppLottieStateWidget.noData(
-        title: 'No Special Day Details',
-        message: 'This special day has no details yet.',
-        lottieSize: 120,
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Row(
-        children: [
-          // Main content
-          Expanded(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing16,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Summary Card FIRST (like devices/sites screens)
+            if (isMobile)
+              _buildCollapsibleSummaryCard()
+            else
+              _buildDesktopSummaryCard(),
+            // Header/Filters AFTER summary card
+            if (isMobile) _buildMobileHeader() else _buildDesktopHeader(),
+            // Content
+            Expanded(
+              child: Container(width: double.infinity, child: _buildContent()),
+            ),
+            // Pagination - direct call like other screens
+            Container(width: double.infinity, child: _buildPagination()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: SpecialDayFiltersAndActionsV2(
+        onSearchChanged: _onSearchChanged,
+        onStatusFilterChanged: _onStatusFilterChanged,
+        onViewModeChanged: _onViewModeChanged,
+        onAddSpecialDay: _createSpecialDay,
+        onRefresh: _refreshData,
+        currentViewMode: _currentViewMode,
+        selectedStatus: _selectedStatus,
+      ),
+    );
+  }
+
+  Widget _buildDesktopSummaryCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: SpecialDaySummaryCard(specialDays: _specialDays),
+    );
+  }
+
+  Widget _buildCollapsibleSummaryCard() {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isTablet =
+        MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
+
+    // Responsive sizing
+    final headerFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final collapsedHeight = isMobile ? 60.0 : (isTablet ? 60.0 : 70.0);
+    final expandedHeight = isMobile ? 180.0 : (isTablet ? 160.0 : 180.0);
+    final headerHeight = isMobile ? 50.0 : (isTablet ? 45.0 : 50.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(
+        left: AppSizes.spacing16,
+        right: AppSizes.spacing16,
+        top: AppSizes.spacing8,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: _summaryCardCollapsed ? collapsedHeight : expandedHeight,
+        child: Container(
+          height: AppSizes.cardMobile,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+            boxShadow: [AppSizes.shadowSmall],
+          ),
+
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with toggle button
+              SizedBox(
+                height: headerHeight,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile
+                        ? AppSizes.paddingSmall
+                        : AppSizes.paddingMedium,
+                    vertical: AppSizes.paddingSmall,
                   ),
-                  child: _buildHeader(),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.event_note,
+                        color: AppColors.primary,
+                        size: AppSizes.iconSmall,
+                      ),
+                      SizedBox(
+                        width: isMobile ? AppSizes.spacing4 : AppSizes.spacing8,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Summary',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                fontSize: headerFontSize,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _summaryCardCollapsed = !_summaryCardCollapsed;
+                          });
+                        },
+                        icon: Icon(
+                          _summaryCardCollapsed
+                              ? Icons.expand_more
+                              : Icons.expand_less,
+                          color: AppColors.textSecondary,
+                          size: AppSizes.iconSmall,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32,
+                          minHeight: isMobile ? 28 : 32,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Expanded(child: _buildContent()),
-                // Always show pagination area, even if empty
-                _buildPagination(),
+              ),
+              // Expanded summary content
+              if (!_summaryCardCollapsed)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      0,
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      AppSizes.paddingSmall,
+                    ),
+                    child: SpecialDaySummaryCard(
+                      specialDays: _specialDays,
+                      isCompact: isMobile,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: Container(
+        height: AppSizes.cardMobile,
+        alignment:
+            Alignment.centerLeft, // Fixed height to prevent constraint issues
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16,
+          vertical: AppSizes.spacing8,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.spacing8),
+          color: AppColors.surface,
+          boxShadow: [AppSizes.shadowSmall],
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _buildMobileSearchBar()),
+            const SizedBox(width: AppSizes.spacing8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: _buildMobileMoreActionsButton(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: Expanded(
+        flex: 1,
+        child: AppInputField.search(
+          hintText: 'Search special days...',
+          controller: _searchController,
+          onChanged: _onSearchChanged,
+          prefixIcon: const Icon(Icons.search, size: AppSizes.iconSmall),
+          enabled: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileMoreActionsButton() {
+    return Container(
+      height: 36,
+      width: 36,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.spacing8),
+      ),
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+        onSelected: (value) {
+          switch (value) {
+            case 'add':
+              _createSpecialDay();
+              break;
+            case 'refresh':
+              _refreshData();
+              break;
+            case 'kanban':
+              _onViewModeChanged(SpecialDayViewMode.kanban);
+              break;
+            case 'table':
+              _onViewModeChanged(SpecialDayViewMode.table);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'add',
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 18),
+                SizedBox(width: 8),
+                Text('Add Special Day'),
               ],
             ),
           ),
-          // Sticky sidebar
-          if (_selectedSpecialDayForDetails != null)
-            Container(
-              width: _isSidebarOpen ? 550 : 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppSizes.spacing8),
-                color: Theme.of(context).colorScheme.surface,
-                border: Border.all(color: AppColors.border),
-              ),
-              child: _isSidebarOpen
-                  ? _buildSidebarContent()
-                  : _buildCollapsedSidebar(),
+          const PopupMenuItem(
+            value: 'refresh',
+            child: Row(
+              children: [
+                Icon(Icons.refresh, size: 18),
+                SizedBox(width: 8),
+                Text('Refresh'),
+              ],
             ),
+          ),
+          PopupMenuItem(
+            value: 'kanban',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.view_kanban,
+                  size: 18,
+                  color: _currentViewMode == SpecialDayViewMode.kanban
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Kanban View',
+                  style: TextStyle(
+                    color: _currentViewMode == SpecialDayViewMode.kanban
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'table',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.table_chart,
+                  size: 18,
+                  color: _currentViewMode == SpecialDayViewMode.table
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Table View',
+                  style: TextStyle(
+                    color: _currentViewMode == SpecialDayViewMode.table
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPagination() {
+    final startItem = ((_currentPage - 1) * _itemsPerPage) + 1;
+    final endItem = ((_currentPage - 1) * _itemsPerPage + _itemsPerPage).clamp(
+      0,
+      _totalItems,
+    );
+
+    return ResultsPagination(
+      currentPage: _currentPage,
+      totalPages: _totalPages,
+      itemsPerPage: _itemsPerPage,
+      totalItems: _totalItems,
+      startItem: startItem,
+      endItem: endItem,
+      onPageChanged: _onPageChanged,
+      onItemsPerPageChanged: _onItemsPerPageChanged,
+      showItemsPerPageSelector: true,
+      itemsPerPageOptions: const [5, 10, 20, 50, 100],
     );
   }
 }

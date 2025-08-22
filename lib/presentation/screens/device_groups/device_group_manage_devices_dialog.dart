@@ -14,6 +14,7 @@ import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/app_tabs.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_input_field.dart';
+import '../../widgets/common/app_dialog_header.dart';
 
 class DeviceGroupManageDevicesDialog extends StatefulWidget {
   final DeviceGroup deviceGroup;
@@ -525,158 +526,117 @@ class _DeviceGroupManageDevicesDialogState
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
         height: MediaQuery.of(context).size.height * 0.9,
-        padding: const EdgeInsets.all(AppSizes.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSizes.spacing8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  ),
-                  child: const Icon(
-                    Icons.devices,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Manage Devices in ${widget.deviceGroup.name}',
-                        style: const TextStyle(
-                          fontSize: AppSizes.fontSizeLarge,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.spacing4),
-                      const Text(
-                        'Add or remove devices from this group',
-                        style: TextStyle(
-                          fontSize: AppSizes.fontSizeSmall,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+            // Enhanced Dialog Header (no padding - extends to edges)
+            AppDialogHeader(
+              type: DialogType.edit,
+              title: 'Manage Devices in ${widget.deviceGroup.name}',
+              subtitle: 'Add or remove devices from this group',
+              onClose: () => Navigator.of(context).pop(),
             ),
-            const SizedBox(height: AppSizes.spacing16),
 
-            // Search field - styled exactly like device screen
-            AppInputField(
-              controller: _searchController,
-              hintText: 'Search devices...',
-              prefixIcon: _isSearching
-                  ? const Padding(
-                      padding: EdgeInsets.all(12.0),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : const Icon(Icons.search, size: AppSizes.iconSmall),
-              onChanged: (value) {
-                // Search based on current tab
-                if (_currentTabIndex == 0) {
-                  _onAvailableSearchChanged(value);
-                } else {
-                  _onCurrentSearchChanged(value);
-                }
-              },
-            ),
-            const SizedBox(height: AppSizes.spacing16),
-
-            // Content with AppPillTabs
+            // Body Content with padding
             Expanded(
-              child: AppPillTabs(
-                initialIndex: _currentTabIndex,
-                onTabChanged: (index) {
-                  setState(() {
-                    _currentTabIndex = index;
-                  });
-                },
-                tabs: [
-                  AppTab(
-                    label: 'Available Devices ($_totalAvailableDevices)',
-                    icon: Icon(
-                      Icons.add_circle_outline,
-                      size: AppSizes.iconSmall,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Column(
+                  children: [
+                    // Search field - styled exactly like device screen
+                    AppInputField.search(
+                      controller: _searchController,
+                      hintText: 'Search devices...',
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: AppSizes.iconSmall,
+                      ),
+                      onChanged: (value) {
+                        // Search based on current tab
+                        if (_currentTabIndex == 0) {
+                          _onAvailableSearchChanged(value);
+                        } else {
+                          _onCurrentSearchChanged(value);
+                        }
+                      },
                     ),
-                    content: _buildAvailableDevicesTab(),
-                  ),
-                  AppTab(
-                    label: 'Current Devices ($_totalCurrentDevices)',
-                    icon: Icon(Icons.devices, size: AppSizes.iconSmall),
-                    content: _buildCurrentDevicesTab(),
-                  ),
-                ],
+                    const SizedBox(height: AppSizes.spacing16),
+
+                    // Content with AppPillTabs
+                    Expanded(
+                      child: AppPillTabs(
+                        initialIndex: _currentTabIndex,
+                        onTabChanged: (index) {
+                          setState(() {
+                            _currentTabIndex = index;
+                          });
+                        },
+                        tabs: [
+                          AppTab(
+                            label:
+                                'Available Devices ($_totalAvailableDevices)',
+                            icon: Icon(
+                              Icons.add_circle_outline,
+                              size: AppSizes.iconSmall,
+                            ),
+                            content: _buildAvailableDevicesTab(),
+                          ),
+                          AppTab(
+                            label: 'Current Devices ($_totalCurrentDevices)',
+                            icon: Icon(Icons.devices, size: AppSizes.iconSmall),
+                            content: _buildCurrentDevicesTab(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
-            const SizedBox(height: AppSizes.spacing16),
-
-            // Action buttons
-            Row(
-              children: [
-                if (_currentTabIndex == 0) ...[
-                  // Text(
-                  //   '${_selectedAvailableDevices.length} device(s) selected',
-                  //   style: const TextStyle(
-                  //     fontSize: AppSizes.fontSizeSmall,
-                  //     color: AppColors.textSecondary,
-                  //   ),
-                  // ),
-                  const Spacer(),
-                  AppButton(
-                    onPressed:
-                        _selectedAvailableDevices.isEmpty || _isProcessing
-                        ? null
-                        : _addDevicesToGroup,
-                    type: AppButtonType.primary,
-                    size: AppButtonSize.medium,
-                    isLoading: _isProcessing,
-                    text: 'Add to Group',
-                    icon: const Icon(Icons.add),
+            // Footer with Action buttons (with padding)
+            Container(
+              padding: const EdgeInsets.all(AppSizes.spacing16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.1),
+                    width: 1,
                   ),
-                ] else ...[
-                  // Text(
-                  //   '${_selectedCurrentDevices.length} device(s) selected',
-                  //   style: const TextStyle(
-                  //     fontSize: AppSizes.fontSizeSmall,
-                  //     color: AppColors.textSecondary,
-                  //   ),
-                  // ),
-                  const Spacer(),
-                  AppButton(
-                    onPressed: _selectedCurrentDevices.isEmpty || _isProcessing
-                        ? null
-                        : _removeDevicesFromGroup,
-                    type: AppButtonType.danger,
-                    size: AppButtonSize.medium,
-                    isLoading: _isProcessing,
-                    text: 'Remove from Group',
-                    icon: const Icon(Icons.remove),
-                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  if (_currentTabIndex == 0) ...[
+                    const Spacer(),
+                    AppButton(
+                      onPressed:
+                          _selectedAvailableDevices.isEmpty || _isProcessing
+                          ? null
+                          : _addDevicesToGroup,
+                      type: AppButtonType.primary,
+                     // size: AppButtonSize.small,
+                      isLoading: _isProcessing,
+                      text: 'Add to Group',
+                      icon: const Icon(Icons.add),
+                    ),
+                  ] else ...[
+                    const Spacer(),
+                    AppButton(
+                      onPressed:
+                          _selectedCurrentDevices.isEmpty || _isProcessing
+                          ? null
+                          : _removeDevicesFromGroup,
+                      type: AppButtonType.danger,
+                      //size: AppButtonSize.small,
+                      isLoading: _isProcessing,
+                      text: 'Remove from Group',
+                      icon: const Icon(Icons.remove),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ),
@@ -951,21 +911,20 @@ class _DeviceGroupManageDevicesDialogState
       //   builder: (device) =>
       //       Text(device.name.isEmpty ? 'Unnamed' : device.name),
       // ),
-      BluNestTableColumn<Device>(
-        key: 'Type',
-        title: 'Type',
-        flex: 1,
-        sortable: true,
-        builder: (device) =>
-            Text(device.deviceType.isEmpty ? 'Unknown' : device.deviceType),
-      ),
+      // BluNestTableColumn<Device>(
+      //   key: 'Type',
+      //   title: 'Type',
+      //   flex: 1,
+      //   sortable: true,
+      //   builder: (device) =>
+      //       Text(device.deviceType.isEmpty ? 'Unknown' : device.deviceType),
+      // ),
       BluNestTableColumn<Device>(
         key: 'Model',
         title: 'Model',
         flex: 1,
         sortable: true,
-        builder: (device) =>
-            Text(device.model.isEmpty ? 'Unknown' : device.model),
+        builder: (device) => Text(device.model.isEmpty ? 'None' : device.model),
       ),
       BluNestTableColumn<Device>(
         key: 'Status',

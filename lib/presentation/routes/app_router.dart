@@ -185,12 +185,12 @@ class AppRouter {
               builder: (context, state) => const TicketsRouteWrapper(),
             ),
 
-            // Analytics Routes
-            GoRoute(
-              path: '/analytics',
-              name: 'analytics',
-              builder: (context, state) => const AnalyticsRouteWrapper(),
-            ),
+            // // Analytics Routes
+            // GoRoute(
+            //   path: '/analytics',
+            //   name: 'analytics',
+            //   builder: (context, state) => const AnalyticsRouteWrapper(),
+            // ),
 
             // Settings Routes Group
             GoRoute(
@@ -262,21 +262,21 @@ class AppRouter {
             ),
 
             // Analytics Sub-routes
-            GoRoute(
-              path: '/reports',
-              name: 'reports',
-              builder: (context, state) => const AnalyticsRouteWrapper(),
-            ),
-            GoRoute(
-              path: '/dashboards',
-              name: 'dashboards',
-              builder: (context, state) => const AnalyticsRouteWrapper(),
-            ),
-            GoRoute(
-              path: '/insights',
-              name: 'insights',
-              builder: (context, state) => const AnalyticsRouteWrapper(),
-            ),
+            // GoRoute(
+            //   path: '/reports',
+            //   name: 'reports',
+            //   builder: (context, state) => const AnalyticsRouteWrapper(),
+            // ),
+            // GoRoute(
+            //   path: '/dashboards',
+            //   name: 'dashboards',
+            //   builder: (context, state) => const AnalyticsRouteWrapper(),
+            // ),
+            // GoRoute(
+            //   path: '/insights',
+            //   name: 'insights',
+            //   builder: (context, state) => const AnalyticsRouteWrapper(),
+            // ),
           ],
         ),
       ],
@@ -452,12 +452,12 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
     if (_isLoading) {
       return Scaffold(
         body: Center(
-          child: Container(),
-          // child: AppLottieStateWidget.loading(
-          //   title: 'Loading Device Details',
-          //   message: 'Please wait while we load the device details.',
-          //   lottieSize: 80,
-          // ),
+         // child: Container(),
+          child: AppLottieStateWidget.loading(
+            // title: 'Loading Device Details',
+            // message: 'Please wait while we load the device details.',
+            lottieSize: 80,
+          ),
           // Column(
           //   mainAxisAlignment: MainAxisAlignment.center,
           //   children: [
@@ -783,7 +783,9 @@ class _DeviceGroupDetailsRouteWrapperState
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
+      );
     }
 
     if (_errorMessage != null) {
@@ -890,7 +892,9 @@ class _SiteDetailsRouteWrapperState extends State<SiteDetailsRouteWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
+      );
     }
 
     if (_errorMessage != null) {
@@ -994,26 +998,26 @@ class TicketsRouteWrapper extends StatelessWidget {
   }
 }
 
-class AnalyticsRouteWrapper extends StatelessWidget {
-  const AnalyticsRouteWrapper({super.key});
+// class AnalyticsRouteWrapper extends StatelessWidget {
+//   const AnalyticsRouteWrapper({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: AppLottieStateWidget.comingSoon(
-          title: 'Coming Soon...',
-          message: 'Please wait new features will comming soon...',
-          lottieSize: 400,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.textSecondary,
-        ),
-      ),
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: Center(
+//         child: AppLottieStateWidget.comingSoon(
+//           title: 'Coming Soon...',
+//           message: 'Please wait new features will comming soon...',
+//           lottieSize: 400,
+//           titleColor: AppColors.primary,
+//           messageColor: AppColors.textSecondary,
+//         ),
+//       ),
 
-      //Text('TOU Management Route - To be implemented')
-    );
-  }
-}
+//       //Text('TOU Management Route - To be implemented')
+//     );
+//   }
+// }
 
 class SitesRouteWrapper extends StatelessWidget {
   const SitesRouteWrapper({super.key});
@@ -1076,6 +1080,8 @@ class MainLayoutWithRouter extends StatefulWidget {
 
 class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
   bool _sidebarCollapsed = false;
+  bool _isMobile = false;
+  bool? _previousDesktopSidebarState; // Store previous desktop state
 
   // Track expanded state for each group
   final Map<String, bool> _expandedGroups = {
@@ -1089,6 +1095,29 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
   Widget build(BuildContext context) {
     final currentLocation = GoRouterState.of(context).uri.toString();
     final selectedScreen = _getSelectedScreenFromLocation(currentLocation);
+
+    // Check if mobile and auto-collapse sidebar
+    final screenWidth = MediaQuery.of(context).size.width;
+    final newIsMobile = screenWidth < AppSizes.mobileBreakpoint;
+
+    if (newIsMobile != _isMobile) {
+      setState(() {
+        if (newIsMobile) {
+          // Transitioning to mobile - save current desktop sidebar state
+          _previousDesktopSidebarState = _sidebarCollapsed;
+          _sidebarCollapsed = true; // Auto-collapse on mobile
+        } else {
+          // Transitioning back to desktop - restore previous state
+          if (_previousDesktopSidebarState != null) {
+            _sidebarCollapsed = _previousDesktopSidebarState!;
+            _previousDesktopSidebarState = null;
+          } else {
+            _sidebarCollapsed = false; // Default to expanded on desktop
+          }
+        }
+        _isMobile = newIsMobile;
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -1178,12 +1207,13 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     ].contains(selectedScreen)) {
       _expandedGroups['tou-management'] = true;
     }
-    if (['reports', 'dashboards', 'insights'].contains(selectedScreen)) {
-      _expandedGroups['analytics'] = true;
-    }
+    // if (['reports', 'dashboards', 'insights'].contains(selectedScreen)) {
+    //   _expandedGroups['analytics'] = true;
+    // }
+
     if ([
       'sites',
-      'integrations',
+      //'integrations',
 
       //'billing',
     ].contains(selectedScreen)) {
@@ -1277,12 +1307,11 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         const SizedBox(height: 8),
 
         // Analytics Group
-        _buildCollapsedGroupHeader('analytics', Icons.analytics, [
-          'reports',
-          'dashboards',
-          'insights',
-        ], selectedScreen),
-
+        // _buildCollapsedGroupHeader('analytics', Icons.analytics, [
+        //   'reports',
+        //   'dashboards',
+        //   'insights',
+        // ], selectedScreen),
         if (_expandedGroups['analytics'] == true) ...[
           const SizedBox(height: 4),
           _buildCollapsedSubMenuItem(
@@ -1309,7 +1338,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           'sites',
           // 'my-profile',
           // 'security',
-          'integrations',
+          // 'integrations',
           // 'billing',
           // 'token-management-test',
           // 'token-test',
@@ -1332,11 +1361,11 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           //   Icons.security,
           //   selectedScreen == 'security',
           // ),
-          _buildCollapsedSubMenuItem(
-            'integrations',
-            Icons.integration_instructions,
-            selectedScreen == 'integrations',
-          ),
+          // _buildCollapsedSubMenuItem(
+          //   'integrations',
+          //   Icons.integration_instructions,
+          //   selectedScreen == 'integrations',
+          // ),
           // _buildCollapsedSubMenuItem(
           //   'billing',
           //   Icons.receipt_long,
@@ -1654,14 +1683,14 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     ].contains(selectedScreen)) {
       _expandedGroups['tou-management'] = true;
     }
-    if (['reports', 'dashboards', 'insights'].contains(selectedScreen)) {
-      _expandedGroups['analytics'] = true;
-    }
+    // if (['reports', 'dashboards', 'insights'].contains(selectedScreen)) {
+    //   _expandedGroups['analytics'] = true;
+    // }
     if ([
       'sites',
       'my-profile',
       'security',
-      'integrations',
+      // 'integrations',
       'billing',
       'token-management-test',
       'token-test',
@@ -1770,12 +1799,11 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         // const SizedBox(height: 8),
 
         // Analytics Group
-        _buildGroupHeader('analytics', 'Analytics', Icons.analytics, [
-          'reports',
-          'dashboards',
-          'insights',
-        ], selectedScreen),
-
+        // _buildGroupHeader('analytics', 'Analytics', Icons.analytics, [
+        //   'reports',
+        //   'dashboards',
+        //   'insights',
+        // ], selectedScreen),
         if (_expandedGroups['analytics'] == true) ...[
           _buildSubMenuWithConnector([
             _buildSubMenuItem(
@@ -1806,7 +1834,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           'sites',
           'my-profile',
           'security',
-          'integrations',
+          //  'integrations',
           'billing',
           'token-management-test',
           'token-test',
@@ -1832,12 +1860,12 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             //   Icons.security,
             //   selectedScreen == 'security',
             // ),
-            _buildSubMenuItem(
-              'integrations',
-              'Integrations',
-              Icons.integration_instructions,
-              selectedScreen == 'integrations',
-            ),
+            // _buildSubMenuItem(
+            //   'integrations',
+            //   'Integrations',
+            //   Icons.integration_instructions,
+            //   selectedScreen == 'integrations',
+            // ),
             // _buildSubMenuItem(
             //   'billing',
             //   'Billing',
@@ -2293,20 +2321,20 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   ],
                 ),
                 itemBuilder: (context) => [
-                  PopupMenuItem<String>(
-                    value: 'appearance',
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.palette_outlined,
-                          size: 18,
-                          color: Color(0xFF64748b),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Appearance'),
-                      ],
-                    ),
-                  ),
+                  // PopupMenuItem<String>(
+                  //   value: 'appearance',
+                  //   child: Row(
+                  //     children: [
+                  //       const Icon(
+                  //         Icons.palette_outlined,
+                  //         size: 18,
+                  //         color: Color(0xFF64748b),
+                  //       ),
+                  //       const SizedBox(width: 12),
+                  //       const Text('Appearance'),
+                  //     ],
+                  //   ),
+                  // ),
                   PopupMenuItem<String>(
                     value: 'logout',
                     child: Row(
@@ -2526,16 +2554,7 @@ class _AuthRedirectScreenState extends State<AuthRedirectScreen> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Redirecting to login...'),
-          ],
-        ),
-      ),
+      body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
     );
   }
 }
@@ -2701,16 +2720,7 @@ class _CallbackHandlerWidgetState extends State<_CallbackHandlerWidget> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Processing authentication...'),
-          ],
-        ),
-      ),
+      body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
     );
   }
 }

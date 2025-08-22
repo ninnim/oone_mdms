@@ -30,6 +30,8 @@ class ApiConstants {
   static const String linkHes = '/core/api/rest/v1/Device/LinkHes';
   static const String pingDevice = '/api/rest/v1/Device/{id}/Ping';
   static const String commissionDevice = '/api/rest/v1/Device/{id}/Commission';
+  static const String decommissionDevice =
+      '/api/rest/v1/Device/{id}/Decommission';
 
   // Schedules (placeholder - implement when schedule_spec.json is provided)
   static const String schedules = '/api/rest/v1/Schedule';

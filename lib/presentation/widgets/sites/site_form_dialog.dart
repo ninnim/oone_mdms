@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/site.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../common/app_button.dart';
 import '../common/app_input_field.dart';
 import '../common/app_toast.dart';
 import '../common/app_dropdown_field.dart';
+import '../common/app_dialog_header.dart';
 
 class SiteFormDialog extends StatefulWidget {
   final Site? site; // null for create, non-null for edit
@@ -119,46 +121,44 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
     return items;
   }
 
+  String? _validateSiteName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Site name is required';
+    }
+    if (value.trim().length < 3) {
+      return 'Site name must be at least 3 characters';
+    }
+    // Check for valid characters (letters, numbers, spaces, hyphens, underscores)
+    if (!RegExp(r'^[a-zA-Z0-9\s\-_]+$').hasMatch(value.trim())) {
+      return 'Site name can only contain letters, numbers, spaces, hyphens, and underscores';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final constraints = ResponsiveHelper.getDialogConstraints(context);
+    final isDesktop = ResponsiveHelper.isDesktop(context);
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.9,
+      child: ConstrainedBox(
+        constraints: constraints,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    _dialogTitle,
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      foregroundColor: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+            // Header using AppDialogHeader
+            AppDialogHeader(
+              type: _isEditMode ? DialogType.edit : DialogType.create,
+              title: _dialogTitle,
+              subtitle: _isEditMode
+                  ? 'Modify site information and settings'
+                  : 'Create a new site with configuration details',
+              onClose: () => Navigator.of(context).pop(),
             ),
+
             // Body
             Expanded(
               child: SingleChildScrollView(
@@ -168,139 +168,20 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Site Information - Single Row Layout
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AppInputField(
-                              controller: _nameController,
-                              label: 'Site Name',
-                              hintText: 'Enter site name',
-                              required: true,
-                              showErrorSpace: false,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Site name is required';
-                                }
-                                if (value.trim().length < 3) {
-                                  return 'Site name must be at least 3 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.spacing16),
-                          Expanded(
-                            child: AppSearchableDropdown<int>(
-                              label: 'Parent Site',
-                              hintText: 'Select Parent Site',
-                              value: _selectedParentId,
-                              items: _parentSiteOptions,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedParentId = value ?? 0;
-                                });
-                              },
-                              height: AppSizes.inputHeight,
-                              validator: (value) {
-                                return null; // No validation required for parent site
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Helper text for subsite creation/editing
-                      if (widget.preferredParentId != null &&
-                          widget.preferredParentId != 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            _isEditMode
-                                ? 'Editing subsite. Current main site is pre-selected.'
-                                : 'Creating subsite under the current main site.',
-                            style: const TextStyle(
-                              fontSize: AppSizes.fontSizeSmall,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        )
-                      else if (widget.availableParentSites.length == 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            'Creating subsite under: ${widget.availableParentSites.first.name}',
-                            style: const TextStyle(
-                              fontSize: AppSizes.fontSizeSmall,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-
+                      // Site Information Section
+                      _buildSiteInformationSection(isDesktop),
                       const SizedBox(height: AppSizes.spacing16),
 
-                      // Description Field
-                      AppInputField(
-                        controller: _descriptionController,
-                        label: 'Description',
-                        hintText: 'Enter site description (optional)',
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: AppSizes.spacing16),
-
-                      // Status Toggle
-                      Row(
-                        children: [
-                          Switch(
-                            value: _isActive,
-                            onChanged: (value) {
-                              setState(() {
-                                _isActive = value;
-                              });
-                            },
-                            activeColor: AppColors.success,
-                          ),
-                          const SizedBox(width: AppSizes.spacing8),
-                          Text(
-                            'Active Site',
-                            style: TextStyle(
-                              fontSize: AppSizes.fontSizeMedium,
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                      // Description Section
+                      _buildDescriptionSection(),
                     ],
                   ),
                 ),
               ),
             ),
+
             // Footer
-            Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppButton(
-                    text: 'Cancel',
-                    onPressed: _isSaving
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    type: AppButtonType.outline,
-                  ),
-                  const SizedBox(width: AppSizes.spacing12),
-                  AppButton(
-                    text: _isEditMode ? 'Update Site' : 'Create Site',
-                    onPressed: _isSaving ? null : _handleSave,
-                    isLoading: _isSaving,
-                  ),
-                ],
-              ),
-            ),
+            _buildFooter(isDesktop),
           ],
         ),
       ),
@@ -308,8 +189,37 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
   }
 
   Future<void> _handleSave() async {
+    // Validate the form first
     if (!_formKey.currentState!.validate()) {
-      return;
+      // Show validation error toast if form is invalid
+      AppToast.show(
+        context,
+        title: 'Validation Error',
+        message: 'Please fill in all required fields correctly before saving',
+        type: ToastType.error,
+      );
+      return; // Prevent API call when validation fails
+    }
+
+    // Additional validation for name field (extra safety check)
+    if (_nameController.text.trim().isEmpty) {
+      AppToast.show(
+        context,
+        title: 'Validation Error',
+        message: 'Site name is required and cannot be empty',
+        type: ToastType.error,
+      );
+      return; // Prevent API call
+    }
+
+    if (_nameController.text.trim().length < 3) {
+      AppToast.show(
+        context,
+        title: 'Validation Error',
+        message: 'Site name must be at least 3 characters long',
+        type: ToastType.error,
+      );
+      return; // Prevent API call
     }
 
     setState(() {
@@ -361,5 +271,201 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
         });
       }
     }
+  }
+
+  Widget _buildSiteInformationSection(bool isDesktop) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Site Information',
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spacing16),
+
+          if (isDesktop) ...[
+            // Desktop layout - side by side with aligned heights
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: AppInputField(
+                    controller: _nameController,
+                    label: 'Site Name',
+                    hintText: 'Enter site name',
+                    required: true,
+                    showErrorSpace: true,
+                    validator: _validateSiteName,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing16),
+                Expanded(
+                  child: AppSearchableDropdown<int>(
+                    label: 'Parent Site',
+                    hintText: 'Select Parent Site',
+                    value: _selectedParentId,
+                    items: _parentSiteOptions,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedParentId = value ?? 0;
+                      });
+                    },
+
+                    height: AppSizes.inputHeight,
+                    validator: (value) {
+                      return null; // No validation required for parent site
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            // Mobile layout - stacked with consistent spacing
+            AppInputField(
+              controller: _nameController,
+              label: 'Site Name',
+              hintText: 'Enter site name',
+              required: true,
+              showErrorSpace: true,
+              validator: _validateSiteName,
+            ),
+            const SizedBox(height: AppSizes.spacing16),
+            AppSearchableDropdown<int>(
+              label: 'Parent Site',
+              hintText: 'Select Parent Site',
+              value: _selectedParentId,
+              items: _parentSiteOptions,
+              onChanged: (value) {
+                setState(() {
+                  _selectedParentId = value ?? 0;
+                });
+              },
+              height: AppSizes.inputHeight,
+              validator: (value) {
+                return null; // No validation required for parent site
+              },
+            ),
+          ],
+
+          // Helper text for subsite creation/editing
+          if (widget.preferredParentId != null && widget.preferredParentId != 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                _isEditMode
+                    ? 'Editing subsite. Current main site is pre-selected.'
+                    : 'Creating subsite under the current main site.',
+                style: const TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            )
+          else if (widget.availableParentSites.length == 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                'Creating subsite under: ${widget.availableParentSites.first.name}',
+                style: const TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Description',
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spacing16),
+          AppInputField(
+            controller: _descriptionController,
+            label: 'Description',
+            hintText: 'Enter site description (optional)',
+            maxLines: 3,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(bool isDesktop) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing16),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: isDesktop
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                AppButton(
+                  text: 'Cancel',
+                  onPressed: _isSaving
+                      ? null
+                      : () => Navigator.of(context).pop(),
+                  type: AppButtonType.outline,
+                ),
+                const SizedBox(width: AppSizes.spacing12),
+                AppButton(
+                  text: _isEditMode ? 'Update Site' : 'Create Site',
+                  onPressed: _isSaving ? null : _handleSave,
+                  isLoading: _isSaving,
+                ),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    text: _isEditMode ? 'Update Site' : 'Create Site',
+                    onPressed: _isSaving ? null : _handleSave,
+                    isLoading: _isSaving,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spacing12),
+                SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    text: 'Cancel',
+                    onPressed: _isSaving
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    type: AppButtonType.outline,
+                  ),
+                ),
+              ],
+            ),
+    );
   }
 }

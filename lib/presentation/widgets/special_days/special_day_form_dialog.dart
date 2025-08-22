@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../common/app_button.dart';
 import '../common/app_input_field.dart';
 import '../common/app_toast.dart';
+import '../common/app_dialog_header.dart';
 import '../common/custom_single_date_picker.dart';
 
 enum SpecialDayDialogMode { view, edit, create }
@@ -159,19 +161,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
 
   bool get _isEditMode => _currentMode == SpecialDayDialogMode.edit;
   bool get _isViewMode => _currentMode == SpecialDayDialogMode.view;
-  bool get _isCreateMode => _currentMode == SpecialDayDialogMode.create;
   bool get _isReadOnlyMode => _isViewMode;
-
-  String get _dialogTitle {
-    switch (_currentMode) {
-      case SpecialDayDialogMode.view:
-        return 'View Special Day';
-      case SpecialDayDialogMode.edit:
-        return 'Edit Special Day';
-      case SpecialDayDialogMode.create:
-        return 'Add Special Day';
-    }
-  }
 
   void _switchToEditMode() {
     setState(() {
@@ -279,6 +269,17 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
 
       if (mounted) {
         Navigator.of(context).pop();
+
+        // Show success toast
+        AppToast.show(
+          context,
+          title: 'Success',
+          message: _isEditMode
+              ? 'Special day updated successfully'
+              : 'Special day created successfully',
+          type: ToastType.success,
+        );
+
         if (widget.onSuccess != null) {
           widget.onSuccess!();
         }
@@ -356,303 +357,539 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
   }
 
   Widget _buildSpecialDayDetailCard(_SpecialDayDetailItem detail, int index) {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+    final canDelete = _specialDayDetails.where((d) => d.active).length > 1;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment
-            .start, // Align to top for consistent label positioning
-        children: [
-          // Name field
-          Expanded(
-            child: AppInputField(
-              controller: detail.nameController,
-              label: 'Detail Name',
-              hintText: 'e.g., Khmer New Year',
-              required: true,
-              readOnly: _isReadOnlyMode,
-              showErrorSpace: false, // Show error space for better UX
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Detail name is required';
-                }
-                return null;
-              },
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing12),
+      margin: EdgeInsets.only(bottom: ResponsiveHelper.getSpacing(context)),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        border: Border.all(color: AppColors.border.withOpacity(0.2)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: isMobile
+          ? _buildMobileDetailCard(detail, index, canDelete)
+          : _buildDesktopDetailCard(detail, index, canDelete),
+    );
+  }
 
-          // Description field
-          Expanded(
-            child: AppInputField(
-              controller: detail.descriptionController,
-              label: 'Description',
-              hintText: 'Optional description',
-              readOnly: _isReadOnlyMode,
-              showErrorSpace: false, // Show error space for consistency
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing12),
-
-          // Start Date field
-          Expanded(
-            flex: 1,
-            child: CustomSingleDatePicker(
-              label: 'Start Date',
-              hintText: 'Select start date',
-              initialDate: detail.startDate,
-              enabled: !_isReadOnlyMode,
-              onDateSelected: (date) {
-                setState(() {
-                  detail.startDate = date;
-                  // Clear validation errors when user selects a date
-                  if (_hasValidationErrors && detail.startDate != null) {
-                    // Optional: you can clear validation state here
-                  }
-                  // Auto-set end date if it's before start date
-                  if (detail.endDate != null &&
-                      detail.endDate!.isBefore(date)) {
-                    detail.endDate = date;
-                  }
-                });
-              },
-              isRequired: true,
-              hasError: _hasValidationErrors && detail.startDate == null,
-              errorText: _hasValidationErrors && detail.startDate == null
-                  ? 'This field is required'
-                  : null,
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacing12),
-
-          // End Date field
-          Expanded(
-            flex: 1,
-            child: CustomSingleDatePicker(
-              label: 'End Date',
-              hintText: 'Select end date',
-              initialDate: detail.endDate,
-              enabled: !_isReadOnlyMode,
-              firstDate: detail
-                  .startDate, // This will be null for new records, which should be fine
-              onDateSelected: (date) {
-                setState(() {
-                  detail.endDate = date;
-                  // Clear validation errors when user selects a date
-                  if (_hasValidationErrors && detail.endDate != null) {
-                    // Optional: you can clear validation state here
-                  }
-                });
-              },
-              isRequired: true,
-              hasError: _hasValidationErrors && detail.endDate == null,
-              errorText: _hasValidationErrors && detail.endDate == null
-                  ? 'This field is required'
-                  : null,
-            ),
-          ),
-
-          // Delete button (only show if multiple active details exist)
-          if (_specialDayDetails.where((d) => d.active).length > 1) ...[
-            const SizedBox(width: AppSizes.spacing12),
-            // Position delete button to align with the center of the date picker input field
-            // Label height (~17px) + spacing (8px) + half input height (19px) = ~44px from top
-            if (!_isReadOnlyMode)
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: 20,
-                ), // Align with date picker input center
-                child: IconButton(
-                  onPressed: () => _removeSpecialDayDetail(index),
-                  icon: const Icon(Icons.delete_outline),
-                  style: IconButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    backgroundColor: Colors.transparent, // Remove background
-                    padding: EdgeInsets.zero, // Remove default padding
-                    tapTargetSize: MaterialTapTargetSize
-                        .shrinkWrap, // Remove extra tap area
-                  ),
+  Widget _buildMobileDetailCard(
+    _SpecialDayDetailItem detail,
+    int index,
+    bool canDelete,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with delete button
+        if (canDelete && !_isReadOnlyMode)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Detail ${index + 1}',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
                 ),
               ),
+              IconButton(
+                onPressed: () => _removeSpecialDayDetail(index),
+                icon: const Icon(Icons.delete_outline),
+                style: IconButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  backgroundColor: Colors.transparent,
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+
+        // Name field
+        AppInputField(
+          controller: detail.nameController,
+          label: 'Detail Name',
+          hintText: 'e.g., Khmer New Year',
+          required: true,
+          readOnly: _isReadOnlyMode,
+          showErrorSpace: false,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Detail name is required';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+        // Description field
+        AppInputField(
+          controller: detail.descriptionController,
+          label: 'Description',
+          hintText: 'Optional description',
+          readOnly: _isReadOnlyMode,
+          showErrorSpace: false,
+        ),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+        // Date fields row
+        Row(
+          children: [
+            Expanded(
+              child: CustomSingleDatePicker(
+                label: 'Start Date',
+                hintText: 'Select start date',
+                initialDate: detail.startDate,
+                enabled: !_isReadOnlyMode,
+                onDateSelected: (date) {
+                  setState(() {
+                    detail.startDate = date;
+                    if (_hasValidationErrors && detail.startDate != null) {
+                      // Optional: you can clear validation state here
+                    }
+                    // Auto-set end date if it's before start date
+                    if (detail.endDate != null &&
+                        detail.endDate!.isBefore(date)) {
+                      detail.endDate = date;
+                    }
+                  });
+                },
+                isRequired: true,
+                hasError: _hasValidationErrors && detail.startDate == null,
+                errorText: _hasValidationErrors && detail.startDate == null
+                    ? 'This field is required'
+                    : null,
+              ),
+            ),
+            SizedBox(width: ResponsiveHelper.getSpacing(context)),
+            Expanded(
+              child: CustomSingleDatePicker(
+                label: 'End Date',
+                hintText: 'Select end date',
+                initialDate: detail.endDate,
+                enabled: !_isReadOnlyMode,
+                firstDate: detail.startDate,
+                onDateSelected: (date) {
+                  setState(() {
+                    detail.endDate = date;
+                    if (_hasValidationErrors && detail.endDate != null) {
+                      // Optional: you can clear validation state here
+                    }
+                  });
+                },
+                isRequired: true,
+                hasError: _hasValidationErrors && detail.endDate == null,
+                errorText: _hasValidationErrors && detail.endDate == null
+                    ? 'This field is required'
+                    : null,
+              ),
+            ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopDetailCard(
+    _SpecialDayDetailItem detail,
+    int index,
+    bool canDelete,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Name field
+        Expanded(
+          child: AppInputField(
+            controller: detail.nameController,
+            label: 'Detail Name',
+            hintText: 'e.g., Khmer New Year',
+            required: true,
+            readOnly: _isReadOnlyMode,
+            showErrorSpace: false,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Detail name is required';
+              }
+              return null;
+            },
+          ),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+
+        // Description field
+        Expanded(
+          child: AppInputField(
+            controller: detail.descriptionController,
+            label: 'Description',
+            hintText: 'Optional description',
+            readOnly: _isReadOnlyMode,
+            showErrorSpace: false,
+          ),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+
+        // Start Date field
+        Expanded(
+          flex: 1,
+          child: CustomSingleDatePicker(
+            label: 'Start Date',
+            hintText: 'Select start date',
+            initialDate: detail.startDate,
+            enabled: !_isReadOnlyMode,
+            onDateSelected: (date) {
+              setState(() {
+                detail.startDate = date;
+                if (_hasValidationErrors && detail.startDate != null) {
+                  // Optional: you can clear validation state here
+                }
+                // Auto-set end date if it's before start date
+                if (detail.endDate != null && detail.endDate!.isBefore(date)) {
+                  detail.endDate = date;
+                }
+              });
+            },
+            isRequired: true,
+            hasError: _hasValidationErrors && detail.startDate == null,
+            errorText: _hasValidationErrors && detail.startDate == null
+                ? 'This field is required'
+                : null,
+          ),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+
+        // End Date field
+        Expanded(
+          flex: 1,
+          child: CustomSingleDatePicker(
+            label: 'End Date',
+            hintText: 'Select end date',
+            initialDate: detail.endDate,
+            enabled: !_isReadOnlyMode,
+            firstDate: detail.startDate,
+            onDateSelected: (date) {
+              setState(() {
+                detail.endDate = date;
+                if (_hasValidationErrors && detail.endDate != null) {
+                  // Optional: you can clear validation state here
+                }
+              });
+            },
+            isRequired: true,
+            hasError: _hasValidationErrors && detail.endDate == null,
+            errorText: _hasValidationErrors && detail.endDate == null
+                ? 'This field is required'
+                : null,
+          ),
+        ),
+
+        // Delete button (only show if multiple active details exist)
+        if (canDelete) ...[
+          SizedBox(width: ResponsiveHelper.getSpacing(context)),
+          if (!_isReadOnlyMode)
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: IconButton(
+                onPressed: () => _removeSpecialDayDetail(index),
+                icon: const Icon(Icons.delete_outline),
+                style: IconButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  backgroundColor: Colors.transparent,
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
         ],
-      ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Use ResponsiveHelper for consistent responsive behavior
+    final dialogConstraints = ResponsiveHelper.getDialogConstraints(context);
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    // Dialog configuration based on mode
+    DialogType dialogType;
+    String dialogTitle;
+    String dialogSubtitle;
+
+    switch (_currentMode) {
+      case SpecialDayDialogMode.create:
+        dialogType = DialogType.create;
+        dialogTitle = 'Create Special Day';
+        dialogSubtitle =
+            'Define special day periods with dates and descriptions';
+        break;
+      case SpecialDayDialogMode.view:
+        dialogType = DialogType.view;
+        dialogTitle = 'View Special Day';
+        dialogSubtitle = 'Review special day configuration and details';
+        break;
+      case SpecialDayDialogMode.edit:
+        dialogType = DialogType.edit;
+        dialogTitle = 'Edit Special Day';
+        dialogSubtitle = 'Update special day periods and settings';
+        break;
+    }
+
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       ),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: MediaQuery.of(context).size.height * 0.95,
+      child: ConstrainedBox(
+        constraints: dialogConstraints,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    _dialogTitle,
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontSizeLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: _handleCancel,
-                    icon: const Icon(Icons.close),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      foregroundColor: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+            AppDialogHeader(
+              type: dialogType,
+              title: dialogTitle,
+              subtitle: dialogSubtitle,
+              onClose: _handleCancel,
             ),
 
             // Body
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Special Day Information Section
-                      Text(
-                        'Special Day Information',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.spacing16),
-
-                      // Special Day Information - Single Row Layout (Name + Description)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment
-                            .start, // Align to top for consistent label positioning
-                        children: [
-                          Expanded(
-                            child: AppInputField(
-                              controller: _nameController,
-                              label: 'Special Day Name',
-                              hintText: 'Enter special day name',
-                              required: true,
-                              readOnly: _isReadOnlyMode,
-                              showErrorSpace:
-                                  true, // Show error space for main form fields
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Special day name is required';
-                                }
-                                if (value.trim().length < 3) {
-                                  return 'Name must be at least 3 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.spacing16),
-                          Expanded(
-                            child: AppInputField(
-                              controller: _descriptionController,
-                              label: 'Description',
-                              hintText: 'Enter description (optional)',
-                              readOnly: _isReadOnlyMode,
-                              showErrorSpace:
-                                  true, // Show error space for main form fields
-                              validator: (value) {
-                                return null; // No validation required for description
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: AppSizes.spacing32),
-
-                      // Special Day Details Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Special Day Details',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
-                                ),
-                          ),
-                          if (!_isReadOnlyMode)
-                            AppButton(
-                              text: 'Add Detail',
-                              type: AppButtonType.outline,
-                              onPressed: _addNewSpecialDayDetail,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSizes.spacing16),
-
-                      // Special Day Details List
-                      ..._buildSpecialDayDetailsList(),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            Expanded(child: _buildBody()),
 
             // Footer
             Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
+              padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.border.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSizes.radiusMedium),
+                  bottomRight: Radius.circular(AppSizes.radiusMedium),
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (_isViewMode) ...[
-                    AppButton(
-                      text: 'Close',
-                      type: AppButtonType.outline,
-                      onPressed: _handleCancel,
-                    ),
-                    const SizedBox(width: AppSizes.spacing12),
-                    AppButton(
-                      text: 'Edit',
-                      type: AppButtonType.primary,
-                      onPressed: _switchToEditMode,
-                    ),
-                  ] else ...[
-                    AppButton(
-                      text: 'Cancel',
-                      type: AppButtonType.outline,
-                      onPressed: _isSaving ? null : _handleCancel,
-                    ),
-                    const SizedBox(width: AppSizes.spacing12),
-                    AppButton(
-                      text: _isEditMode ? 'Update' : 'Create',
-                      type: AppButtonType.primary,
-                      onPressed: _isSaving ? null : _handleSave,
-                      isLoading: _isSaving,
-                    ),
-                  ],
-                ],
-              ),
+              child: isMobile ? _buildMobileFooter() : _buildDesktopFooter(),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Responsive body with form content
+  Widget _buildBody() {
+    return Container(
+      color: AppColors.background,
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBasicInformationSection(),
+              SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
+              _buildSpecialDayDetailsSection(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Mobile footer - vertical button layout
+  Widget _buildMobileFooter() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_isViewMode)
+          AppButton(text: 'Edit', onPressed: _switchToEditMode)
+        else
+          AppButton(
+            text: _isSaving ? 'Saving...' : (_isEditMode ? 'Update' : 'Create'),
+            onPressed: _isSaving ? null : _handleSave,
+            isLoading: _isSaving,
+          ),
+        const SizedBox(height: AppSizes.spacing8),
+        AppButton(
+          text: _isViewMode ? 'Close' : 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: _isSaving ? null : _handleCancel,
+        ),
+      ],
+    );
+  }
+
+  // Desktop footer - horizontal button layout
+  Widget _buildDesktopFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AppButton(
+          text: _isViewMode ? 'Close' : 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: _isSaving ? null : _handleCancel,
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+        if (_isViewMode)
+          AppButton(text: 'Edit', onPressed: _switchToEditMode)
+        else
+          AppButton(
+            text: _isSaving ? 'Saving...' : (_isEditMode ? 'Update' : 'Create'),
+            onPressed: _isSaving ? null : _handleSave,
+            isLoading: _isSaving,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBasicInformationSection() {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Special Day Information',
+            style: TextStyle(
+              fontSize: isMobile
+                  ? AppSizes.fontSizeMedium
+                  : AppSizes.fontSizeLarge,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Name and Description fields (responsive)
+          isMobile
+              ? Column(
+                  children: [
+                    AppInputField(
+                      controller: _nameController,
+                      label: 'Special Day Name',
+                      hintText: 'Enter special day name',
+                      required: true,
+                      readOnly: _isReadOnlyMode,
+                      showErrorSpace: true,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Special day name is required';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'Name must be at least 3 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                    AppInputField(
+                      controller: _descriptionController,
+                      label: 'Description',
+                      hintText: 'Enter description (optional)',
+                      readOnly: _isReadOnlyMode,
+                      showErrorSpace: true,
+                      validator: (value) {
+                        return null; // No validation required for description
+                      },
+                    ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: AppInputField(
+                        controller: _nameController,
+                        label: 'Special Day Name',
+                        hintText: 'Enter special day name',
+                        required: true,
+                        readOnly: _isReadOnlyMode,
+                        showErrorSpace: true,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Special day name is required';
+                          }
+                          if (value.trim().length < 3) {
+                            return 'Name must be at least 3 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(
+                      child: AppInputField(
+                        controller: _descriptionController,
+                        label: 'Description',
+                        hintText: 'Enter description (optional)',
+                        readOnly: _isReadOnlyMode,
+                        showErrorSpace: true,
+                        validator: (value) {
+                          return null; // No validation required for description
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecialDayDetailsSection() {
+    final isMobile = ResponsiveHelper.shouldUseCompactUI(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+      ),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Special Day Details',
+                style: TextStyle(
+                  fontSize: isMobile
+                      ? AppSizes.fontSizeMedium
+                      : AppSizes.fontSizeLarge,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              if (!_isReadOnlyMode)
+                AppButton(
+                  text: 'Add Detail',
+                  type: AppButtonType.outline,
+                  onPressed: _addNewSpecialDayDetail,
+                ),
+            ],
+          ),
+          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+
+          // Special Day Details List
+          ..._buildSpecialDayDetailsList(),
+        ],
       ),
     );
   }

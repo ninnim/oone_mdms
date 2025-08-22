@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/constants/app_colors.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class ResultsPagination extends StatefulWidget {
@@ -74,19 +76,13 @@ class _ResultsPaginationState extends State<ResultsPagination> {
         final theme = Theme.of(context);
 
         return Container(
-          width: double.infinity,
           padding: EdgeInsets.symmetric(
             horizontal: isSmallScreen ? AppSizes.spacing8 : AppSizes.spacing16,
             vertical: isSmallScreen ? AppSizes.spacing8 : AppSizes.spacing12,
           ),
           decoration: BoxDecoration(
             color: theme.scaffoldBackgroundColor,
-            border: Border(
-              top: BorderSide(
-                color: theme.dividerColor.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
+            border: Border(top: BorderSide(color: AppColors.border, width: 1)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.02),
@@ -117,87 +113,163 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             if (widget.showItemsPerPageSelector &&
                 widget.onItemsPerPageChanged != null)
               _buildItemsPerPageSelector(theme),
+            const SizedBox(width: AppSizes.spacing8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildNavigationButton(
+                  icon: Icons.keyboard_double_arrow_left,
+                  onPressed: widget.currentPage > 1
+                      ? () => widget.onPageChanged(1)
+                      : null,
+                  isEnabled: widget.currentPage > 1,
+                  theme: theme,
+                  size: 28,
+                ),
+
+                const SizedBox(width: AppSizes.spacing4),
+
+                _buildNavigationButton(
+                  icon: Icons.chevron_left,
+                  onPressed: widget.currentPage > 1
+                      ? () => widget.onPageChanged(widget.currentPage - 1)
+                      : null,
+                  isEnabled: widget.currentPage > 1,
+                  theme: theme,
+                  size: 28,
+                ),
+
+                const SizedBox(width: AppSizes.spacing8),
+
+                // Page indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    border: Border.all(
+                      color: theme.primaryColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    '${widget.currentPage} / ${widget.totalPages}',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeSmall,
+                      fontWeight: FontWeight.w600,
+                      color: theme.primaryColor,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: AppSizes.spacing8),
+
+                _buildNavigationButton(
+                  icon: Icons.chevron_right,
+                  onPressed: widget.currentPage < widget.totalPages
+                      ? () => widget.onPageChanged(widget.currentPage + 1)
+                      : null,
+                  isEnabled: widget.currentPage < widget.totalPages,
+                  theme: theme,
+                  size: 28,
+                ),
+
+                const SizedBox(width: AppSizes.spacing4),
+
+                _buildNavigationButton(
+                  icon: Icons.keyboard_double_arrow_right,
+                  onPressed: widget.currentPage < widget.totalPages
+                      ? () => widget.onPageChanged(widget.totalPages)
+                      : null,
+                  isEnabled: widget.currentPage < widget.totalPages,
+                  theme: theme,
+                  size: 28,
+                ),
+              ],
+            ),
           ],
         ),
 
         const SizedBox(height: AppSizes.spacing8),
 
         // Navigation controls (always show, even for single page)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildNavigationButton(
-              icon: Icons.keyboard_double_arrow_left,
-              onPressed: widget.currentPage > 1
-                  ? () => widget.onPageChanged(1)
-                  : null,
-              isEnabled: widget.currentPage > 1,
-              theme: theme,
-              size: 28,
-            ),
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.center,
+        //   children: [
+        //     _buildNavigationButton(
+        //       icon: Icons.keyboard_double_arrow_left,
+        //       onPressed: widget.currentPage > 1
+        //           ? () => widget.onPageChanged(1)
+        //           : null,
+        //       isEnabled: widget.currentPage > 1,
+        //       theme: theme,
+        //       size: 28,
+        //     ),
 
-            const SizedBox(width: AppSizes.spacing4),
+        //     const SizedBox(width: AppSizes.spacing4),
 
-            _buildNavigationButton(
-              icon: Icons.chevron_left,
-              onPressed: widget.currentPage > 1
-                  ? () => widget.onPageChanged(widget.currentPage - 1)
-                  : null,
-              isEnabled: widget.currentPage > 1,
-              theme: theme,
-              size: 28,
-            ),
+        //     _buildNavigationButton(
+        //       icon: Icons.chevron_left,
+        //       onPressed: widget.currentPage > 1
+        //           ? () => widget.onPageChanged(widget.currentPage - 1)
+        //           : null,
+        //       isEnabled: widget.currentPage > 1,
+        //       theme: theme,
+        //       size: 28,
+        //     ),
 
-            const SizedBox(width: AppSizes.spacing8),
+        //     const SizedBox(width: AppSizes.spacing8),
 
-            // Page indicator
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spacing8,
-                vertical: AppSizes.spacing4,
-              ),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                border: Border.all(
-                  color: theme.primaryColor.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                '${widget.currentPage} / ${widget.totalPages}',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeSmall,
-                  fontWeight: FontWeight.w600,
-                  color: theme.primaryColor,
-                ),
-              ),
-            ),
+        //     // Page indicator
+        //     Container(
+        //       padding: const EdgeInsets.symmetric(
+        //         horizontal: AppSizes.spacing8,
+        //         vertical: AppSizes.spacing4,
+        //       ),
+        //       decoration: BoxDecoration(
+        //         color: theme.primaryColor.withValues(alpha: 0.1),
+        //         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        //         border: Border.all(
+        //           color: theme.primaryColor.withValues(alpha: 0.3),
+        //         ),
+        //       ),
+        //       child: Text(
+        //         '${widget.currentPage} / ${widget.totalPages}',
+        //         style: TextStyle(
+        //           fontSize: AppSizes.fontSizeSmall,
+        //           fontWeight: FontWeight.w600,
+        //           color: theme.primaryColor,
+        //         ),
+        //       ),
+        //     ),
 
-            const SizedBox(width: AppSizes.spacing8),
+        //     const SizedBox(width: AppSizes.spacing8),
 
-            _buildNavigationButton(
-              icon: Icons.chevron_right,
-              onPressed: widget.currentPage < widget.totalPages
-                  ? () => widget.onPageChanged(widget.currentPage + 1)
-                  : null,
-              isEnabled: widget.currentPage < widget.totalPages,
-              theme: theme,
-              size: 28,
-            ),
+        //     _buildNavigationButton(
+        //       icon: Icons.chevron_right,
+        //       onPressed: widget.currentPage < widget.totalPages
+        //           ? () => widget.onPageChanged(widget.currentPage + 1)
+        //           : null,
+        //       isEnabled: widget.currentPage < widget.totalPages,
+        //       theme: theme,
+        //       size: 28,
+        //     ),
 
-            const SizedBox(width: AppSizes.spacing4),
+        //     const SizedBox(width: AppSizes.spacing4),
 
-            _buildNavigationButton(
-              icon: Icons.keyboard_double_arrow_right,
-              onPressed: widget.currentPage < widget.totalPages
-                  ? () => widget.onPageChanged(widget.totalPages)
-                  : null,
-              isEnabled: widget.currentPage < widget.totalPages,
-              theme: theme,
-              size: 28,
-            ),
-          ],
-        ),
+        //     _buildNavigationButton(
+        //       icon: Icons.keyboard_double_arrow_right,
+        //       onPressed: widget.currentPage < widget.totalPages
+        //           ? () => widget.onPageChanged(widget.totalPages)
+        //           : null,
+        //       isEnabled: widget.currentPage < widget.totalPages,
+        //       theme: theme,
+        //       size: 28,
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }
@@ -341,9 +413,11 @@ class _ResultsPaginationState extends State<ResultsPagination> {
     return Row(
       mainAxisSize: isCompact ? MainAxisSize.min : MainAxisSize.max,
       children: [
+        // items
         Text(
           isCompact
-              ? '${widget.totalItems} ${widget.itemLabel}'
+              ? ''
+              // ? '${widget.totalItems} ${widget.itemLabel}'
               : '${widget.startItem} to ${widget.endItem} of ${widget.totalItems} ${widget.itemLabel}',
           style: TextStyle(
             fontSize: isCompact
@@ -354,17 +428,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           ),
         ),
 
-        if (widget.isLoading) ...[
-          const SizedBox(width: AppSizes.spacing8),
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.5,
-              valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
-            ),
-          ),
-        ],
+        if (widget.isLoading) ...[AppLottieStateWidget.loading(lottieSize: 80)],
       ],
     );
   }
@@ -382,7 +446,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
       decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         color: theme.cardColor,
       ),

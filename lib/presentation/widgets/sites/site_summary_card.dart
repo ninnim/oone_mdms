@@ -5,12 +5,21 @@ import '../../../core/constants/app_sizes.dart';
 
 class SiteSummaryCard extends StatelessWidget {
   final List<Site> sites;
+  final bool isCompact;
 
-  const SiteSummaryCard({super.key, required this.sites});
+  const SiteSummaryCard({
+    super.key,
+    required this.sites,
+    this.isCompact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final stats = _calculateStats();
+
+    if (isCompact) {
+      return _buildCompactView(stats);
+    }
 
     return Container(
       // margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
@@ -93,6 +102,48 @@ class SiteSummaryCard extends StatelessWidget {
     );
   }
 
+  Widget _buildCompactView(SiteStats stats) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildCompactStatCard(
+            'Total',
+            stats.totalSites.toString(),
+            Icons.business,
+            AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing8),
+        Expanded(
+          child: _buildCompactStatCard(
+            'Main',
+            stats.totalMainSites.toString(),
+            Icons.location_city,
+            AppColors.success,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing8),
+        Expanded(
+          child: _buildCompactStatCard(
+            'Sub',
+            stats.totalSubSites.toString(),
+            Icons.domain,
+            AppColors.info,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacing8),
+        Expanded(
+          child: _buildCompactStatCard(
+            'Active',
+            stats.activeSites.toString(),
+            Icons.check_circle_outline,
+            AppColors.warning,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatCard(
     String title,
     String value,
@@ -131,6 +182,47 @@ class SiteSummaryCard extends StatelessWidget {
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.spacing6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(height: AppSizes.spacing4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: AppSizes.fontSizeExtraSmall,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

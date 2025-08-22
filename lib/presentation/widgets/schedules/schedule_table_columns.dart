@@ -91,17 +91,17 @@ class ScheduleTableColumns {
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
-              if (schedule.cronExpression?.isNotEmpty == true) ...[
-                const SizedBox(height: 2),
-                Text(
-                  'Cron: ${schedule.cronExpression}',
-                  style: const TextStyle(
-                    fontSize: AppSizes.fontSizeSmall,
-                    color: AppColors.textSecondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              // if (schedule.cronExpression?.isNotEmpty == true) ...[
+              //   const SizedBox(height: 2),
+              //   Text(
+              //     'Cron: ${schedule.cronExpression}',
+              //     style: const TextStyle(
+              //       fontSize: AppSizes.fontSizeSmall,
+              //       color: AppColors.textSecondary,
+              //     ),
+              //     overflow: TextOverflow.ellipsis,
+              //   ),
+              // ],
             ],
           ),
         ),

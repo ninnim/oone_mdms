@@ -6,8 +6,10 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/schedule.dart';
 import '../../../core/services/schedule_service.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_confirm_dialog.dart';
+import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/blunest_data_table.dart';
@@ -25,9 +27,9 @@ class ScheduleScreen extends StatefulWidget {
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
+class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
   final TextEditingController _searchController = TextEditingController();
-  late final ScheduleService _scheduleService;
+  ScheduleService? _scheduleService;
   bool _isLoading = false;
   List<Schedule> _schedules = [];
   List<Schedule> _filteredSchedules = [];
@@ -39,6 +41,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   int _itemsPerPage = 25;
   String _errorMessage = '';
   Timer? _debounceTimer;
+  bool _isInitialized = false; // Track if data has been loaded initially
 
   // View mode
   ScheduleViewMode _currentViewMode = ScheduleViewMode.table;
@@ -51,41 +54,163 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   String? _sortBy;
   bool _sortAscending = true;
 
+  // Responsive UI state
+  bool _summaryCardCollapsed = false;
+  bool _isKanbanView = false;
+  ScheduleViewMode?
+  _previousViewModeBeforeMobile; // Track previous view mode before mobile switch
+  bool?
+  _previousSummaryStateBeforeMobile; // Track previous summary state before mobile switch
+
+  // Search delay timer
+  Timer? _searchTimer;
+
   @override
   void initState() {
     super.initState();
-    final serviceLocator = ServiceLocator();
-    final apiService = serviceLocator.apiService;
-    _scheduleService = ScheduleService(apiService);
-    _loadSchedules();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Initialize service only once
+    if (_scheduleService == null) {
+      final serviceLocator = ServiceLocator();
+      final apiService = serviceLocator.apiService;
+      _scheduleService = ScheduleService(apiService);
+    }
+
+    // Only load data on first initialization, not on every dependency change (like screen resize)
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadSchedules();
+      print('🚀 ScheduleScreen: Initial data load triggered');
+    } else {
+      print(
+        '📱 ScheduleScreen: Dependencies changed (likely screen resize) - NO API call',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounceTimer?.cancel();
+    _searchTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void handleResponsiveStateChange() {
+    if (!mounted) return;
+
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = mediaQuery.size.width < 768;
+    final isTablet =
+        mediaQuery.size.width >= 768 && mediaQuery.size.width < 1024;
+
+    // Auto-collapse summary card on mobile, keep visible but allow toggle
+    if (isMobile &&
+        !_summaryCardCollapsed &&
+        _previousSummaryStateBeforeMobile == null) {
+      // Save previous summary state before collapsing for mobile
+      _previousSummaryStateBeforeMobile = _summaryCardCollapsed;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _summaryCardCollapsed = true; // Default to collapsed on mobile
+          });
+          print('📱 Auto-collapsed summary card for mobile');
+        }
+      });
+    }
+
+    // Auto-expand summary card on desktop - restore previous state
+    if (!isMobile && !isTablet && _previousSummaryStateBeforeMobile != null) {
+      final shouldExpand = _previousSummaryStateBeforeMobile == false;
+      if (shouldExpand) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _summaryCardCollapsed = _previousSummaryStateBeforeMobile!;
+              _previousSummaryStateBeforeMobile = null; // Reset tracking
+            });
+            print('📱 Auto-expanded summary card for desktop');
+          }
+        });
+      }
+    }
+
+    // Auto-switch to kanban view on mobile
+    if (isMobile && !_isKanbanView) {
+      // Save previous view mode before switching to mobile kanban
+      if (_previousViewModeBeforeMobile == null) {
+        _previousViewModeBeforeMobile = _currentViewMode;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = true;
+            _currentViewMode = ScheduleViewMode.kanban;
+          });
+        }
+      });
+    }
+
+    // Auto-switch back to previous view mode on desktop
+    if (!isMobile && _isKanbanView && _previousViewModeBeforeMobile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isKanbanView = false;
+            _currentViewMode = _previousViewModeBeforeMobile!;
+            _previousViewModeBeforeMobile = null; // Reset tracking
+          });
+        }
+      });
+    }
+
+    print(
+      '📱 ScheduleScreen: Responsive state updated (mobile: $isMobile, kanban: $_isKanbanView, view: $_currentViewMode) - UI ONLY, no API calls',
+    );
   }
 
   void _onSearchChanged(String value) {
-    // Cancel the previous timer
-    _debounceTimer?.cancel();
+    // Cancel any existing timer
+    _searchTimer?.cancel();
 
-    // Set a new timer
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      // Reset to first page when searching
-      _currentPage = 1;
-      _searchController.text = value;
-      _loadSchedules();
+    // Update search query immediately for UI responsiveness
+    _searchController.text = value;
+
+    // Set a delay before triggering the API call
+    _searchTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _currentPage = 1; // Reset to first page when search changes
+        });
+        print('🔍 ScheduleScreen: Search triggered for: "$value"');
+        _loadSchedules(); // Trigger API call after delay
+      }
     });
   }
 
   Future<void> _loadSchedules() async {
+    if (_scheduleService == null) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
-      final search = _searchController.text.isEmpty
-          ? '%%'
-          : '%${_searchController.text}%';
+      // Pass search value directly without % wrapping
+      final search = _searchController.text.trim().isEmpty
+          ? null
+          : _searchController.text.trim();
       final offset = (_currentPage - 1) * _itemsPerPage;
 
-      final response = await _scheduleService.getSchedules(
+      final response = await _scheduleService!.getSchedules(
         search: search,
         offset: offset,
         limit: _itemsPerPage,
@@ -94,8 +219,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (response.success) {
         setState(() {
           _schedules = response.data ?? [];
-          // Apply client-side filters for now (until API supports them)
-          _filteredSchedules = _applyFilters(_schedules);
+          // For API-driven search, use the data directly without additional filtering
+          _filteredSchedules = _schedules;
 
           // Use total count from API response for server-side pagination
           _totalItems = response.paging?.item.total ?? _schedules.length;
@@ -104,7 +229,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               : 1;
 
           // Ensure current page is valid
-          if (_currentPage > _totalPages) {
+          if (_currentPage > _totalPages && _totalPages > 0) {
             _currentPage = _totalPages;
           }
           if (_currentPage < 1) {
@@ -118,12 +243,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           _errorMessage = response.message ?? 'Unknown error occurred';
           _isLoading = false;
         });
+
+        if (mounted) {
+          AppToast.showError(
+            context,
+            error: Exception(response.message ?? 'Failed to load schedules'),
+            title: 'Load Failed',
+            errorContext: 'schedule_load',
+          );
+        }
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load schedules: $e';
         _isLoading = false;
       });
+
+      if (mounted) {
+        AppToast.showError(
+          context,
+          error: e,
+          title: 'Load Failed',
+          errorContext: 'schedule_load',
+        );
+      }
     }
   }
 
@@ -163,96 +306,51 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  void _updatePaginationTotals() {
-    _totalItems = _filteredSchedules.length;
-    _totalPages = _totalItems > 0
-        ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
-        : 1;
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isMobile = screenWidth < 768;
 
-    // Ensure current page is valid
-    if (_currentPage > _totalPages) {
-      _currentPage = _totalPages;
-    }
-    if (_currentPage < 1) {
-      _currentPage = 1;
-    }
-  }
-
-  Widget _buildErrorMessage() {
-    if (_errorMessage.isEmpty) return const SizedBox.shrink();
-
-    // Show full-screen error state if no schedules and there's an error
-    if (_schedules.isEmpty) {
-      return AppLottieStateWidget.error(
-        title: 'Failed to Load Schedules',
-        message: _errorMessage,
-        buttonText: 'Try Again',
-        onButtonPressed: _loadSchedules,
-      );
-    }
-
-    // Show compact error banner if schedules exist but there was an error
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.error),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: AppSizes.iconMedium,
-          ),
-          const SizedBox(width: AppSizes.spacing12),
-          Expanded(
-            child: Text(
-              _errorMessage,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontSize: AppSizes.fontSizeMedium,
-              ),
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Summary Card FIRST (like seasons screen)
+                if (isMobile)
+                  _buildCollapsibleSummaryCard()
+                else
+                  _buildDesktopSummaryCard(),
+                // Header/Filters AFTER summary card
+                if (isMobile) _buildMobileHeader() else _buildDesktopHeader(),
+                // Content
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    child: _buildContent(),
+                  ),
+                ),
+                // Pagination - direct call like other screens
+                Container(width: double.infinity, child: _buildPagination()),
+              ],
             ),
           ),
-          IconButton(
-            onPressed: _loadSchedules,
-            icon: const Icon(Icons.refresh, color: AppColors.error),
-            tooltip: 'Retry',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return _buildMainContent(context);
-  }
-
-  Widget _buildMainContent(BuildContext context) {
-    // Show full-screen error state if no schedules and there's an error
-    if (_errorMessage.isNotEmpty && _schedules.isEmpty) {
-      return _buildErrorMessage();
-    }
-
-    return Column(
-      children: [
-        SizedBox(height: AppSizes.spacing12),
-        // Summary card with padding
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-          child: ScheduleSummaryCard(schedules: _filteredSchedules),
-        ),
-
-        const SizedBox(height: AppSizes.spacing8),
-
-        // Filters and actions with padding
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-          child: ScheduleFiltersAndActionsV2(
+  Widget _buildDesktopHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSizes.spacing8),
+          // Filters and Actions
+          ScheduleFiltersAndActionsV2(
             onSearchChanged: _onSearchChanged,
             onStatusFilterChanged: _onStatusFilterChanged,
             onTargetTypeFilterChanged: _onTargetTypeFilterChanged,
@@ -265,30 +363,287 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             selectedStatus: _selectedStatus,
             selectedTargetType: _selectedTargetType,
           ),
+          const SizedBox(height: AppSizes.spacing24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopSummaryCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: ScheduleSummaryCard(schedules: _filteredSchedules),
+    );
+  }
+
+  Widget _buildCollapsibleSummaryCard() {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isTablet =
+        MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
+
+    // Responsive sizing
+    final headerFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final collapsedHeight = isMobile ? 60.0 : (isTablet ? 60.0 : 70.0);
+    final expandedHeight = isMobile ? 180.0 : (isTablet ? 160.0 : 180.0);
+    final headerHeight = isMobile ? 50.0 : (isTablet ? 45.0 : 50.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(
+        left: AppSizes.spacing16,
+        right: AppSizes.spacing16,
+        top: AppSizes.spacing8,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: _summaryCardCollapsed ? collapsedHeight : expandedHeight,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+            boxShadow: [AppSizes.shadowSmall],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with toggle button
+              SizedBox(
+                height: headerHeight,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile
+                        ? AppSizes.paddingSmall
+                        : AppSizes.paddingMedium,
+                    vertical: AppSizes.paddingSmall,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.schedule,
+                        color: AppColors.primary,
+                        size: AppSizes.iconSmall,
+                      ),
+                      SizedBox(
+                        width: isMobile ? AppSizes.spacing4 : AppSizes.spacing8,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Summary',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                fontSize: headerFontSize,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _summaryCardCollapsed = !_summaryCardCollapsed;
+                            // Reset mobile tracking when user manually toggles
+                            _previousSummaryStateBeforeMobile = null;
+                          });
+                          print(
+                            '📱 Summary card toggled: collapsed=$_summaryCardCollapsed',
+                          );
+                        },
+                        icon: Icon(
+                          _summaryCardCollapsed
+                              ? Icons.expand_more
+                              : Icons.expand_less,
+                          color: AppColors.textSecondary,
+                          size: AppSizes.iconSmall,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32,
+                          minHeight: isMobile ? 28 : 32,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Expanded summary content
+              if (!_summaryCardCollapsed)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      0,
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      AppSizes.paddingSmall,
+                    ),
+                    child: ScheduleSummaryCard(schedules: _filteredSchedules),
+                  ),
+                ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
 
-        const SizedBox(height: AppSizes.spacing8),
-
-        // Error message with padding (compact banner for existing schedules)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-          child: _buildErrorMessage(),
+  Widget _buildMobileHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: Container(
+        height: AppSizes.cardMobile,
+        alignment: Alignment.centerLeft,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16,
+          vertical: AppSizes.spacing8,
         ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.spacing8),
+          color: AppColors.surface,
+          boxShadow: [AppSizes.shadowSmall],
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _buildMobileSearchBar()),
+            const SizedBox(width: AppSizes.spacing8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: _buildMobileMoreActionsButton(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-        // Content based on view mode
-        Expanded(child: _buildContent()),
-        // Always show pagination area, even if empty (no padding)
-        _buildPagination(),
-      ],
+  Widget _buildMobileSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: AppInputField.search(
+        hintText: 'Search schedules...',
+        //  controller: _searchController,
+        onChanged: _onSearchChanged,
+        prefixIcon: const Icon(Icons.search, size: AppSizes.iconSmall),
+        enabled: true,
+      ),
+    );
+  }
+
+  Widget _buildMobileMoreActionsButton() {
+    return Container(
+      height: 36,
+      width: 36,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.spacing8),
+      ),
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+        onSelected: (value) {
+          switch (value) {
+            case 'add':
+              _showCreateDialog();
+              break;
+            case 'refresh':
+              _loadSchedules();
+              break;
+            case 'kanban':
+              _onViewModeChanged(ScheduleViewMode.kanban);
+              break;
+            case 'table':
+              _onViewModeChanged(ScheduleViewMode.table);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'add',
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 18),
+                SizedBox(width: 8),
+                Text('Add Schedule'),
+              ],
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'refresh',
+            child: Row(
+              children: [
+                Icon(Icons.refresh, size: 18),
+                SizedBox(width: 8),
+                Text('Refresh'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'kanban',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.view_kanban,
+                  size: 18,
+                  color: _currentViewMode == ScheduleViewMode.kanban
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Kanban View',
+                  style: TextStyle(
+                    color: _currentViewMode == ScheduleViewMode.kanban
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'table',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.table_chart,
+                  size: 18,
+                  color: _currentViewMode == ScheduleViewMode.table
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Table View',
+                  style: TextStyle(
+                    color: _currentViewMode == ScheduleViewMode.table
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildScheduleTable() {
-    // Get the schedules for current page based on whether filters are applied
-    final hasFilters = _selectedStatus != null || _selectedTargetType != null;
-    final displaySchedules = hasFilters
-        ? _getPaginatedSchedules()
-        : _filteredSchedules;
+    // Check if we have client-side filters applied
+    final hasClientFilters =
+        _selectedStatus != null || _selectedTargetType != null;
+    final displaySchedules = hasClientFilters
+        ? _getPaginatedSchedules() // Use client-side pagination for filtered data
+        : _filteredSchedules; // Use API data directly
 
     return BluNestDataTable<Schedule>(
       columns: ScheduleTableColumns.getBluNestColumns(
@@ -321,32 +676,38 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       sortAscending: _sortAscending,
       onSort: _handleSort,
       isLoading: _isLoading,
-      totalItemsCount: _totalItems,
+      totalItemsCount: hasClientFilters
+          ? _filteredSchedules.length
+          : _totalItems,
       onSelectAllItems: _fetchAllSchedules,
+      emptyState: AppLottieStateWidget.noData(
+        title: 'No Schedules',
+        message: 'No schedules found for the current filter criteria.',
+        lottieSize: 120,
+      ),
     );
   }
 
   Widget _buildPagination() {
-    // Use filtered schedules count when filters are applied, otherwise use API total
-    final hasFilters = _selectedStatus != null || _selectedTargetType != null;
-    final displayTotalItems = hasFilters
+    // Check if we have client-side filters applied
+    final hasClientFilters =
+        _selectedStatus != null || _selectedTargetType != null;
+
+    // Use appropriate total items and pages based on filter state
+    final displayTotalItems = hasClientFilters
         ? _filteredSchedules.length
         : _totalItems;
-    final displayTotalPages = displayTotalItems > 0
-        ? ((displayTotalItems - 1) ~/ _itemsPerPage) + 1
-        : 1;
+    final displayTotalPages = hasClientFilters
+        ? (displayTotalItems > 0
+              ? ((_filteredSchedules.length - 1) ~/ _itemsPerPage) + 1
+              : 1)
+        : _totalPages;
 
-    // Calculate display range based on filtered or unfiltered data
-    final startItem = hasFilters
-        ? ((_currentPage - 1) * _itemsPerPage + 1)
-        : ((_currentPage - 1) * _itemsPerPage + 1);
-    final endItem = hasFilters
-        ? ((_currentPage * _itemsPerPage) > displayTotalItems
-              ? displayTotalItems
-              : _currentPage * _itemsPerPage)
-        : ((_currentPage * _itemsPerPage) > _totalItems
-              ? _totalItems
-              : _currentPage * _itemsPerPage);
+    // Calculate display range
+    final startItem = (_currentPage - 1) * _itemsPerPage + 1;
+    final endItem = (_currentPage * _itemsPerPage) > displayTotalItems
+        ? displayTotalItems
+        : _currentPage * _itemsPerPage;
 
     return ResultsPagination(
       currentPage: _currentPage,
@@ -360,11 +721,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         setState(() {
           _currentPage = page;
         });
-        if (hasFilters) {
-          // For filtered data, just update the page (client-side pagination)
+        if (hasClientFilters) {
+          // For client-side filtered data, just update the page
           setState(() {});
         } else {
-          // For unfiltered data, reload from server
+          // For API data, reload from server
           _loadSchedules();
         }
       },
@@ -372,11 +733,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         setState(() {
           _itemsPerPage = newItemsPerPage;
           _currentPage = 1;
-          _totalPages = _totalItems > 0
-              ? ((_totalItems + _itemsPerPage - 1) ~/ _itemsPerPage)
-              : 1;
         });
-        _loadSchedules();
+        if (hasClientFilters) {
+          // Recalculate pagination for filtered data
+          _applyClientSideFilters();
+        } else {
+          // Reload from API with new page size
+          _loadSchedules();
+        }
       },
       showItemsPerPageSelector: true,
     );
@@ -449,9 +813,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Future<void> _deleteSchedule(Schedule schedule) async {
+    if (_scheduleService == null) return;
+
     try {
       // Direct API call without another confirmation dialog
-      await _scheduleService.deleteSchedule(
+      await _scheduleService!.deleteSchedule(
         schedule.billingDevice!.id!.toLowerCase(),
       );
 
@@ -478,20 +844,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Future<List<Schedule>> _fetchAllSchedules() async {
-    try {
-      // Fetch all schedules without pagination
-      final search = _searchController.text.isEmpty
-          ? '%%'
-          : '%${_searchController.text}%';
+    if (_scheduleService == null) return [];
 
-      final response = await _scheduleService.getSchedules(
+    try {
+      // Fetch all schedules without pagination for the current search
+      final search = _searchController.text.trim().isEmpty
+          ? null
+          : _searchController.text.trim();
+
+      final response = await _scheduleService!.getSchedules(
         search: search,
         offset: 0,
         limit: 10000, // Large limit to get all items
       );
 
       if (response.success && response.data != null) {
-        // Apply same filters as current view
+        // Apply same client-side filters as current view
         return _applyFilters(response.data!);
       } else {
         throw Exception(response.message ?? 'Failed to fetch all schedules');
@@ -501,43 +869,60 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  void _updateFilteredPagination() {
-    // For client-side filtering, calculate pagination based on filtered results
-    final filteredTotal = _filteredSchedules.length;
-    _totalPages = filteredTotal > 0
-        ? ((filteredTotal - 1) ~/ _itemsPerPage) + 1
-        : 1;
-
-    // Ensure current page is valid for filtered results
-    if (_currentPage > _totalPages) {
-      _currentPage = _totalPages;
-    }
-    if (_currentPage < 1) {
-      _currentPage = 1;
-    }
-  }
-
   void _onStatusFilterChanged(String? status) {
     setState(() {
       _selectedStatus = status;
-      _filteredSchedules = _applyFilters(_schedules);
-      // Update pagination for filtered results (client-side)
-      _updateFilteredPagination();
+      _currentPage = 1; // Reset to first page when filters change
     });
+    // Note: For now, this is client-side until API supports status filtering
+    // When API supports it, add status parameter to _loadSchedules()
+    _applyClientSideFilters();
   }
 
   void _onTargetTypeFilterChanged(String? targetType) {
     setState(() {
       _selectedTargetType = targetType;
+      _currentPage = 1; // Reset to first page when filters change
+    });
+    // Note: For now, this is client-side until API supports target type filtering
+    // When API supports it, add targetType parameter to _loadSchedules()
+    _applyClientSideFilters();
+  }
+
+  void _applyClientSideFilters() {
+    setState(() {
       _filteredSchedules = _applyFilters(_schedules);
-      _updatePaginationTotals();
+
+      // Update pagination for filtered results
+      _totalItems = _filteredSchedules.length;
+      _totalPages = _totalItems > 0
+          ? ((_totalItems - 1) ~/ _itemsPerPage) + 1
+          : 1;
+
+      // Ensure current page is valid for filtered results
+      if (_currentPage > _totalPages && _totalPages > 0) {
+        _currentPage = _totalPages;
+      }
+      if (_currentPage < 1) {
+        _currentPage = 1;
+      }
     });
   }
 
   void _onViewModeChanged(ScheduleViewMode mode) {
     setState(() {
       _currentViewMode = mode;
+      // Update kanban view state based on the new mode
+      _isKanbanView = (mode == ScheduleViewMode.kanban);
+
+      // If user manually changes view mode, reset mobile tracking
+      if (MediaQuery.of(context).size.width >= 768) {
+        _previousViewModeBeforeMobile = null;
+      }
     });
+    print(
+      '🔄 ScheduleScreen: View mode changed to $mode (kanban: $_isKanbanView)',
+    );
   }
 
   void _exportSchedules() {
@@ -606,12 +991,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildContent() {
     // Show loading state
     if (_isLoading && _schedules.isEmpty) {
-      return AppLottieStateWidget.loading(
-        title: 'Loading Schedules',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
-        message: 'Please wait while we fetch your schedules...',
-        lottieSize: 100,
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Schedules',
+          titleColor: AppColors.primary,
+          messageColor: AppColors.textSecondary,
+          message: 'Please wait while we fetch your schedules...',
+          lottieSize: 80,
+        ),
+      );
+    }
+
+    // Show error state if no schedules and there's an error
+    if (_errorMessage.isNotEmpty && _schedules.isEmpty) {
+      return AppLottieStateWidget.error(
+        title: 'Error Loading Schedules',
+        message: _errorMessage,
+        buttonText: 'Try Again',
+        onButtonPressed: _loadSchedules,
       );
     }
 
@@ -619,10 +1016,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     if (!_isLoading && _schedules.isEmpty && _errorMessage.isEmpty) {
       return AppLottieStateWidget.noData(
         title: 'No Schedules Found',
-        message: '',
+        message: 'Start by creating your first schedule.',
         buttonText: 'Add Schedule',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
         onButtonPressed: _showCreateDialog,
       );
     }
@@ -638,11 +1033,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       );
     }
 
-    // Build content based on view mode
-    return switch (_currentViewMode) {
-      ScheduleViewMode.table => _buildTableView(),
-      ScheduleViewMode.kanban => _buildKanbanView(),
-    };
+    return _buildViewContent();
+  }
+
+  Widget _buildViewContent() {
+    return (_currentViewMode == ScheduleViewMode.table && !_isKanbanView)
+        ? _buildTableView()
+        : _buildKanbanView();
   }
 
   Widget _buildTableView() {
@@ -653,10 +1050,27 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildKanbanView() {
+    // Check if we have client-side filters applied
+    final hasClientFilters =
+        _selectedStatus != null || _selectedTargetType != null;
+    final displaySchedules = hasClientFilters
+        ? _getPaginatedSchedules() // Use client-side pagination for filtered data
+        : _filteredSchedules; // Use API data directly
+
+    if (_isLoading && _schedules.isEmpty) {
+      return const Center(
+        child: AppLottieStateWidget.loading(
+          title: 'Loading Schedules',
+          lottieSize: 80,
+          message: 'Please wait while we fetch your schedules.',
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       child: ScheduleKanbanView(
-        schedules: _getPaginatedSchedules(),
+        schedules: displaySchedules,
         onScheduleSelected: _showViewDialog,
         onScheduleView: _showViewDialog,
         onScheduleEdit: _showEditDialog,
@@ -668,19 +1082,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _debounceTimer?.cancel();
-    super.dispose();
-  }
-
   void _clearAllFilters() {
     setState(() {
       _selectedStatus = null;
       _selectedTargetType = null;
       _searchController.clear();
+      _currentPage = 1;
     });
-    _onSearchChanged('');
+    // Reload from API without search or filters
+    _loadSchedules();
   }
 }

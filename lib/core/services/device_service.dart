@@ -499,6 +499,28 @@ class DeviceService {
     }
   }
 
+  // Decommission device
+  Future<ApiResponse<Map<String, dynamic>>> decommissionDevice(
+    String deviceId,
+  ) async {
+    try {
+      final endpoint = ApiConstants.decommissionDevice.replaceAll(
+        '{id}',
+        deviceId,
+      );
+      final response = await _apiService.post(endpoint);
+
+      return ApiResponse.success(response.data);
+    } catch (e) {
+      final userFriendlyMessage =
+          ErrorTranslationService.getContextualErrorMessage(
+            e,
+            'device_decommission',
+          );
+      return ApiResponse.error(userFriendlyMessage);
+    }
+  }
+
   // Link device to HES (improved implementation)
   Future<ApiResponse<Map<String, dynamic>>> linkDeviceToHES(
     String deviceId,

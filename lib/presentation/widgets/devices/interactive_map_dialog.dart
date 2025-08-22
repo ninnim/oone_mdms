@@ -1,14 +1,15 @@
-
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/models/address.dart';
 import '../../../core/services/google_maps_service.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../common/app_button.dart';
+import '../common/app_dialog_header.dart';
 import '../common/app_input_field.dart';
 import '../common/app_toast.dart';
 
@@ -88,7 +89,21 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
           point: position,
           width: 40,
           height: 40,
-          child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.surface, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(Icons.location_pin, color: AppColors.surface, size: 24),
+          ),
         ),
       ];
     });
@@ -255,245 +270,301 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Responsive sizing
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isTablet =
+        MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
+
+    // Responsive dialog sizing
+    final dialogWidth = isMobile
+        ? MediaQuery.of(context).size.width * 0.95
+        : isTablet
+        ? MediaQuery.of(context).size.width * 0.85
+        : MediaQuery.of(context).size.width * 0.8;
+
+    final dialogHeight = isMobile
+        ? MediaQuery.of(context).size.height * 0.9
+        : MediaQuery.of(context).size.height * 0.85;
+
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: EdgeInsets.all(isMobile ? 8 : 16),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.8,
+        width: dialogWidth,
+        height: dialogHeight,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    color: Color(0xFF2563eb),
-                    size: AppSizes.iconMedium,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Select Location',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeLarge,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1e293b),
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFFF8F9FA),
-                      foregroundColor: const Color(0xFF64748b),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Search Bar
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: AppSizes.inputWidth,
-                        child: AppInputField(
-                          controller: _searchController,
-                          hintText: 'Enter address or place name...',
-                          onChanged: _searchPlaces,
-                          suffixIcon: _isSearching
-                              ? const SizedBox(
-                                  width: 10,
-                                  height: 10,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.search),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Search Suggestions
-                  if (_showSuggestions && _searchSuggestions.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _searchSuggestions.length,
-                        itemBuilder: (context, index) {
-                          final suggestion = _searchSuggestions[index];
-                          return ListTile(
-                            dense: true,
-                            leading: const Icon(
-                              Icons.location_on,
-                              color: Color(0xFF64748b),
-                              size: 20,
-                            ),
-                            title: Text(
-                              suggestion.mainText,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF1e293b),
-                              ),
-                            ),
-                            subtitle: suggestion.secondaryText.isNotEmpty
-                                ? Text(
-                                    suggestion.secondaryText,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF64748b),
-                                    ),
-                                  )
-                                : null,
-                            onTap: () => _selectSuggestion(suggestion),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Map
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: FlutterMap(
-                    mapController: _mapController,
-                    options: MapOptions(
-                      initialCenter: _currentLocation,
-                      initialZoom: 13.0,
-                      onTap: _onMapTap,
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.example.mdms_clone',
-                      ),
-                      MarkerLayer(markers: _markers),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Current Address Display
-            if (_currentAddress.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.pin_drop,
-                      color: Color(0xFF2563eb),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _currentAddress,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF374151),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Footer Actions
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                border: Border(
-                  top: BorderSide(color: Color(0xFFE1E5E9), width: 1),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SizedBox(
-                    width: 100,
-                    child: AppButton(
-                      text: 'Cancel',
-                      type: AppButtonType.outline,
-                      size: AppButtonSize.small,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  SizedBox(
-                    width: 100,
-                    child: AppButton(
-                      size: AppButtonSize.small,
-                      text: _isSaving ? 'Saving...' : 'Save',
-                      type: AppButtonType.primary,
-                      onPressed: _isSaving ? null : _saveLocation,
-                      icon:  Icon(Icons.save, size: AppSizes.iconSmall),
-                    ),
-                  ),
-                ],
-              ),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(
+            ResponsiveHelper.getCardBorderRadius(context),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
+        child: Column(
+          children: [
+            // Consistent Dialog Header
+            AppDialogHeader(
+              type: DialogType.edit,
+              title: 'Select Location',
+              subtitle: 'Choose a location on the map or search for an address',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+
+            // Search Bar Section
+            Container(
+              padding: ResponsiveHelper.getPadding(context),
+              child: Column(
+                children: [
+                  _buildSearchField(context),
+                  if (_showSuggestions && _searchSuggestions.isNotEmpty)
+                    _buildSearchSuggestions(context),
+                ],
+              ),
+            ),
+
+            // Map Section
+            Expanded(child: _buildMapSection(context)),
+
+            // Current Address Display
+            if (_currentAddress.isNotEmpty)
+              _buildCurrentAddressDisplay(context),
+
+            // Footer Actions
+            _buildFooterActions(context),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    return Row(
+      children: [
+        Expanded(
+          child: AppInputField.search(
+            controller: _searchController,
+            hintText: isMobile
+                ? 'Search location...'
+                : 'Enter address or place names...',
+            onChanged: _searchPlaces,
+            prefixIcon: Icon(
+              Icons.search,
+              size: AppSizes.iconSmall,
+              color: AppColors.textSecondary,
+            ),
+            enabled: true,
+          ),
+        ),
+        if (_isSearching) ...[
+          SizedBox(width: ResponsiveHelper.getSpacing(context)),
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSearchSuggestions(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    return Container(
+      margin: EdgeInsets.only(top: ResponsiveHelper.getSpacing(context)),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getCardBorderRadius(context),
+        ),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [AppSizes.shadowMedium],
+      ),
+      constraints: BoxConstraints(maxHeight: isMobile ? 150 : 200),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: _searchSuggestions.length,
+        itemBuilder: (context, index) {
+          final suggestion = _searchSuggestions[index];
+          return ListTile(
+            dense: isMobile,
+            leading: Icon(
+              Icons.location_on,
+              color: AppColors.textSecondary,
+              size: isMobile ? 18 : 20,
+            ),
+            title: Text(
+              suggestion.mainText,
+              style: TextStyle(
+                fontSize: isMobile ? 13 : 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            subtitle: suggestion.secondaryText.isNotEmpty
+                ? Text(
+                    suggestion.secondaryText,
+                    style: TextStyle(
+                      fontSize: isMobile ? 11 : 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  )
+                : null,
+            onTap: () => _selectSuggestion(suggestion),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMapSection(BuildContext context) {
+    return Container(
+      margin: ResponsiveHelper.getPadding(context),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getCardBorderRadius(context),
+        ),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [AppSizes.shadowSmall],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getCardBorderRadius(context),
+        ),
+        child: FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: _currentLocation,
+            initialZoom: 13.0,
+            onTap: _onMapTap,
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.mdms_clone',
+            ),
+            MarkerLayer(markers: _markers),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentAddressDisplay(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    return Container(
+      margin: ResponsiveHelper.getPadding(context),
+      padding: EdgeInsets.all(isMobile ? 10 : 12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getCardBorderRadius(context),
+        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.pin_drop,
+            color: AppColors.primary,
+            size: isMobile ? 18 : 20,
+          ),
+          SizedBox(width: ResponsiveHelper.getSpacing(context)),
+          Expanded(
+            child: Text(
+              _currentAddress,
+              style: TextStyle(
+                fontSize: isMobile ? 13 : 14,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterActions(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    return Container(
+      padding: ResponsiveHelper.getPadding(context),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(
+            ResponsiveHelper.getCardBorderRadius(context),
+          ),
+          bottomRight: Radius.circular(
+            ResponsiveHelper.getCardBorderRadius(context),
+          ),
+        ),
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+      ),
+      child: isMobile
+          ? Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    text: _isSaving ? 'Saving...' : 'Save',
+                    type: AppButtonType.primary,
+                    // size: AppButtonSize.medium,
+                    onPressed: _isSaving ? null : _saveLocation,
+                    icon: Icon(Icons.save, size: AppSizes.iconSmall),
+                  ),
+                ),
+                SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    text: 'Cancel',
+                    type: AppButtonType.outline,
+                    size: AppButtonSize.medium,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: AppButton(
+                    text: 'Cancel',
+                    type: AppButtonType.outline,
+                    size: AppButtonSize.medium,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                SizedBox(
+                  width: 140,
+                  child: AppButton(
+                    text: _isSaving ? 'Saving...' : 'Save',
+                    type: AppButtonType.primary,
+
+                    /// size: AppButtonSize.medium,
+                    onPressed: _isSaving ? null : _saveLocation,
+                    icon: Icon(Icons.save, size: AppSizes.iconSmall),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

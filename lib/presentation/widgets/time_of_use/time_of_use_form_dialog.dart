@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../../core/models/time_of_use.dart';
 import '../../../core/models/time_band.dart';
 import '../../../core/services/time_of_use_service.dart';
@@ -9,6 +10,7 @@ import '../common/app_button.dart';
 import '../common/app_input_field.dart';
 import '../common/app_dropdown_field.dart';
 import '../common/app_toast.dart';
+import '../common/app_dialog_header.dart';
 import '../common/app_lottie_state_widget.dart';
 import '../common/blunest_data_table.dart';
 import '../common/results_pagination.dart';
@@ -736,22 +738,25 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Use ResponsiveHelper for consistent responsive behavior
+    final dialogConstraints = ResponsiveHelper.getDialogConstraints(context);
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
-      child: SizedBox(
-        width:
-            MediaQuery.of(context).size.width *
-            0.95, // Wider for side-by-side layout
-        height:
-            MediaQuery.of(context).size.height *
-            0.95, // Appropriate height for horizontal layout
+      child: ConstrainedBox(
+        constraints: dialogConstraints,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(),
-            Expanded(child: _buildBody()),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: _buildBody(),
+              ),
+            ),
             _buildFooter(),
           ],
         ),
@@ -761,96 +766,170 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
 
   Widget _buildFooter() {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: ResponsiveHelper.getPadding(context),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
+      child: ResponsiveHelper.shouldUseCompactUI(context)
+          ? _buildMobileFooter()
+          : _buildDesktopFooter(),
+    );
+  }
+
+  // Mobile footer - vertical button layout
+  Widget _buildMobileFooter() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.isReadOnly && !_isEditMode)
+          // Show "Edit" button in view mode
+          AppButton(text: 'Edit', onPressed: _toggleEditMode)
+        else if (_isEditMode || widget.timeOfUse == null)
+          // Show "Update" or "Create" button in edit mode
           AppButton(
-            text: 'Cancel',
-            type: AppButtonType.outline,
-            onPressed: () => Navigator.of(context).pop(),
+            text: _actionButtonText,
+
+            onPressed: _save,
+            isLoading: _isLoading,
           ),
-          const SizedBox(width: AppSizes.spacing12),
-          if (widget.isReadOnly && !_isEditMode)
-            // Show "Edit" button in view mode
-            AppButton(text: 'Edit', onPressed: _toggleEditMode)
-          else if (_isEditMode || widget.timeOfUse == null)
-            // Show "Update" or "Create" button in edit mode
-            AppButton(
-              text: _actionButtonText,
-              onPressed: _save,
-              isLoading: _isLoading,
-            ),
-        ],
-      ),
+        const SizedBox(height: AppSizes.spacing8),
+        AppButton(
+          text: 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  // Desktop footer - horizontal button layout
+  Widget _buildDesktopFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AppButton(
+          text: 'Cancel',
+          type: AppButtonType.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+        if (widget.isReadOnly && !_isEditMode)
+          // Show "Edit" button in view mode
+          AppButton(text: 'Edit', onPressed: _toggleEditMode)
+        else if (_isEditMode || widget.timeOfUse == null)
+          // Show "Update" or "Create" button in edit mode
+          AppButton(
+            text: _actionButtonText,
+            onPressed: _save,
+            isLoading: _isLoading,
+          ),
+      ],
     );
   }
 
   Widget _buildHeader() {
-    final title = widget.timeOfUse == null
-        ? 'Create Time of Use'
-        : widget.isReadOnly && !_isEditMode
-        ? 'View Time of Use Details'
-        : 'Edit Time of Use';
+    // Determine dialog type and content based on state
+    final DialogType dialogType;
+    final String title;
+    final String subtitle;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            widget.timeOfUse == null ? Icons.add : Icons.schedule,
-            color: AppColors.primary,
-            size: 20,
-          ),
-          const SizedBox(width: AppSizes.spacing8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeLarge,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const Spacer(),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, size: 18),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.textSecondary.withOpacity(0.1),
-              foregroundColor: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+    if (widget.timeOfUse == null) {
+      dialogType = DialogType.create;
+      title = 'Create Time of Use';
+      subtitle = 'Set up new time-based usage configuration';
+    } else if (widget.isReadOnly && !_isEditMode) {
+      dialogType = DialogType.view;
+      title = 'View Time of Use Details';
+      subtitle = 'Review time-based usage configuration';
+    } else {
+      dialogType = DialogType.edit;
+      title = 'Edit Time of Use';
+      subtitle = 'Modify time-based usage configuration';
+    }
+
+    return AppDialogHeader(
+      type: dialogType,
+      title: title,
+      subtitle: subtitle,
+      onClose: () => Navigator.of(context).pop(),
+      showCloseButton: true,
     );
   }
 
   Widget _buildBody() {
     if (_isLoading && _availableTimeBands.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Container(
+        constraints: BoxConstraints(
+          minHeight: ResponsiveHelper.shouldUseCompactUI(context) ? 300 : 400,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: ResponsiveHelper.getSpacing(context) * 10),
+              AppLottieStateWidget.loading(
+                lottieSize: ResponsiveHelper.shouldUseCompactUI(context)
+                    ? 60
+                    : 80,
+              ),
+              // SizedBox(height: ResponsiveHelper.getSpacing(context)),
+            ],
+          ),
+        ),
+      );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+    return Container(
+      padding: ResponsiveHelper.getPadding(context),
+      constraints: BoxConstraints(minHeight: context.isMobile ? 300 : 400),
       child: Form(
         key: _formKey,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left Column: General Information + Time of Use Details
-            Expanded(flex: 1, child: _buildGeneralInfoGrid()),
-            const SizedBox(width: AppSizes.spacing24),
-
-            // Right Column: TOU Validation Grid
-            Expanded(flex: 1, child: _buildValidationGrid()),
-          ],
-        ),
+        child: context.isMobile
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Mobile: Stack vertically with intrinsic sizing
+                  _buildGeneralInfoGrid(),
+                  SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                  _buildValidationGrid(),
+                ],
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Desktop/Tablet: Side by side layout
+                      Expanded(
+                        flex: 1,
+                        child: Container(
+                          constraints: BoxConstraints(
+                            maxHeight: constraints.maxHeight > 0
+                                ? constraints.maxHeight
+                                : 600,
+                          ),
+                          child: _buildGeneralInfoGrid(),
+                        ),
+                      ),
+                      SizedBox(width: ResponsiveHelper.getSpacing(context) * 2),
+                      Expanded(
+                        flex: 1,
+                        child: Container(
+                          constraints: BoxConstraints(
+                            maxHeight: constraints.maxHeight > 0
+                                ? constraints.maxHeight
+                                : 600,
+                          ),
+                          child: _buildValidationGrid(),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }
@@ -858,83 +937,127 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   Widget _buildGeneralInfoGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Basic Information Section
-        const Text(
+        Text(
           'Basic Information',
           style: TextStyle(
-            fontSize: AppSizes.fontSizeLarge,
+            fontSize: context.isMobile
+                ? AppSizes.fontSizeMedium
+                : AppSizes.fontSizeLarge,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: AppSizes.spacing16),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-        // Single row for Code, Name, and Description
-        Row(
-          children: [
-            // Code field
-            Expanded(
-              flex: 2,
-              child: AppInputField(
-                controller: _codeController,
-                label: 'Code',
+        // Responsive layout for form fields
+        context.isMobile
+            ? Column(
+                children: [
+                  AppInputField(
+                    controller: _codeController,
+                    label: 'Code',
+                    enabled: _isEditMode,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Code is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                  AppInputField(
+                    controller: _nameController,
+                    label: 'Name',
+                    enabled: _isEditMode,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Name is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                  AppInputField(
+                    controller: _descriptionController,
+                    label: 'Description',
+                    enabled: _isEditMode,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Description is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  // Code field
+                  Expanded(
+                    flex: 2,
+                    child: AppInputField(
+                      controller: _codeController,
+                      label: 'Code',
+                      enabled: _isEditMode,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Code is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  SizedBox(width: ResponsiveHelper.getSpacing(context)),
 
-                enabled: _isEditMode,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Code is required';
-                  }
-                  return null;
-                },
+                  // Name field
+                  Expanded(
+                    flex: 3,
+                    child: AppInputField(
+                      controller: _nameController,
+                      label: 'Name',
+                      enabled: _isEditMode,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Name is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  SizedBox(width: ResponsiveHelper.getSpacing(context)),
+
+                  // Description field
+                  Expanded(
+                    flex: 4,
+                    child: AppInputField(
+                      controller: _descriptionController,
+                      label: 'Description',
+                      enabled: _isEditMode,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Description is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: AppSizes.spacing12),
 
-            // Name field
-            Expanded(
-              flex: 3,
-              child: AppInputField(
-                controller: _nameController,
-                label: 'Name',
-                enabled: _isEditMode,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name is required';
-                  }
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(width: AppSizes.spacing12),
-
-            // Description field
-            Expanded(
-              flex: 4,
-              child: AppInputField(
-                controller: _descriptionController,
-                label: 'Description',
-                enabled: _isEditMode,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Description is required';
-                  }
-                  return null;
-                },
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: AppSizes.spacing24),
+        SizedBox(height: ResponsiveHelper.getSpacing(context) * 2),
 
         // Time of Use Details Section
         Row(
           children: [
-            const Text(
+            Text(
               'Time of Use Details',
               style: TextStyle(
-                fontSize: AppSizes.fontSizeLarge,
+                fontSize: context.isMobile
+                    ? AppSizes.fontSizeMedium
+                    : AppSizes.fontSizeLarge,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -948,18 +1071,19 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
               ),
           ],
         ),
-        const SizedBox(height: AppSizes.spacing16),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-        // Scrollable Time of Use Details List
-        Expanded(
+        // Scrollable Time of Use Details List with fixed height
+        Container(
+          height: context.isMobile ? 200 : 300,
+          decoration: BoxDecoration(
+            color: AppColors.surface.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+          ),
           child: _details.isEmpty
               ? Container(
                   padding: const EdgeInsets.all(AppSizes.spacing24),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    border: Border.all(color: AppColors.border),
-                  ),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -989,7 +1113,9 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                   ),
                 )
               : ReorderableListView.builder(
+                  padding: const EdgeInsets.all(AppSizes.spacing8),
                   buildDefaultDragHandles: false,
+                  physics: const BouncingScrollPhysics(),
                   itemCount: _details.length,
                   onReorder: _isEditMode
                       ? _reorderDetails
@@ -1008,80 +1134,150 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   Widget _buildValidationGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Header with title and filter dropdown
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Expanded(
-              child: Text(
-                'Time of use validate',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeLarge,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            // Channel filter dropdown
-            const Spacer(),
-            if (_details.isNotEmpty) ...[
-              const SizedBox(width: AppSizes.spacing8),
-              Flexible(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 200,
-                    minWidth: 150,
-                  ),
-                  child: AppSearchableDropdown<int?>(
-                    value: _selectedFilterChannelId,
-                    hintText: 'All Selected Channels',
-                    items: [
-                      const DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text('All Selected Channels'),
+        Container(
+          width: double.infinity,
+          child: context.isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Time of use validate',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeMedium,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
-                      ..._details.map((d) => d.channelId).toSet().map((
-                        channelId,
-                      ) {
-                        final channel = _availableChannels.firstWhere(
-                          (c) => c.id == channelId,
-                          orElse: () => Channel.simple(
-                            id: channelId,
-                            name: 'Channel $channelId',
-                          ),
-                        );
-                        return DropdownMenuItem<int?>(
-                          value: channelId,
-                          child: Text(_getFilterChannelDisplayText(channel)),
-                        );
-                      }),
+                    ),
+                    if (_details.isNotEmpty) ...[
+                      SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 250),
+                        child: AppSearchableDropdown<int?>(
+                          value: _selectedFilterChannelId,
+                          hintText: 'All Channels',
+                          items: [
+                            const DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text(
+                                'All Selected Channels',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            ..._details.map((d) => d.channelId).toSet().map((
+                              channelId,
+                            ) {
+                              final channel = _availableChannels.firstWhere(
+                                (c) => c.id == channelId,
+                                orElse: () => Channel.simple(
+                                  id: channelId,
+                                  name: 'Channel $channelId',
+                                ),
+                              );
+                              return DropdownMenuItem<int?>(
+                                value: channelId,
+                                child: Text(
+                                  _getFilterChannelDisplayText(channel),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedFilterChannelId = value;
+                            });
+                          },
+                        ),
+                      ),
                     ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedFilterChannelId = value;
-                      });
-                    },
-                  ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Time of use validate',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeLarge,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    // Channel filter dropdown
+                    if (_details.isNotEmpty) ...[
+                      SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                      Expanded(
+                        flex: 1,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: 250,
+                            minWidth: 120,
+                          ),
+                          child: AppSearchableDropdown<int?>(
+                            value: _selectedFilterChannelId,
+                            hintText: 'All Channels',
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text(
+                                  'All Selected Channels',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              ..._details.map((d) => d.channelId).toSet().map((
+                                channelId,
+                              ) {
+                                final channel = _availableChannels.firstWhere(
+                                  (c) => c.id == channelId,
+                                  orElse: () => Channel.simple(
+                                    id: channelId,
+                                    name: 'Channel $channelId',
+                                  ),
+                                );
+                                return DropdownMenuItem<int?>(
+                                  value: channelId,
+                                  child: Text(
+                                    _getFilterChannelDisplayText(channel),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                );
+                              }),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedFilterChannelId = value;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-            ],
-          ],
         ),
-        const SizedBox(height: AppSizes.spacing16),
+        SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-        // Scrollable Validation Grid Container
-        Expanded(
-          flex: 1,
+        // Validation Grid Container with responsive height
+        Container(
+          height: context.isMobile ? 250 : 550,
+          decoration: BoxDecoration(
+            color: AppColors.surface.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+          ),
           child: _details.isEmpty
               ? Container(
                   padding: const EdgeInsets.all(AppSizes.spacing24),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    border: Border.all(color: AppColors.border),
-                  ),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1111,7 +1307,6 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                       .toSet()
                       .toList(),
                   selectedFilterChannelId: _selectedFilterChannelId,
-                  // No height specified - will expand to fill available space
                   showLegend: true,
                 ),
         ),
@@ -1319,7 +1514,11 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   /// Gets display text for filter channel dropdown
   String _getFilterChannelDisplayText(Channel channel) {
     final code = channel.code.isEmpty ? 'CH${channel.id}' : channel.code;
-    return channel.name.isNotEmpty ? '$code - ${channel.name}' : code;
+    if (channel.name.isNotEmpty) {
+      // Use a more compact format for dropdown
+      return '${code} - ${channel.name}';
+    }
+    return code;
   }
 
   /// Builds enhanced time band dropdown with detailed information
@@ -1740,84 +1939,62 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     final paginatedTimeBands = _getPaginatedTimeBands();
+    final dialogConstraints = ResponsiveHelper.getCustomDialogConstraints(
+      context,
+      mobileWidthRatio: 0.95,
+      tabletWidthRatio: 0.9,
+      desktopWidthRatio: 0.8,
+      maxDesktopWidth: 1200,
+      heightRatio: 0.85,
+    );
 
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: MediaQuery.of(context).size.height * 0.85,
-        constraints: const BoxConstraints(maxWidth: 1400, maxHeight: 800),
+      child: ConstrainedBox(
+        constraints: dialogConstraints,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header with search
+            // Enhanced Header with AppDialogHeader
+            AppDialogHeader(
+              type: DialogType.view,
+              title: 'Select Time Band',
+              subtitle: 'Choose a time band for your configuration',
+              onClose: () => Navigator.of(context).pop(),
+              showCloseButton: true,
+            ),
+
+            // Search and Filter Section
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
               decoration: const BoxDecoration(
                 color: AppColors.surface,
                 border: Border(bottom: BorderSide(color: AppColors.border)),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(AppSizes.radiusLarge),
-                  topRight: Radius.circular(AppSizes.radiusLarge),
-                ),
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Title row
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Select Time Band',
-                        style: TextStyle(
-                          fontSize: AppSizes.fontSizeLarge,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '(Click on a row to select)',
-                        style: TextStyle(
-                          fontSize: AppSizes.fontSizeSmall,
-                          color: AppColors.textSecondary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.surface,
-                          foregroundColor: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
-                  // Search bar
+                  // Search bar with item count
                   Row(
                     children: [
                       Expanded(
                         flex: 1,
-                        child: AppInputField(
+                        child: AppInputField.search(
                           hintText: 'Search time bands...',
                           prefixIcon: const Icon(Icons.search),
                           onChanged: _handleSearchChanged,
                         ),
                       ),
-                      //  const SizedBox(width: AppSizes.spacing12),
-                      const Spacer(),
+                      const SizedBox(width: AppSizes.spacing12),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSizes.spacing12,
                           vertical: AppSizes.spacing8,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMedium,
                           ),
@@ -1833,11 +2010,50 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppSizes.spacing8),
+                  // Instruction text
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing12,
+                      vertical: AppSizes.spacing8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.info.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(
+                        AppSizes.radiusMedium,
+                      ),
+                      border: Border.all(
+                        color: AppColors.info.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: AppSizes.iconSmall,
+                          color: AppColors.info,
+                        ),
+                        const SizedBox(width: AppSizes.spacing8),
+                        Expanded(
+                          child: Text(
+                            'Click on any row to select the time band',
+                            style: TextStyle(
+                              fontSize: AppSizes.fontSizeSmall,
+                              color: AppColors.info,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            // BluNestDataTable (same style as Time Bands screen)
+            // BluNestDataTable (same style as Time Bands screen) - Scrollable
             Expanded(
               child: Container(
                 margin: const EdgeInsets.all(AppSizes.spacing16),
@@ -1852,24 +2068,34 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                     ),
                   ],
                 ),
-                child: BluNestDataTable<TimeBand>(
-                  data: paginatedTimeBands,
-                  columns: _buildTableColumns(),
-                  onRowTap: _handleTimeBandSelection,
-                  onSort: _handleSort,
-                  sortBy: _sortBy,
-                  sortAscending: _sortAscending,
-                  enableMultiSelect: false,
-                  hiddenColumns: _hiddenColumns,
-                  emptyState: Center(
-                    child: AppLottieStateWidget.noData(
-                      title: _searchQuery.isNotEmpty
-                          ? 'No matches found'
-                          : 'No time bands available',
-                      message: _searchQuery.isNotEmpty
-                          ? 'No time bands found matching "$_searchQuery"'
-                          : 'No time bands available',
-                    ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SizedBox(
+                        height: constraints.maxHeight,
+                        child: BluNestDataTable<TimeBand>(
+                          data: paginatedTimeBands,
+                          columns: _buildTableColumns(),
+                          onRowTap: _handleTimeBandSelection,
+                          onSort: _handleSort,
+                          sortBy: _sortBy,
+                          sortAscending: _sortAscending,
+                          enableMultiSelect: false,
+                          hiddenColumns: _hiddenColumns,
+                          emptyState: Center(
+                            child: AppLottieStateWidget.noData(
+                              title: _searchQuery.isNotEmpty
+                                  ? 'No matches found'
+                                  : 'No time bands available',
+                              message: _searchQuery.isNotEmpty
+                                  ? 'No time bands found matching "$_searchQuery"'
+                                  : 'No time bands available',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -1887,6 +2113,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                 ),
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Pagination - Always visible for consistency
                   Container(

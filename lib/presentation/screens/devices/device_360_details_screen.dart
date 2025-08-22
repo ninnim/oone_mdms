@@ -14,6 +14,7 @@ import '../../../core/models/schedule.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input_field.dart';
@@ -54,7 +55,8 @@ class Device360DetailsScreen extends StatefulWidget {
   State<Device360DetailsScreen> createState() => _Device360DetailsScreenState();
 }
 
-class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
+class _Device360DetailsScreenState extends State<Device360DetailsScreen>
+    with ResponsiveMixin {
   late DeviceService _deviceService;
   late ScheduleService _scheduleService;
   int _currentTabIndex = 0;
@@ -127,8 +129,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   // Metrics table scroll controller for drag-to-scroll
   final ScrollController _metricsTableScrollController = ScrollController();
 
-
-
   // Overview edit mode state
   bool _isEditingOverview = false;
   bool _savingOverview = false;
@@ -189,6 +189,14 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   String? _schedulesSortBy;
   bool _schedulesSortAscending = true;
 
+  // Responsive UI state for schedules
+  bool _scheduleSummaryCardCollapsed = false;
+  bool _isScheduleKanbanView = false;
+  ScheduleViewMode?
+  _previousScheduleViewModeBeforeMobile; // Track previous view mode before mobile switch
+  bool?
+  _previousScheduleSummaryStateBeforeMobile; // Track previous summary state before mobile switch
+
   // Device type options
   final List<String> _deviceTypes = ['None', 'Smart Meter', 'IoT'];
 
@@ -217,6 +225,87 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
 
     // Load initial overview data
     _loadOverviewData();
+  }
+
+  @override
+  void handleResponsiveStateChange() {
+    if (!mounted) return;
+
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = mediaQuery.size.width < 768;
+    final isTablet =
+        mediaQuery.size.width >= 768 && mediaQuery.size.width < 1024;
+
+    // Handle schedules summary card responsive behavior
+    if (isMobile &&
+        !_scheduleSummaryCardCollapsed &&
+        _previousScheduleSummaryStateBeforeMobile == null) {
+      // Save previous summary state before collapsing for mobile
+      _previousScheduleSummaryStateBeforeMobile = _scheduleSummaryCardCollapsed;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _scheduleSummaryCardCollapsed =
+                true; // Default to collapsed on mobile
+          });
+          print('📱 Auto-collapsed schedule summary card for mobile');
+        }
+      });
+    }
+
+    // Auto-expand summary card on desktop - restore previous state
+    if (!isMobile &&
+        !isTablet &&
+        _previousScheduleSummaryStateBeforeMobile != null) {
+      final shouldExpand = _previousScheduleSummaryStateBeforeMobile == false;
+      if (shouldExpand) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _scheduleSummaryCardCollapsed = false;
+              _previousScheduleSummaryStateBeforeMobile =
+                  null; // Reset tracking
+            });
+            print('📱 Auto-expanded schedule summary card for desktop');
+          }
+        });
+      }
+    }
+
+    // Auto-switch to kanban view on mobile for schedules
+    if (isMobile && !_isScheduleKanbanView) {
+      // Save previous view mode before switching to mobile kanban
+      if (_previousScheduleViewModeBeforeMobile == null) {
+        _previousScheduleViewModeBeforeMobile = _scheduleViewMode;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isScheduleKanbanView = true;
+            _scheduleViewMode = ScheduleViewMode.kanban;
+          });
+        }
+      });
+    }
+
+    // Auto-switch back to previous view mode on desktop
+    if (!isMobile &&
+        _isScheduleKanbanView &&
+        _previousScheduleViewModeBeforeMobile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isScheduleKanbanView = false;
+            _scheduleViewMode = _previousScheduleViewModeBeforeMobile!;
+            _previousScheduleViewModeBeforeMobile = null; // Reset tracking
+          });
+        }
+      });
+    }
+
+    print(
+      '📱 Device360DetailsScreen: Responsive state updated (mobile: $isMobile, kanban: $_isScheduleKanbanView, view: $_scheduleViewMode) - UI ONLY, no API calls',
+    );
   }
 
   void _initializeEditFields() {
@@ -437,7 +526,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       final response = await _scheduleService.getSchedules(
         limit: 20,
         offset: reset ? 0 : _schedules.length,
-        search: _schedulesSearchQuery.isNotEmpty ? _schedulesSearchQuery : '',
+        search: _schedulesSearchQuery.isNotEmpty ? _schedulesSearchQuery : null,
       );
 
       if (response.success) {
@@ -1542,9 +1631,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
                       icon: Icon(Icons.receipt, size: AppSizes.iconSmall),
                       content: _buildBillingTab(),
                     ),
-                   
                   ],
-                  
                 ),
         ),
       ],
@@ -1552,6 +1639,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   }
 
   Widget _buildActionButtons() {
+    // Get current device status (refreshed or original)
+    final currentStatus = _currentDevice.status;
+
+    // Determine commission button based on status
+    bool showCommission = currentStatus != 'Commissioned';
+    bool showDecommission = currentStatus == 'Commissioned';
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1591,22 +1685,39 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         ),
         const SizedBox(width: 8),
 
-        // Commission Device
-        IconButton(
-          padding: const EdgeInsets.all(AppSizes.spacing8),
-          constraints: const BoxConstraints(
-            minWidth: AppSizes.spacing32,
-            minHeight: AppSizes.spacing32,
+        // Commission/Decommission Device - Dynamic based on status
+        if (showCommission)
+          IconButton(
+            padding: const EdgeInsets.all(AppSizes.spacing8),
+            constraints: const BoxConstraints(
+              minWidth: AppSizes.spacing32,
+              minHeight: AppSizes.spacing32,
+            ),
+            iconSize: AppSizes.iconSmall,
+            onPressed: () => _performDeviceAction('commission'),
+            icon: const Icon(Icons.check_circle),
+            tooltip: 'Commission Device',
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFFf59e0b).withOpacity(0.1),
+              foregroundColor: const Color(0xFFf59e0b),
+            ),
           ),
-          iconSize: AppSizes.iconSmall,
-          onPressed: () => _performDeviceAction('commission'),
-          icon: const Icon(Icons.check_circle),
-          tooltip: 'Commission Device',
-          style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFFf59e0b).withOpacity(0.1),
-            foregroundColor: const Color(0xFFf59e0b),
+        if (showDecommission)
+          IconButton(
+            padding: const EdgeInsets.all(AppSizes.spacing8),
+            constraints: const BoxConstraints(
+              minWidth: AppSizes.spacing32,
+              minHeight: AppSizes.spacing32,
+            ),
+            iconSize: AppSizes.iconSmall,
+            onPressed: () => _performDeviceAction('decommission'),
+            icon: const Icon(Icons.cancel),
+            tooltip: 'Decommission Device',
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFFef4444).withOpacity(0.1),
+              foregroundColor: const Color(0xFFef4444),
+            ),
           ),
-        ),
         const SizedBox(width: 8),
 
         // More Actions
@@ -1666,6 +1777,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
         break;
       case 'commission':
         await _commissionDevice();
+        break;
+      case 'decommission':
+        await _decommissionDevice();
         break;
       case 'refresh':
         await _refreshCurrentTabData();
@@ -1781,7 +1895,50 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
           AppToast.showError(
             context,
             title: 'Error',
-            error: 'Error commerrorissioning device: $e',
+            error: 'Error commissioning device: $e',
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _decommissionDevice() async {
+    final confirmed = await AppConfirmDialog.show(
+      context,
+      title: 'Decommission Device',
+      message:
+          'Are you sure you want to decommission device ${widget.device.serialNumber}?\n\nThis action will make the device inactive and not ready for operation.',
+      confirmText: 'Decommission',
+      confirmColor: AppColors.error,
+    );
+
+    if (confirmed == true) {
+      try {
+        final response = await _deviceService.decommissionDevice(
+          widget.device.id ?? '',
+        );
+
+        if (response.success && mounted) {
+          AppToast.showSuccess(
+            context,
+            title: 'Decommission Success',
+            message: 'Device decommissioned successfully',
+          );
+          // Refresh device data
+          await _refreshCurrentTabData();
+        } else if (mounted) {
+          AppToast.showError(
+            context,
+            title: 'Decommission Failed',
+            error: 'Failed to decommission device: ${response.message}',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.showError(
+            context,
+            title: 'Error',
+            error: 'Error decommissioning device: $e',
           );
         }
       }
@@ -1940,8 +2097,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
             ),
           ),
           const SizedBox(height: AppSizes.spacing16),
-
-         
 
           // Location Information Card with Map View
           if (_currentDevice.address != null ||
@@ -2447,7 +2602,6 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
     );
   }
 
-  
   Widget _buildChannelsTab() {
     if (_loadingChannels && !_channelsLoaded) {
       return Center(
@@ -3601,20 +3755,165 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
       );
     }
 
-    return Column(
-      children: [
-        // Summary card with padding (same style as device group details)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-          child: ScheduleSummaryCard(schedules: _filteredSchedules),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isMobile = screenWidth < 768;
+
+        return Column(
+          children: [
+            // Summary Card
+            if (isMobile)
+              _buildCollapsibleScheduleSummaryCard()
+            else
+              _buildDesktopScheduleSummaryCard(),
+
+            // Filters and Actions
+            if (isMobile)
+              _buildMobileScheduleHeader()
+            else
+              _buildDesktopScheduleHeader(),
+
+            // Content
+            Expanded(child: _buildScheduleContent()),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopScheduleSummaryCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: ScheduleSummaryCard(schedules: _filteredSchedules),
+    );
+  }
+
+  Widget _buildCollapsibleScheduleSummaryCard() {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isTablet =
+        MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
+
+    // Responsive sizing
+    final headerFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final collapsedHeight = isMobile ? 60.0 : (isTablet ? 60.0 : 70.0);
+    final expandedHeight = isMobile ? 180.0 : (isTablet ? 160.0 : 180.0);
+    final headerHeight = isMobile ? 50.0 : (isTablet ? 45.0 : 50.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(
+        left: AppSizes.spacing16,
+        right: AppSizes.spacing16,
+        top: AppSizes.spacing8,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: _scheduleSummaryCardCollapsed
+            ? collapsedHeight
+            : expandedHeight,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+            boxShadow: [AppSizes.shadowSmall],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with toggle button
+              SizedBox(
+                height: headerHeight,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile
+                        ? AppSizes.paddingSmall
+                        : AppSizes.paddingMedium,
+                    vertical: AppSizes.paddingSmall,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.schedule,
+                        color: AppColors.primary,
+                        size: AppSizes.iconSmall,
+                      ),
+                      SizedBox(
+                        width: isMobile ? AppSizes.spacing4 : AppSizes.spacing8,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Schedule Summary',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                fontSize: headerFontSize,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _scheduleSummaryCardCollapsed =
+                                !_scheduleSummaryCardCollapsed;
+                            // Reset mobile tracking when user manually toggles
+                            _previousScheduleSummaryStateBeforeMobile = null;
+                          });
+                        },
+                        icon: Icon(
+                          _scheduleSummaryCardCollapsed
+                              ? Icons.expand_more
+                              : Icons.expand_less,
+                          color: AppColors.textSecondary,
+                          size: AppSizes.iconSmall,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32,
+                          minHeight: isMobile ? 28 : 32,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Expanded summary content
+              if (!_scheduleSummaryCardCollapsed)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      0,
+                      isMobile ? AppSizes.paddingSmall : AppSizes.paddingMedium,
+                      AppSizes.paddingSmall,
+                    ),
+                    child: ScheduleSummaryCard(schedules: _filteredSchedules),
+                  ),
+                ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
 
-        const SizedBox(height: AppSizes.spacing8),
-
-        // Filters and actions with padding (same style as device group details)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-          child: ScheduleFiltersAndActionsV2(
+  Widget _buildDesktopScheduleHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSizes.spacing8),
+          ScheduleFiltersAndActionsV2(
             onSearchChanged: _onScheduleSearchChanged,
             onStatusFilterChanged: _onScheduleStatusFilterChanged,
             onTargetTypeFilterChanged: _onScheduleTargetTypeFilterChanged,
@@ -3627,13 +3926,155 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
             selectedStatus: _selectedScheduleStatus,
             selectedTargetType: _selectedScheduleTargetType,
           ),
+          const SizedBox(height: AppSizes.spacing24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileScheduleHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing8,
+      ),
+      child: Container(
+        height: AppSizes.cardMobile,
+        alignment: Alignment.centerLeft,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16,
+          vertical: AppSizes.spacing8,
         ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.spacing8),
+          color: AppColors.surface,
+          boxShadow: [AppSizes.shadowSmall],
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _buildMobileScheduleSearchBar()),
+            const SizedBox(width: AppSizes.spacing8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: _buildMobileScheduleActionsButton(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-        const SizedBox(height: AppSizes.spacing8),
+  Widget _buildMobileScheduleSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+      child: TextField(
+        onChanged: _onScheduleSearchChanged,
+        decoration: const InputDecoration(
+          hintText: 'Search schedules...',
+          prefixIcon: Icon(Icons.search, size: AppSizes.iconSmall),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 8),
+        ),
+      ),
+    );
+  }
 
-        // Content based on view mode
-        Expanded(child: _buildScheduleContent()),
-      ],
+  Widget _buildMobileScheduleActionsButton() {
+    return Container(
+      height: 36,
+      width: 36,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.spacing8),
+      ),
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+        onSelected: (value) {
+          switch (value) {
+            case 'add':
+              _showCreateScheduleDialog();
+              break;
+            case 'refresh':
+              _refreshSchedules();
+              break;
+            case 'kanban':
+              _onScheduleViewModeChanged(ScheduleViewMode.kanban);
+              break;
+            case 'table':
+              _onScheduleViewModeChanged(ScheduleViewMode.table);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'add',
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 18),
+                SizedBox(width: 8),
+                Text('Add Schedule'),
+              ],
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'refresh',
+            child: Row(
+              children: [
+                Icon(Icons.refresh, size: 18),
+                SizedBox(width: 8),
+                Text('Refresh'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'table',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.table_chart,
+                  size: 18,
+                  color: _scheduleViewMode == ScheduleViewMode.table
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Table View',
+                  style: TextStyle(
+                    color: _scheduleViewMode == ScheduleViewMode.table
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'kanban',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.view_kanban,
+                  size: 18,
+                  color: _scheduleViewMode == ScheduleViewMode.kanban
+                      ? AppColors.primary
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Kanban View',
+                  style: TextStyle(
+                    color: _scheduleViewMode == ScheduleViewMode.kanban
+                        ? AppColors.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3673,7 +4114,17 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen> {
   void _onScheduleViewModeChanged(ScheduleViewMode mode) {
     setState(() {
       _scheduleViewMode = mode;
+      // Update kanban view state based on the new mode
+      _isScheduleKanbanView = (mode == ScheduleViewMode.kanban);
+
+      // If user manually changes view mode, reset mobile tracking
+      if (MediaQuery.of(context).size.width >= 768) {
+        _previousScheduleViewModeBeforeMobile = null;
+      }
     });
+    print(
+      '🔄 Device360DetailsScreen: Schedule view mode changed to $mode (kanban: $_isScheduleKanbanView)',
+    );
   }
 
   Widget _buildScheduleContent() {

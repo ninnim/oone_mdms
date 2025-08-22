@@ -5,23 +5,35 @@ import '../../../core/models/special_day.dart';
 
 class SpecialDaySummaryCard extends StatelessWidget {
   final List<SpecialDay> specialDays;
+  final bool isCompact;
 
-  const SpecialDaySummaryCard({super.key, required this.specialDays});
+  const SpecialDaySummaryCard({
+    super.key,
+    required this.specialDays,
+    this.isCompact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final stats = _calculateStats();
 
+    // Responsive sizing based on compact mode
+    final padding = isCompact ? AppSizes.spacing8 : AppSizes.spacing16;
+    final spacing = isCompact ? AppSizes.spacing8 : AppSizes.spacing12;
+    final borderRadius = isCompact
+        ? AppSizes.radiusSmall
+        : AppSizes.radiusMedium;
+
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
+            blurRadius: isCompact ? 4 : 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -39,7 +51,7 @@ class SpecialDaySummaryCard extends StatelessWidget {
                   AppColors.primary,
                 ),
               ),
-              const SizedBox(width: AppSizes.spacing12),
+              SizedBox(width: spacing),
               Expanded(
                 child: _buildStatCard(
                   'Active',
@@ -48,7 +60,7 @@ class SpecialDaySummaryCard extends StatelessWidget {
                   AppColors.success,
                 ),
               ),
-              const SizedBox(width: AppSizes.spacing12),
+              SizedBox(width: spacing),
               Expanded(
                 child: _buildStatCard(
                   'Inactive',
@@ -57,7 +69,7 @@ class SpecialDaySummaryCard extends StatelessWidget {
                   AppColors.error,
                 ),
               ),
-              const SizedBox(width: AppSizes.spacing12),
+              SizedBox(width: spacing),
               Expanded(
                 child: _buildStatCard(
                   'Total Details',
@@ -79,8 +91,15 @@ class SpecialDaySummaryCard extends StatelessWidget {
     IconData icon,
     Color color,
   ) {
+    // Responsive sizing based on compact mode
+    final iconSize = isCompact ? 16.0 : 20.0;
+    final valueSize = isCompact ? 18.0 : 24.0;
+    final titleSize = isCompact ? 11.0 : AppSizes.fontSizeSmall;
+    final cardPadding = isCompact ? AppSizes.spacing6 : AppSizes.spacing8;
+    final spacingBetween = isCompact ? AppSizes.spacing4 : AppSizes.spacing8;
+
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing8),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -88,29 +107,31 @@ class SpecialDaySummaryCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: color, size: iconSize),
               const Spacer(),
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: valueSize,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.spacing8),
+          SizedBox(height: spacingBetween),
           Text(
             title,
             style: TextStyle(
-              fontSize: AppSizes.fontSizeSmall,
+              fontSize: titleSize,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

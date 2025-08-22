@@ -172,6 +172,25 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final Size size = renderBox.size;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final bool isMobile = mediaQuery.size.width <= AppSizes.tabletBreakpoint;
+
+    // Calculate available space and optimal positioning
+    final double availableSpaceBelow =
+        mediaQuery.size.height - offset.dy - size.height;
+    final double availableSpaceAbove = offset.dy;
+    final bool shouldOpenUpward =
+        availableSpaceBelow < 200 && availableSpaceAbove > 200;
+
+    // Calculate dropdown width and height constraints
+    final double dropdownWidth = isMobile
+        ? mediaQuery.size.width *
+              0.9 // Use more screen width on mobile
+        : size.width;
+    final double maxDropdownHeight = isMobile
+        ? mediaQuery.size.height *
+              0.4 // Limit height on mobile
+        : 250;
 
     return OverlayEntry(
       builder: (context) => Stack(
@@ -187,13 +206,20 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
           ),
           // Actual dropdown
           Positioned(
-            left: offset.dx,
-            top: offset.dy + size.height + 4,
-            width: size.width,
+            left: isMobile
+                ? (mediaQuery.size.width - dropdownWidth) /
+                      2 // Center on mobile
+                : offset.dx,
+            top: shouldOpenUpward
+                ? offset.dy - maxDropdownHeight - 4
+                : offset.dy + size.height + 4,
+            width: dropdownWidth,
             child: CompositedTransformFollower(
               link: _layerLink,
               showWhenUnlinked: false,
-              offset: Offset(0, size.height + 4),
+              offset: shouldOpenUpward
+                  ? Offset(0, -maxDropdownHeight - 4)
+                  : Offset(0, size.height + 4),
               child: GestureDetector(
                 onTap: () {
                   // Prevent overlay from closing when tapping inside dropdown
@@ -203,7 +229,10 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                   color: AppColors.surface,
                   child: Container(
-                    constraints: const BoxConstraints(maxHeight: 200),
+                    constraints: BoxConstraints(
+                      maxHeight: maxDropdownHeight,
+                      minHeight: 50,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(
                         AppSizes.radiusMedium,
@@ -215,103 +244,22 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                       children: [
                         // Search field (if search is enabled)
                         if (widget.onSearchChanged != null) ...[
-                          AppInputField(
-                            controller: _searchController,
-                            //focusNode: _searchFocusNode,
-                            onChanged: _onSearchChanged,
-                            onTap: () {
-                              // Prevent dropdown from closing when tapping search field
-                            },
-                            // decoration: InputDecoration(
-                            //   hintText: 'Search...',
-                            //   hintStyle: const TextStyle(
-                            //     color: AppColors.textTertiary,
-                            //     fontSize: AppSizes.fontSizeSmall,
-                            //   ),
-                            //   prefixIcon: const Icon(
-                            //     Icons.search,
-                            //     color: AppColors.textTertiary,
-                            //     size: 20,
-                            //   ),
-                            //   border: OutlineInputBorder(
-                            //     borderRadius: BorderRadius.circular(8),
-                            //     borderSide: const BorderSide(
-                            //       color: AppColors.border,
-                            //     ),
-                            //   ),
-                            //   enabledBorder: OutlineInputBorder(
-                            //     borderRadius: BorderRadius.circular(8),
-                            //     borderSide: const BorderSide(
-                            //       color: AppColors.border,
-                            //     ),
-                            //   ),
-                            //   focusedBorder: OutlineInputBorder(
-                            //     borderRadius: BorderRadius.circular(8),
-                            //     borderSide: const BorderSide(
-                            //       color: AppColors.primary,
-                            //     ),
-                            //   ),
-                            //   contentPadding: const EdgeInsets.symmetric(
-                            //     horizontal: 12,
-                            //     vertical: 8,
-                            //   ),
-                            //   isDense: true,
-                            // ),
-                            // style: const TextStyle(
-                            //   fontSize: AppSizes.fontSizeSmall,
-                            // ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: AppInputField(
+                              controller: _searchController,
+                              onChanged: _onSearchChanged,
+                              hintText: 'Search...',
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: AppColors.textTertiary,
+                                size: 20,
+                              ),
+                              onTap: () {
+                                // Prevent dropdown from closing when tapping search field
+                              },
+                            ),
                           ),
-                          // Padding(
-                          //   padding: const EdgeInsets.all(8.0),
-                          //   child:
-
-                          //   TextField(
-                          //     controller: _searchController,
-                          //     focusNode: _searchFocusNode,
-                          //     onChanged: _onSearchChanged,
-                          //     onTap: () {
-                          //       // Prevent dropdown from closing when tapping search field
-                          //     },
-                          //     decoration: InputDecoration(
-                          //       hintText: 'Search...',
-                          //       hintStyle: const TextStyle(
-                          //         color: AppColors.textTertiary,
-                          //         fontSize: AppSizes.fontSizeSmall,
-                          //       ),
-                          //       prefixIcon: const Icon(
-                          //         Icons.search,
-                          //         color: AppColors.textTertiary,
-                          //         size: 20,
-                          //       ),
-                          //       border: OutlineInputBorder(
-                          //         borderRadius: BorderRadius.circular(8),
-                          //         borderSide: const BorderSide(
-                          //           color: AppColors.border,
-                          //         ),
-                          //       ),
-                          //       enabledBorder: OutlineInputBorder(
-                          //         borderRadius: BorderRadius.circular(8),
-                          //         borderSide: const BorderSide(
-                          //           color: AppColors.border,
-                          //         ),
-                          //       ),
-                          //       focusedBorder: OutlineInputBorder(
-                          //         borderRadius: BorderRadius.circular(8),
-                          //         borderSide: const BorderSide(
-                          //           color: AppColors.primary,
-                          //         ),
-                          //       ),
-                          //       contentPadding: const EdgeInsets.symmetric(
-                          //         horizontal: 12,
-                          //         vertical: 8,
-                          //       ),
-                          //       isDense: true,
-                          //     ),
-                          //     style: const TextStyle(
-                          //       fontSize: AppSizes.fontSizeSmall,
-                          //     ),
-                          //   ),
-                          // ),
                           const Divider(height: 1, color: AppColors.border),
                         ],
 
@@ -326,26 +274,24 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                             ),
                           ),
 
-                        // Items list
+                        // Items list - Make it scrollable
                         if (widget.items.isNotEmpty)
                           Flexible(
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              padding: EdgeInsets.zero,
-                              itemCount:
-                                  widget.items.length +
-                                  (widget.hasMore ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                // Load more item
-                                if (index == widget.items.length) {
-                                  return _buildLoadMoreItem();
-                                }
-
-                                final item = widget.items[index];
-                                final isSelected = item.value == widget.value;
-
-                                return _buildDropdownItem(item, isSelected);
-                              },
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ...widget.items.asMap().entries.map((entry) {
+                                    final item = entry.value;
+                                    final isSelected =
+                                        item.value == widget.value;
+                                    return _buildDropdownItem(item, isSelected);
+                                  }),
+                                  // Load more item
+                                  if (widget.hasMore) _buildLoadMoreItem(),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -554,6 +500,8 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                                         ? AppColors.textPrimary
                                         : AppColors.textTertiary,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
 

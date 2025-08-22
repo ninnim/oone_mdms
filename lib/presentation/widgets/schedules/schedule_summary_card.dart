@@ -33,7 +33,7 @@ class ScheduleSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'Total Schedules',
+                  'Total',
                   stats.totalSchedules.toString(),
                   Icons.schedule,
                   const Color(0xFF6366F1), // Indigo for total
@@ -60,7 +60,7 @@ class ScheduleSummaryCard extends StatelessWidget {
               const SizedBox(width: AppSizes.spacing12),
               Expanded(
                 child: _buildStatCard(
-                  'Schedule by Group',
+                  'By Group',
                   stats.scheduleByGroup.toString(),
                   Icons.group_work,
                   const Color(0xFFD97706), // Orange matching Group target type
@@ -69,7 +69,7 @@ class ScheduleSummaryCard extends StatelessWidget {
               const SizedBox(width: AppSizes.spacing12),
               Expanded(
                 child: _buildStatCard(
-                  'Schedule by Device',
+                  'By Device',
                   stats.scheduleByDevice.toString(),
                   Icons.device_hub,
                   const Color(0xFF2563EB), // Blue matching Device target type
