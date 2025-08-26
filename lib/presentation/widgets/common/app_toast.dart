@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/error_translation_service.dart';
+import '../../themes/app_theme.dart';
 
 enum ToastType { success, warning, error, info }
 
@@ -256,39 +257,39 @@ class _ToastWidgetState extends State<ToastWidget>
   Color _getBackgroundColor() {
     switch (widget.data.type) {
       case ToastType.success:
-        return AppColors.surface;
+        return Theme.of(context).colorScheme.surface;
       case ToastType.warning:
-        return AppColors.surface;
+        return Theme.of(context).colorScheme.surface;
       case ToastType.error:
-        return AppColors.surface;
+        return Theme.of(context).colorScheme.surface;
       case ToastType.info:
-        return AppColors.surface;
+        return Theme.of(context).colorScheme.surface;
     }
   }
 
   Color _getProgressColor() {
     switch (widget.data.type) {
       case ToastType.success:
-        return AppColors.success;
+        return context.successColor;
       case ToastType.warning:
-        return AppColors.warning;
+        return context.warningColor;
       case ToastType.error:
-        return AppColors.error;
+        return Theme.of(context).colorScheme.error;
       case ToastType.info:
-        return AppColors.primary;
+        return context.primaryColor;
     }
   }
 
   Color _getIconColor() {
     switch (widget.data.type) {
       case ToastType.success:
-        return AppColors.success;
+        return context.successColor;
       case ToastType.warning:
-        return AppColors.warning;
+        return context.warningColor;
       case ToastType.error:
-        return AppColors.error;
+        return Theme.of(context).colorScheme.error;
       case ToastType.info:
-        return AppColors.primary;
+        return context.primaryColor;
     }
   }
 
@@ -323,7 +324,9 @@ class _ToastWidgetState extends State<ToastWidget>
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.textPrimary.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -361,18 +364,20 @@ class _ToastWidgetState extends State<ToastWidget>
                         children: [
                           Text(
                             widget.data.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeMedium,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: AppSizes.spacing2),
                           Text(
                             widget.data.message,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeSmall,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -386,15 +391,17 @@ class _ToastWidgetState extends State<ToastWidget>
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: AppColors.textTertiary.withValues(alpha: 0.1),
+                          color: Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: 0.5)
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusSmall,
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.close,
                           size: 16,
-                          color: AppColors.textTertiary,
+                          color: context.textSecondaryColor,
                         ),
                       ),
                     ),

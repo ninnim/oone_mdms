@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
@@ -7,10 +7,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../common/status_chip.dart';
-import '../common/results_pagination.dart';
+import '../common/responsive_map_pagination.dart';
 import 'dart:math' as math;
 
 class FlutterMapDeviceView extends StatefulWidget {
@@ -233,8 +234,8 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
           title: 'Loading Device Locations',
           message: 'Please wait while we fetch device locations.',
           lottieSize: 80,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.secondary,
+          titleColor: context.primaryColor,
+          messageColor: context.textSecondaryColor,
         ),
       );
     }
@@ -244,11 +245,15 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.location_off, size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.location_off,
+              size: 64,
+              color: context.textSecondaryColor,
+            ),
             const SizedBox(height: 16),
             Text(
               'No devices with location found',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 18, color: context.textSecondaryColor),
             ),
           ],
         ),
@@ -267,7 +272,10 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
               // Device list sidebar
               if (_showDeviceList) ...[
                 _buildDeviceListSidebar(),
-                Container(width: 1, color: AppColors.border),
+                Container(
+                  width: 1,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ],
 
               // Map view
@@ -290,8 +298,17 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                       children: [
                         TileLayer(
                           urlTemplate:
-                              'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              Theme.of(context).brightness == Brightness.dark
+                              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                              : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                           subdomains: const ['a', 'b', 'c'],
+                          additionalOptions:
+                              Theme.of(context).brightness == Brightness.dark
+                              ? {
+                                  'attribution':
+                                      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                                }
+                              : {},
                         ),
                         MarkerClusterLayerWidget(
                           options: MarkerClusterLayerOptions(
@@ -322,7 +339,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
 
   Widget _buildClusterMarker(int count) {
     final isLarge = count > 10;
-    final color = isLarge ? Colors.red : const Color(0xFF2F3CFE);
+    final color = isLarge ? AppColors.error : AppColors.primary;
 
     return Container(
       width: 40,
@@ -341,7 +358,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
       child: Center(
         child: Text(
           count > 99 ? '99+' : count.toString(),
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 12,
@@ -356,11 +373,16 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
       width: 48,
       height: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
+        color: context.surfaceColor,
+        border: Border(
+          right: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: context.shadowColor.withOpacity(0.05),
             blurRadius: 4,
             offset: const Offset(1, 0),
           ),
@@ -372,7 +394,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
           IconButton(
             icon: Icon(
               _showDeviceList ? Icons.chevron_left : Icons.chevron_right,
-              color: AppColors.primary,
+              color: context.primaryColor,
             ),
             onPressed: () {
               setState(() {
@@ -390,7 +412,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
+                  color: context.textSecondaryColor,
                 ),
               ),
             ),
@@ -404,10 +426,10 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
     return Container(
       width: 320,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: context.shadowColor.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(2, 0),
           ),
@@ -418,24 +440,24 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
           // Header
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8F9FA),
-              border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9))),
+            decoration: BoxDecoration(
+              color: context.surfaceColor,
+              border: Border(bottom: BorderSide(color: context.borderColor)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.location_on, color: AppColors.primary),
+                    Icon(Icons.location_on, color: context.primaryColor),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Device Locations ($_totalItems)',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: AppSizes.fontSizeSmall,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: context.textPrimaryColor,
                         ),
                       ),
                     ),
@@ -458,7 +480,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
               //   prefixIcon: const Icon(Icons.search),
               //   border: OutlineInputBorder(
               //     borderRadius: BorderRadius.circular(8),
-              //     borderSide: BorderSide(color: AppColors.border),
+              //     borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
               //   ),
               //   focusedBorder: OutlineInputBorder(
               //     borderRadius: BorderRadius.circular(8),
@@ -476,8 +498,8 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                       title: 'Loading Devices',
                       message: 'Please wait while we fetch devices.',
                       lottieSize: 50,
-                      titleColor: AppColors.primary,
-                      messageColor: AppColors.secondary,
+                      titleColor: context.primaryColor,
+                      messageColor: context.textSecondaryColor,
                     ),
                   )
                 //CircularProgressIndicator()
@@ -489,18 +511,18 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                         Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: Colors.grey[400],
+                          color: context.textSecondaryColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           _errorMessage,
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: context.textSecondaryColor),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _loadDevicesForMap,
-                          child: const Text('Retry'),
+                          child: Text('Retry'),
                         ),
                       ],
                     ),
@@ -513,12 +535,12 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                         Icon(
                           Icons.location_off,
                           size: 48,
-                          color: Colors.grey[400],
+                          color: context.textSecondaryColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'No devices with location found',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: context.textSecondaryColor),
                         ),
                       ],
                     ),
@@ -537,11 +559,11 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.primary.withOpacity(0.08)
+                              ? context.primaryColor.withOpacity(0.08)
                               : null,
                           border: isSelected
                               ? Border.all(
-                                  color: AppColors.primary.withOpacity(0.3),
+                                  color: context.primaryColor.withOpacity(0.3),
                                   width: 1,
                                 )
                               : null,
@@ -567,7 +589,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                             child: Center(
                               child: Text(
                                 '${index + (_currentPage - 1) * _itemsPerPage + 1}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -583,8 +605,8 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.black87,
+                                  ? context.primaryColor
+                                  : context.textPrimaryColor,
                             ),
                           ),
                           trailing: Row(
@@ -595,8 +617,8 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                                   Icons.my_location,
                                   size: 16,
                                   color: isSelected
-                                      ? AppColors.primary
-                                      : Colors.grey[500],
+                                      ? context.primaryColor
+                                      : context.textSecondaryColor,
                                 ),
                                 tooltip: 'Center on map',
                                 onPressed: () =>
@@ -611,7 +633,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                                 icon: Icon(
                                   Icons.info_outline,
                                   size: 16,
-                                  color: Colors.grey[500],
+                                  color: context.textSecondaryColor,
                                 ),
                                 tooltip: 'Device details',
                                 onPressed: () =>
@@ -633,7 +655,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
 
           // Reusable pagination (always show if there are items)
           if (_totalItems > 0)
-            ResultsPagination(
+            ResponsiveMapPagination(
               currentPage: _currentPage,
               totalPages: _totalPages,
               totalItems: _totalItems,
@@ -645,6 +667,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
               onItemsPerPageChanged: _onItemsPerPageChanged,
               showItemsPerPageSelector: true,
               itemLabel: 'devices',
+              isLoading: _isLoadingDevices,
             ),
         ],
       ),
@@ -659,11 +682,11 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
         width: 300,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: context.shadowColor.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -680,10 +703,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
                     _selectedDevice!.serialNumber.isNotEmpty
                         ? _selectedDevice!.serialNumber
                         : 'Device ${_selectedDevice!.id?.substring(0, 6)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 IconButton(
@@ -707,10 +727,10 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
             ElevatedButton(
               onPressed: () => widget.onDeviceSelected(_selectedDevice!),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: context.primaryColor,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
-              child: const Text('View Details'),
+              child: Text('View Details'),
             ),
           ],
         ),

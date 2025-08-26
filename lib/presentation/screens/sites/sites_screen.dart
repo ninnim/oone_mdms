@@ -9,13 +9,13 @@ import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/kanban_view.dart';
 import '../../widgets/common/app_input_field.dart';
+import '../../themes/app_theme.dart';
 import '../../widgets/sites/site_filters_and_actions_v2.dart';
 import '../../widgets/sites/site_summary_card.dart';
 import '../../widgets/sites/site_form_dialog.dart';
 import '../../widgets/sites/site_table_columns.dart';
 import '../../widgets/sites/subsite_table_columns.dart';
 import '../../widgets/sites/site_kanban_adapter.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/models/site.dart';
@@ -569,7 +569,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
     final isMobile = screenWidth < 768;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: Row(
         children: [
           // Main content
@@ -603,8 +603,8 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
               width: _isSidebarOpen ? 500 : 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppSizes.spacing8),
-                color: Theme.of(context).colorScheme.surface,
-                border: Border.all(color: AppColors.border),
+                color: context.surfaceColor,
+                border: Border.all(color: context.borderColor),
               ),
               child: _isSidebarOpen
                   ? _buildSidebarContent()
@@ -648,7 +648,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
             currentViewMode: _currentViewMode,
             selectedStatus: null, // We can add status filtering later
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -680,7 +680,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -701,7 +701,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                     children: [
                       Icon(
                         Icons.location_city,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -714,7 +714,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                               ?.copyWith(
                                 fontSize: headerFontSize,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                               ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -780,7 +780,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -815,7 +815,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -865,7 +865,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                   Icons.view_kanban,
                   size: 18,
                   color: _currentViewMode == SiteViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -873,7 +873,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                   'Kanban View',
                   style: TextStyle(
                     color: _currentViewMode == SiteViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -888,7 +888,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                   Icons.table_chart,
                   size: 18,
                   color: _currentViewMode == SiteViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -896,7 +896,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                   'Table View',
                   style: TextStyle(
                     color: _currentViewMode == SiteViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -911,11 +911,14 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
   Widget _buildContent() {
     // Show full-screen loading only if no data exists yet
     if (_isLoading && _filteredSites.isEmpty) {
-      return const Center(
-        child: AppLottieStateWidget.loading(
-          title: 'Loading Sites',
-          lottieSize: 80,
-          message: 'Please wait while we fetch your sites.',
+      return Container(
+        color: context.backgroundColor,
+        child: Center(
+          child: AppLottieStateWidget.loading(
+            title: 'Loading Sites',
+            lottieSize: 80,
+            //   message: 'Please wait while we fetch your sites.',
+          ),
         ),
       );
     }
@@ -990,17 +993,20 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
 
   Widget _buildKanbanView() {
     if (_isLoading && _filteredSites.isEmpty) {
-      return const Center(
-        child: AppLottieStateWidget.loading(
-          title: 'Loading Sites',
-          lottieSize: 80,
-          message: 'Please wait while we fetch your sites.',
+      return Container(
+        color: context.backgroundColor,
+        child: Center(
+          child: AppLottieStateWidget.loading(
+            title: 'Loading Sites',
+            lottieSize: 80,
+            //   message: 'Please wait while we fetch your sites.',
+          ),
         ),
       );
     }
 
     final kanbanItems = _paginatedSites
-        .map((site) => SiteKanbanItem(site))
+        .map((site) => SiteKanbanItem(site, context))
         .toList();
 
     return Padding(
@@ -1009,6 +1015,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
         items: kanbanItems,
         columns: SiteKanbanConfig.columns,
         actions: SiteKanbanConfig.getActions(
+          context: context,
           onView: _viewSite,
           onEdit: _editSite,
           onDelete: _deleteSite,
@@ -1022,6 +1029,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
 
   List<BluNestTableColumn<Site>> _buildTableColumns() {
     return SiteTableColumns.buildBluNestColumns(
+      context: context,
       visibleColumns: _availableColumns
           .where((column) => !_hiddenColumns.contains(column))
           .toList(),
@@ -1083,13 +1091,13 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                           : 'Expand sidebar',
 
                       style: IconButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        foregroundColor: AppColors.textSecondary,
+                        backgroundColor: context.surfaceColor,
+                        foregroundColor: context.textSecondaryColor,
                         padding: const EdgeInsets.all(6),
                         minimumSize: const Size(30, 30),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
-                          side: BorderSide(color: AppColors.border),
+                          side: BorderSide(color: context.borderColor),
                         ),
                       ),
                     ),
@@ -1105,7 +1113,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                           'Parent: ${_selectedSiteForDetails?.name ?? ''}',
                           style: TextStyle(
                             fontSize: AppSizes.fontSizeSmall,
-                            color: AppColors.textSecondary,
+                            color: context.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -1152,13 +1160,13 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
             icon: const Icon(Icons.keyboard_arrow_left, size: 20),
             tooltip: 'Expand sidebar',
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.textSecondary,
+              backgroundColor: context.surfaceColor,
+              foregroundColor: context.textSecondaryColor,
               padding: const EdgeInsets.all(6),
               minimumSize: const Size(28, 28),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
-                side: BorderSide(color: AppColors.border),
+                side: BorderSide(color: context.borderColor),
               ),
             ),
           ),
@@ -1174,7 +1182,7 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
                   _selectedSiteForDetails!.name,
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeLarge,
-                    color: AppColors.textSecondary,
+                    color: context.textSecondaryColor,
                     fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
@@ -1190,13 +1198,13 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
             icon: const Icon(Icons.close, size: AppSizes.iconSmall),
             tooltip: 'Close sidebar',
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.textTertiary,
+              backgroundColor: context.surfaceColor,
+              foregroundColor: context.textPrimaryColor.withOpacity(0.5),
               padding: const EdgeInsets.all(4),
               minimumSize: const Size(30, 30),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
-                side: BorderSide(color: AppColors.borderLight),
+                side: BorderSide(color: context.borderColor),
               ),
             ),
           ),
@@ -1206,10 +1214,6 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
   }
 
   Widget _buildSubSitesTable() {
-    print(
-      '🔄 Building subsites table - Loading: $_isLoadingSubSites, Count: ${_subSites.length}',
-    );
-
     // Sort the sub-sites based on current sorting
     List<Site> sortedSubSites = List.from(_subSites);
     if (_subSitesSortColumn != null) {
@@ -1286,9 +1290,6 @@ class _SitesScreenState extends State<SitesScreen> with ResponsiveMixin {
         },
         onSave: (newSite) async {
           try {
-            print(
-              '🔄 Creating sub-site: ${newSite.name} under parent: ${parentSite.name}',
-            );
             final response = await _siteService.createSite(newSite);
             if (response.success) {
               print('✅ Sub-site created successfully: ${newSite.name}');

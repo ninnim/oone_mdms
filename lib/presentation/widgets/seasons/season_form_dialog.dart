@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/season.dart';
 import '../../../core/utils/responsive_helper.dart';
@@ -88,7 +88,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
         icon: const Icon(Icons.clear_all, size: AppSizes.iconSmall),
         label: const Text('Clear All'),
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.error,
+          foregroundColor: context.errorColor,
           textStyle: const TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w500,
@@ -102,7 +102,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
         icon: const Icon(Icons.select_all, size: AppSizes.iconSmall),
         label: const Text('Select All'),
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: context.primaryColor,
           textStyle: const TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w500,
@@ -158,11 +158,11 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
         ),
         decoration: BoxDecoration(
           color: isCurrentPattern
-              ? color.withValues(alpha: 0.2)
-              : color.withValues(alpha: 0.05),
+              ? color.withOpacity(0.2)
+              : color.withOpacity(0.05),
           borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
           border: Border.all(
-            color: isCurrentPattern ? color : color.withValues(alpha: 0.3),
+            color: isCurrentPattern ? color : color.withOpacity(0.3),
             width: isCurrentPattern ? 2 : 1,
           ),
         ),
@@ -182,7 +182,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                 fontWeight: isCurrentPattern
                     ? FontWeight.w600
                     : FontWeight.w500,
-                color: isCurrentPattern ? color : color.withValues(alpha: 0.8),
+                color: isCurrentPattern ? color : color.withOpacity(0.8),
               ),
             ),
           ],
@@ -325,7 +325,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                                       ? AppSizes.fontSizeMedium
                                       : AppSizes.fontSizeLarge,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
+                                  color: context.textPrimaryColor,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -346,14 +346,14 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                             isMobile ? AppSizes.spacing8 : AppSizes.spacing12,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant.withValues(
+                            color: context.surfaceVariantColor.withValues(
                               alpha: 0.5,
                             ),
                             borderRadius: BorderRadius.circular(
                               AppSizes.radiusMedium,
                             ),
                             border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.5),
+                              color: context.borderColor.withOpacity(0.5),
                             ),
                           ),
                           child: Column(
@@ -366,7 +366,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                                       ? AppSizes.fontSizeExtraSmall
                                       : AppSizes.fontSizeSmall,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary,
+                                  color: context.textSecondaryColor,
                                 ),
                               ),
                               SizedBox(
@@ -383,24 +383,24 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                                   _buildQuickPatternChip(
                                     'Winter',
                                     [12, 1, 2],
-                                    AppColors.primary,
+                                    context.primaryColor,
                                     isReadOnly: isViewMode,
                                   ),
                                   _buildQuickPatternChip(
                                     'Spring',
                                     [3, 4, 5],
-                                    AppColors.primary,
+                                    context.primaryColor,
                                     isReadOnly: isViewMode,
                                   ),
                                   _buildQuickPatternChip('Summer', [
                                     6,
                                     7,
                                     8,
-                                  ], AppColors.primary),
+                                  ], context.primaryColor),
                                   _buildQuickPatternChip(
                                     'Autumn',
                                     [9, 10, 11],
-                                    AppColors.primary,
+                                    context.primaryColor,
                                     isReadOnly: isViewMode,
                                   ),
                                 ],
@@ -420,7 +420,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                             fontSize: isMobile
                                 ? AppSizes.fontSizeSmall
                                 : AppSizes.fontSizeMedium,
-                            color: AppColors.textSecondary,
+                            color: context.textSecondaryColor,
                           ),
                         ),
                         SizedBox(
@@ -448,8 +448,8 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               // Footer
               Container(
                 padding: ResponsiveHelper.getPadding(context),
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: context.borderColor)),
                 ),
                 child: ResponsiveHelper.shouldUseCompactUI(context)
                     ? _buildMobileFooter(isCreate, isViewMode)
@@ -521,7 +521,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
 
   Widget _buildMonthSelection({bool isReadOnly = false}) {
     // Use only primary color for easier theming
-    const primaryColor = AppColors.primary;
+    final primaryColor = context.primaryColor;
 
     // Adjust for month selection grid - optimize for 12 items
     int monthGridColumns;
@@ -544,7 +544,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
     return Container(
       padding: ResponsiveHelper.getPadding(context),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(
           ResponsiveHelper.getCardBorderRadius(context),
         ),
@@ -583,8 +583,8 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               ),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? primaryColor.withValues(alpha: isReadOnly ? 0.1 : 0.2)
-                    : primaryColor.withValues(alpha: 0.05),
+                    ? primaryColor.withOpacity(isReadOnly ? 0.1 : 0.2)
+                    : primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(
                   context.isMobile
                       ? AppSizes.radiusSmall
@@ -593,13 +593,13 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                 border: Border.all(
                   color: isSelected
                       ? primaryColor
-                      : primaryColor.withValues(alpha: 0.3),
+                      : primaryColor.withOpacity(0.3),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: primaryColor.withValues(alpha: 0.2),
+                          color: primaryColor.withOpacity(0.2),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -659,7 +659,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
               color: isSelected
                   ? primaryColor
-                  : primaryColor.withValues(alpha: 0.8),
+                  : primaryColor.withOpacity(0.8),
             ),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
@@ -694,7 +694,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               color: isSelected
                   ? primaryColor
-                  : primaryColor.withValues(alpha: 0.8),
+                  : primaryColor.withOpacity(0.8),
             ),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
@@ -706,7 +706,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
 
   Widget _buildSelectedMonthsSummary() {
     // Use only primary color for easier theming
-    const primaryColor = AppColors.primary;
+    final primaryColor = context.primaryColor;
     final selectedCount = _selectedMonths.where((selected) => selected).length;
     final selectedMonthNames = <String>[];
     final selectedIndices = <int>[];
@@ -725,17 +725,17 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
           shouldUseCompactUI ? AppSizes.spacing8 : AppSizes.spacing12,
         ),
         decoration: BoxDecoration(
-          color: AppColors.warning.withValues(alpha: 0.1),
+          color: context.warningColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(
             ResponsiveHelper.getCardBorderRadius(context),
           ),
-          border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+          border: Border.all(color: context.warningColor.withOpacity(0.3)),
         ),
         child: Row(
           children: [
             Icon(
               Icons.warning,
-              color: AppColors.warning,
+              color: context.warningColor,
               size: shouldUseCompactUI
                   ? AppSizes.iconSmall
                   : AppSizes.iconMedium,
@@ -747,7 +747,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               child: Text(
                 'Please select at least one month',
                 style: TextStyle(
-                  color: AppColors.warning,
+                  color: context.warningColor,
                   fontWeight: FontWeight.w500,
                   fontSize: shouldUseCompactUI ? AppSizes.fontSizeSmall : null,
                 ),
@@ -765,17 +765,17 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
           shouldUseCompactUI ? AppSizes.spacing8 : AppSizes.spacing12,
         ),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.05),
+          color: context.primaryColor.withOpacity(0.05),
           borderRadius: BorderRadius.circular(
             ResponsiveHelper.getCardBorderRadius(context),
           ),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          border: Border.all(color: context.primaryColor.withOpacity(0.2)),
         ),
         child: Row(
           children: [
             Icon(
               Icons.calendar_month,
-              color: AppColors.primary,
+              color: context.primaryColor,
               size: shouldUseCompactUI
                   ? AppSizes.iconSmall
                   : AppSizes.iconMedium,
@@ -787,7 +787,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               child: Text(
                 'All 12 months selected (Full Year Season)',
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: context.primaryColor,
                   fontWeight: FontWeight.w600,
                   fontSize: shouldUseCompactUI
                       ? AppSizes.fontSizeExtraSmall
@@ -805,11 +805,11 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
         shouldUseCompactUI ? AppSizes.spacing8 : AppSizes.spacing12,
       ),
       decoration: BoxDecoration(
-        color: primaryColor.withValues(alpha: 0.05),
+        color: primaryColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(
           ResponsiveHelper.getCardBorderRadius(context),
         ),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
+        border: Border.all(color: primaryColor.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -873,12 +873,12 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
                   vertical: shouldUseCompactUI ? 2 : 4,
                 ),
                 decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.1),
+                  color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                     shouldUseCompactUI ? 8 : 12,
                   ),
                   border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.3),
+                    color: primaryColor.withOpacity(0.3),
                     width: 1,
                   ),
                 ),
@@ -977,3 +977,8 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
     }
   }
 }
+
+
+
+
+

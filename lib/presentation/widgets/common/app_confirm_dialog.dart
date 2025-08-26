@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'app_button.dart';
+import '../../themes/app_theme.dart';
 
 class AppConfirmDialog extends StatelessWidget {
   final String title;
@@ -57,15 +57,12 @@ class AppConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 400,
-          minWidth: 320,
-        ),
+        constraints: const BoxConstraints(maxWidth: 400, minWidth: 320),
         padding: EdgeInsets.all(AppSizes.spacing24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -76,13 +73,15 @@ class AppConfirmDialog extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: (confirmColor ?? AppColors.primary).withValues(alpha: 0.1),
+                  color: (confirmColor ?? context.primaryColor).withValues(
+                    alpha: 0.1,
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
                   size: 28,
-                  color: confirmColor ?? AppColors.primary,
+                  color: confirmColor ?? context.primaryColor,
                 ),
               ),
               SizedBox(height: AppSizes.spacing16),
@@ -91,10 +90,10 @@ class AppConfirmDialog extends StatelessWidget {
             // Title
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -103,9 +102,9 @@ class AppConfirmDialog extends StatelessWidget {
             // Message
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 height: 1.4,
               ),
               textAlign: TextAlign.center,

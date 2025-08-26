@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/schedule.dart';
@@ -19,6 +18,7 @@ import '../../widgets/schedules/schedule_table_columns.dart';
 import '../../widgets/schedules/schedule_filters_and_actions_v2.dart';
 import '../../widgets/schedules/schedule_summary_card.dart';
 import '../../widgets/schedules/schedule_kanban_view.dart';
+import '../../themes/app_theme.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -314,7 +314,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
         final isMobile = screenWidth < 768;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.backgroundColor,
           body: SafeArea(
             child: Column(
               children: [
@@ -363,7 +363,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
             selectedStatus: _selectedStatus,
             selectedTargetType: _selectedTargetType,
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -406,7 +406,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -427,7 +427,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
                     children: [
                       Icon(
                         Icons.schedule,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -439,7 +439,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -460,7 +460,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
                           _summaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -509,7 +509,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -544,7 +544,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color:context.primaryColor, //AppColors.primary,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -594,7 +594,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
                   Icons.view_kanban,
                   size: 18,
                   color: _currentViewMode == ScheduleViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -602,7 +602,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
                   'Kanban View',
                   style: TextStyle(
                     color: _currentViewMode == ScheduleViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -617,7 +617,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
                   Icons.table_chart,
                   size: 18,
                   color: _currentViewMode == ScheduleViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -625,7 +625,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
                   'Table View',
                   style: TextStyle(
                     color: _currentViewMode == ScheduleViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -647,6 +647,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
 
     return BluNestDataTable<Schedule>(
       columns: ScheduleTableColumns.getBluNestColumns(
+        context: context,
         onView: (schedule) => _showViewDialog(schedule),
         onEdit: (schedule) => _showEditDialog(schedule),
         onDelete: (schedule) => _showDeleteDialog(schedule),
@@ -991,11 +992,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
   Widget _buildContent() {
     // Show loading state
     if (_isLoading && _schedules.isEmpty) {
-      return const Center(
+      return  Center(
         child: AppLottieStateWidget.loading(
           title: 'Loading Schedules',
-          titleColor: AppColors.primary,
-          messageColor: AppColors.textSecondary,
+          titleColor: context.primaryColor,
+          messageColor: context.textSecondaryColor,
           message: 'Please wait while we fetch your schedules...',
           lottieSize: 80,
         ),
@@ -1093,3 +1094,5 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
     _loadSchedules();
   }
 }
+
+

@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mdms_clone/presentation/widgets/common/app_tabs.dart';
-import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
+import '../../widgets/common/app_tabs.dart';
+import '../../widgets/common/status_chip.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
@@ -669,7 +670,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             value: group.id,
             child: Text(
               group.name ?? 'None',
-              style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+              style: TextStyle(fontSize: AppSizes.fontSizeSmall),
             ),
           );
         }),
@@ -698,13 +699,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   Widget _buildScheduleEditDropdown() {
     // Create dropdown items from schedules
     final List<DropdownMenuItem<int?>> items = [
-      const DropdownMenuItem<int?>(
+      DropdownMenuItem<int?>(
         value: null,
         child: Text(
           'None',
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: Color(0xFF374151),
+            color: context.textPrimaryColor,
           ),
         ),
       ),
@@ -713,9 +714,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           value: schedule.id,
           child: Text(
             schedule.name ?? 'Unnamed Schedule',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: Color(0xFF374151),
+              color: context.textPrimaryColor,
             ),
           ),
         ),
@@ -757,10 +758,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       items: _deviceTypes.map((type) {
         return DropdownMenuItem<String>(
           value: type,
-          child: Text(
-            type,
-            style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
-          ),
+          child: Text(type, style: TextStyle(fontSize: AppSizes.fontSizeSmall)),
         );
       }).toList(),
       onChanged: (value) {
@@ -783,7 +781,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           value: status,
           child: Text(
             status,
-            style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            style: TextStyle(fontSize: AppSizes.fontSizeSmall),
           ),
         );
       }).toList(),
@@ -807,7 +805,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           value: status,
           child: Text(
             status,
-            style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+            style: TextStyle(fontSize: AppSizes.fontSizeSmall),
           ),
         );
       }).toList(),
@@ -825,6 +823,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => InteractiveMapDialog(
+        context: context,
         initialAddress: _selectedAddressEdit,
         onLocationSelected: (address) {
           setState(() {
@@ -1423,10 +1422,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             horizontal: AppSizes.spacing24,
             vertical: AppSizes.spacing16,
           ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+              bottom: BorderSide(color: context.borderColor, width: 1),
             ),
           ),
           child: Row(
@@ -1463,7 +1462,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                               style: TextStyle(
                                 fontSize: AppSizes.fontSizeXLarge,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
+                                color: context.primaryColor,
                               ),
                             ),
                           ],
@@ -1473,7 +1472,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                     // const SizedBox(height: 4),
                     // Text(
                     //   'Serial: ${widget.device.serialNumber}',
-                    //   style: const TextStyle(
+                    //   style: TextStyle(
                     //     fontSize: 16,
                     //     color: Color(0xFF64748b),
                     //   ),
@@ -1518,13 +1517,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         // Content section with AppTabs
         Expanded(
           child: _isLoading
-              ? const Center(
+              ? Center(
                   child: AppLottieStateWidget.loading(
                     title: 'Loading Device Details',
                     message: 'Please wait while we fetch device details.',
                     lottieSize: 80,
-                    titleColor: AppColors.primary,
-                    messageColor: AppColors.secondary,
+                    titleColor: context.primaryColor,
+                    messageColor: context.secondaryColor,
                   ),
                 )
               : _error != null
@@ -1532,17 +1531,17 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         size: 64,
-                        color: Color(0xFFef4444),
+                        color: context.errorColor,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         _error!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFFef4444),
+                          color: context.errorColor,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1596,7 +1595,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                               break;
                           }
                         },
-                        child: const Text('Retry'),
+                        child: Text('Retry'),
                       ),
                     ],
                   ),
@@ -1661,8 +1660,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           icon: const Icon(Icons.network_ping),
           tooltip: 'Ping Device',
           style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFF10b981).withOpacity(0.1),
-            foregroundColor: const Color(0xFF10b981),
+            backgroundColor: context.successColor.withOpacity(0.1),
+            foregroundColor: context.successColor,
           ),
         ),
         const SizedBox(width: 8),
@@ -1679,8 +1678,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           icon: const Icon(Icons.link),
           tooltip: 'Link to HES',
           style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFF2563eb).withOpacity(0.1),
-            foregroundColor: const Color(0xFF2563eb),
+            backgroundColor: context.primaryColor.withOpacity(0.1),
+            foregroundColor: context.primaryColor,
           ),
         ),
         const SizedBox(width: 8),
@@ -1698,8 +1697,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             icon: const Icon(Icons.check_circle),
             tooltip: 'Commission Device',
             style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFFf59e0b).withOpacity(0.1),
-              foregroundColor: const Color(0xFFf59e0b),
+              backgroundColor: context.warningColor.withOpacity(0.1),
+              foregroundColor: context.warningColor,
             ),
           ),
         if (showDecommission)
@@ -1714,8 +1713,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             icon: const Icon(Icons.cancel),
             tooltip: 'Decommission Device',
             style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFFef4444).withOpacity(0.1),
-              foregroundColor: const Color(0xFFef4444),
+              backgroundColor: context.errorColor.withOpacity(0.1),
+              foregroundColor: context.errorColor,
             ),
           ),
         const SizedBox(width: 8),
@@ -1866,7 +1865,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       message:
           'Are you sure you want to commission device ${widget.device.serialNumber}?\n\nThis action will make the device active and ready for operation.',
       confirmText: 'Commission',
-      confirmColor: AppColors.warning,
+      confirmColor: context.warningColor,
     );
 
     if (confirmed == true) {
@@ -1909,7 +1908,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       message:
           'Are you sure you want to decommission device ${widget.device.serialNumber}?\n\nThis action will make the device inactive and not ready for operation.',
       confirmText: 'Decommission',
-      confirmColor: AppColors.error,
+      confirmColor: context.errorColor,
     );
 
     if (confirmed == true) {
@@ -1963,13 +1962,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
 
   Widget _buildOverviewTab() {
     if (_loadingOverview && !_overviewLoaded) {
-      return const Center(
+      return Center(
         child: AppLottieStateWidget.loading(
           title: 'Loading Overview',
           message: 'Loading device overview...',
           lottieSize: 80,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.secondary,
+          titleColor: context.primaryColor,
+          messageColor: context.secondaryColor,
         ),
       );
     }
@@ -1979,21 +1978,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         // Sticky header
         Container(
           padding: const EdgeInsets.all(AppSizes.spacing16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+              bottom: BorderSide(color: context.borderColor, width: 1),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Device Overview',
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1e293b),
+                  color: context.textPrimaryColor,
                 ),
               ),
               if (!_isEditingOverview)
@@ -2041,15 +2040,15 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                     Icon(
                       Icons.info_outline,
                       size: AppSizes.iconSmall,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'General Information',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1e293b),
+                        color: context.textPrimaryColor,
                       ),
                     ),
                   ],
@@ -2110,15 +2109,15 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                       Icon(
                         Icons.location_on_outlined,
                         size: AppSizes.iconSmall,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Location Information',
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeMedium,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
+                          color: context.textPrimaryColor,
                         ),
                       ),
                     ],
@@ -2132,12 +2131,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                       borderRadius: BorderRadius.circular(
                         AppSizes.radiusMedium,
                       ),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(
                         AppSizes.radiusMedium,
                       ),
+
                       child: DeviceLocationViewer(
                         address: _currentDevice.address,
                         addressText: _currentDevice.addressText,
@@ -2230,15 +2230,15 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                       Icon(
                         Icons.settings_outlined,
                         size: AppSizes.iconSmall,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Device Attributes',
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeMedium,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
+                          color: context.textPrimaryColor,
                         ),
                       ),
                     ],
@@ -2255,18 +2255,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                           height: AppSizes.inputHeight,
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: context.surfaceVariantColor,
                             borderRadius: BorderRadius.circular(
                               AppSizes.radiusMedium,
                             ),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.label,
                                 size: AppSizes.iconMedium,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondaryColor,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -2275,9 +2275,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                                   attribute.name
                                       .replaceAll('_', ' ')
                                       .toUpperCase(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF475569),
+                                    color: context.textSecondaryColor,
                                     fontSize: AppSizes.fontSizeSmall,
                                   ),
                                 ),
@@ -2288,8 +2288,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                                 child: Text(
                                   attribute.value,
 
-                                  style: const TextStyle(
-                                    color: Color(0xFF64748b),
+                                  style: TextStyle(
+                                    color: context.textSecondaryColor,
                                     fontSize: AppSizes.fontSizeSmall,
                                   ),
                                 ),
@@ -2321,12 +2321,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              const Text(
+              Text(
                 'Edit Device Information',
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1e293b),
+                  color: context.textPrimaryColor,
                 ),
               ),
               const SizedBox(height: AppSizes.spacing16),
@@ -2336,12 +2336,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'General Information',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1e293b),
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     const SizedBox(height: AppSizes.spacing16),
@@ -2392,12 +2392,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Integration Information',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1e293b),
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     const SizedBox(height: AppSizes.spacing16),
@@ -2418,12 +2418,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Location Information',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1e293b),
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     const SizedBox(height: AppSizes.spacing16),
@@ -2439,7 +2439,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                       onTap: _openMapDialog,
                       suffixIcon: IconButton(
                         onPressed: _openMapDialog,
-                        icon: const Icon(Icons.map, color: Color(0xFF2563eb)),
+                        icon: Icon(Icons.map, color: context.primaryColor),
                         tooltip: 'Open Map Selector',
                       ),
                     ),
@@ -2452,23 +2452,23 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                         height: AppSizes.inputHeight,
                         padding: const EdgeInsets.all(AppSizes.spacing8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: context.surfaceVariantColor,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: context.borderColor),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.pin_drop,
-                              color: Color(0xFF64748b),
+                              color: context.textSecondaryColor,
                               size: AppSizes.iconMedium,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Coordinates: ${_selectedAddressEdit!.latitude!.toStringAsFixed(6)}, ${_selectedAddressEdit!.longitude!.toStringAsFixed(6)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: AppSizes.fontSizeSmall,
-                                color: Color(0xFF374151),
+                                color: context.textSecondaryColor,
                               ),
                             ),
                           ],
@@ -2486,20 +2486,20 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Device Attributes',
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeMedium,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1e293b),
+                          color: context.textPrimaryColor,
                         ),
                       ),
                       const SizedBox(height: AppSizes.spacing16),
-                      const Text(
+                      Text(
                         'Note: Device attributes are managed through the system configuration.',
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeMedium,
-                          color: Color(0xFF64748b),
+                          color: context.textSecondaryColor,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -2509,11 +2509,11 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(AppSizes.spacing8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: context.surfaceVariantColor,
                             borderRadius: BorderRadius.circular(
                               AppSizes.radiusMedium,
                             ),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Row(
                             children: [
@@ -2522,10 +2522,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                                   attribute.name
                                       .replaceAll('_', ' ')
                                       .toUpperCase(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: AppSizes.fontSizeSmall,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF475569),
+                                    color: context.textSecondaryColor,
                                   ),
                                 ),
                               ),
@@ -2533,9 +2533,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                               Expanded(
                                 child: Text(
                                   attribute.value,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: AppSizes.fontSizeSmall,
-                                    color: Color(0xFF64748b),
+                                    color: context.textSecondaryColor,
                                   ),
                                 ),
                               ),
@@ -2553,14 +2553,14 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(AppSizes.spacing16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+        decoration: BoxDecoration(
+          color: context.surfaceColor,
+          border: Border(top: BorderSide(color: context.borderColor, width: 1)),
           boxShadow: [
             BoxShadow(
-              color: Color(0x1A000000),
+              color: context.shadowColor,
               blurRadius: 8,
-              offset: Offset(0, -2),
+              offset: const Offset(0, -2),
             ),
           ],
         ),
@@ -2609,8 +2609,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           title: 'Loading Channels',
           message: 'Loading device channels...',
           lottieSize: 80,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.secondary,
+          titleColor: context.primaryColor,
+          messageColor: context.secondaryColor,
         ),
       );
     }
@@ -2620,10 +2620,10 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         // Sticky header
         Container(
           padding: const EdgeInsets.all(AppSizes.spacing16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+              bottom: BorderSide(color: context.borderColor, width: 1),
             ),
           ),
           child: Column(
@@ -2638,7 +2638,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeLarge,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1e293b),
+                        color: context.textPrimaryColor,
                       ),
                     ),
                   ),
@@ -2679,22 +2679,22 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.1),
+                    color: context.warningColor.withOpacity(0.1),
                     border: Border.all(
-                      color: AppColors.warning.withOpacity(0.3),
+                      color: context.warningColor.withOpacity(0.3),
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.warning_amber, color: AppColors.warning),
+                      Icon(Icons.warning_amber, color: context.warningColor),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Note: After updating channel values, ApplyMetric will be set to true automatically, and cumulative values may change based on system calculations.',
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.warning,
+                            color: context.warningColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2731,6 +2731,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       padding: const EdgeInsets.all(AppSizes.spacing16),
       child: BluNestDataTable<DeviceChannel>(
         columns: DeviceChannelTableColumns.getColumns(
+          channels: _deviceChannels!,
+          context: context,
           isEditMode: _isEditingChannels,
           selectedChannelIds: _selectedChannelIds,
           onChannelSelect: (channel, value) {
@@ -3004,13 +3006,13 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
 
   Widget _buildMetricsTab() {
     if (_loadingMetrics && !_metricsLoaded) {
-      return const Center(
+      return Center(
         child: AppLottieStateWidget.loading(
           title: 'Loading Metrics',
           message: 'Loading device metrics...',
           lottieSize: 80,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.secondary,
+          titleColor: context.primaryColor,
+          messageColor: context.secondaryColor,
         ),
       );
     }
@@ -3042,7 +3044,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                       borderRadius: BorderRadius.circular(
                         AppSizes.radiusMedium,
                       ),
-                      color: const Color(0xFFF1F5F9),
+                      color: context.surfaceVariantColor,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -3118,14 +3120,14 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         Container(
           // height: AppSizes.inputHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFF2563eb),
+            color: context.primaryColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
           ),
           child: IconButton(
             onPressed: _refreshMetricsData,
-            icon: const Icon(
+            icon: Icon(
               Icons.refresh,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               size: AppSizes.iconSmall,
             ),
             tooltip: 'Refresh Data',
@@ -3165,7 +3167,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          color: isActive ? const Color(0xFF2563eb) : Colors.transparent,
+          color: isActive ? context.primaryColor : Colors.transparent,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -3173,7 +3175,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             Icon(
               icon,
               size: AppSizes.iconSmall,
-              color: isActive ? Colors.white : const Color(0xFF64748b),
+              color: isActive
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : context.textSecondaryColor,
             ),
             const SizedBox(width: 8),
             Text(
@@ -3181,7 +3185,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: isActive ? Colors.white : const Color(0xFF64748b),
+                color: isActive
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : context.textSecondaryColor,
               ),
             ),
           ],
@@ -3349,12 +3355,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Metrics Summary',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         const SizedBox(height: AppSizes.spacing16),
@@ -3379,20 +3385,20 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           children: [
             Text(
               _formatFieldName(fieldName),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
             const SizedBox(height: AppSizes.spacing12),
-            _buildStatRow('Min', stats['min']!, AppColors.info),
+            _buildStatRow('Min', stats['min']!, context.infoColor),
             const SizedBox(height: AppSizes.spacing8),
-            _buildStatRow('Max', stats['max']!, AppColors.error),
+            _buildStatRow('Max', stats['max']!, context.errorColor),
             const SizedBox(height: AppSizes.spacing8),
-            _buildStatRow('Avg', stats['avg']!, AppColors.success),
+            _buildStatRow('Avg', stats['avg']!, context.successColor),
             const SizedBox(height: AppSizes.spacing8),
-            _buildStatRow('Count', stats['count']!, AppColors.textSecondary),
+            _buildStatRow('Count', stats['count']!, context.textSecondaryColor),
           ],
         ),
       ),
@@ -3405,7 +3411,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       children: [
         Text(
           '$label:',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 12, color: context.textSecondaryColor),
         ),
         Text(
           _formatMetricValue(value),
@@ -3434,8 +3440,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       return AppLottieStateWidget.noData(
         title: 'No Metrics Data',
         message: 'No metrics data available for this device.',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
       );
     }
 
@@ -3467,6 +3473,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                   data: _dynamicMetrics,
                   columns: DynamicMetricsTableColumns.generateColumns(
                     metrics: _dynamicMetrics,
+                    context: context,
                     currentPage: _metricsCurrentPage,
                     itemsPerPage: _metricsItemsPerPage,
                     hiddenColumns: _hiddenMetricsColumns,
@@ -3544,21 +3551,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         // Sticky header
         Container(
           padding: const EdgeInsets.all(AppSizes.spacing16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+              bottom: BorderSide(color: context.borderColor, width: 1),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Device Billing Information',
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1e293b),
+                  color: context.textPrimaryColor,
                 ),
               ),
               _buildBillingActions(),
@@ -3583,14 +3590,14 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       children: [
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF2563eb),
+            color: context.primaryColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
           ),
           child: IconButton(
             onPressed: _refreshBillingData,
-            icon: const Icon(
+            icon: Icon(
               Icons.refresh,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               size: AppSizes.iconSmall,
             ),
             tooltip: 'Refresh Data',
@@ -3617,8 +3624,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       return AppLottieStateWidget.noData(
         title: 'No Billing Records',
         // lottieSize: 100,
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        lottieSize: 80,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
       );
     }
 
@@ -3821,7 +3829,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -3842,7 +3850,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                     children: [
                       Icon(
                         Icons.schedule,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -3854,7 +3862,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -3873,7 +3881,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                           _scheduleSummaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -3926,7 +3934,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             selectedStatus: _selectedScheduleStatus,
             selectedTargetType: _selectedScheduleTargetType,
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -3948,7 +3956,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -3985,11 +3993,15 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+        icon: Icon(
+          Icons.more_vert,
+          color: Theme.of(context).colorScheme.onPrimary,
+          size: 20,
+        ),
         onSelected: (value) {
           switch (value) {
             case 'add':
@@ -4035,7 +4047,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                   Icons.table_chart,
                   size: 18,
                   color: _scheduleViewMode == ScheduleViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -4043,7 +4055,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                   'Table View',
                   style: TextStyle(
                     color: _scheduleViewMode == ScheduleViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -4058,7 +4070,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                   Icons.view_kanban,
                   size: 18,
                   color: _scheduleViewMode == ScheduleViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -4066,7 +4078,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
                   'Kanban View',
                   style: TextStyle(
                     color: _scheduleViewMode == ScheduleViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -4134,8 +4146,8 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
         title: 'No Schedules Found',
         message: 'This device has no scheduled tasks configured.',
         buttonText: 'Create Schedule',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
         onButtonPressed: _showCreateScheduleDialog,
       );
     }
@@ -4188,6 +4200,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
   Widget _buildScheduleTable() {
     return BluNestDataTable<Schedule>(
       columns: ScheduleTableColumns.getBluNestColumns(
+        context: context,
         onView: (schedule) => _showViewScheduleDialog(schedule),
         onEdit: (schedule) => _canEditSchedule(schedule)
             ? _showEditScheduleDialog(schedule)
@@ -4428,7 +4441,7 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
             Icon(
               icon,
               size: AppSizes.iconMedium,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
             const SizedBox(width: 8),
           ],
@@ -4437,18 +4450,18 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
               width: icon != null ? 100 : 120,
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748b),
+                  color: context.textSecondaryColor,
                 ),
               ),
             ),
-            const Text(
+            Text(
               ': ',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: Color(0xFF64748b),
+                color: context.textSecondaryColor,
               ),
             ),
           ],
@@ -4456,9 +4469,9 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
               ? _buildStatusDisplay(value)
               : Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
-                    color: Color(0xFF1e293b),
+                    color: context.textPrimaryColor,
                   ),
                 ),
         ],
@@ -4472,20 +4485,20 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
 
     switch (status.toLowerCase()) {
       case 'commissioned':
-        statusColor = AppColors.success;
+        statusColor = context.successColor;
         statusIcon = Icons.check_circle;
         break;
       case 'decommissioned':
-        statusColor = AppColors.error;
+        statusColor = context.errorColor;
         statusIcon = Icons.cancel;
         break;
       case 'multidrive':
       case 'e-power':
-        statusColor = AppColors.primary;
+        statusColor = context.primaryColor;
         statusIcon = Icons.link;
         break;
       default:
-        statusColor = AppColors.warning;
+        statusColor = context.warningColor;
         statusIcon = Icons.info;
     }
 

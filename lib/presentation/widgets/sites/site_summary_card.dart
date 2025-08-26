@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/models/site.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class SiteSummaryCard extends StatelessWidget {
@@ -18,22 +18,18 @@ class SiteSummaryCard extends StatelessWidget {
     final stats = _calculateStats();
 
     if (isCompact) {
-      return _buildCompactView(stats);
+      return _buildCompactView(stats, context);
     }
 
     return Container(
       // margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+        AppSizes.shadowSmall,
         ],
       ),
       child: Column(
@@ -65,25 +61,28 @@ class SiteSummaryCard extends StatelessWidget {
                   'Total Sites',
                   stats.totalSites.toString(),
                   Icons.business,
-                  AppColors.primary,
+                  context.primaryColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
               Expanded(
                 child: _buildStatCard(
-                  'Total Main Sites',
+                  'Total Main',
                   stats.totalMainSites.toString(),
                   Icons.location_city,
-                  AppColors.success,
+                  context.successColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
               Expanded(
                 child: _buildStatCard(
-                  'Total Sub Sites',
+                  'Total Sub',
                   stats.totalSubSites.toString(),
                   Icons.domain,
-                  AppColors.info,
+                  context.infoColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -92,7 +91,8 @@ class SiteSummaryCard extends StatelessWidget {
                   'Active Sites',
                   stats.activeSites.toString(),
                   Icons.check_circle_outline,
-                  AppColors.warning,
+                  context.warningColor,
+                  context,
                 ),
               ),
             ],
@@ -102,7 +102,7 @@ class SiteSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactView(SiteStats stats) {
+  Widget _buildCompactView(SiteStats stats, BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -110,7 +110,8 @@ class SiteSummaryCard extends StatelessWidget {
             'Total',
             stats.totalSites.toString(),
             Icons.business,
-            AppColors.primary,
+            context.primaryColor,
+            context,
           ),
         ),
         const SizedBox(width: AppSizes.spacing8),
@@ -119,7 +120,8 @@ class SiteSummaryCard extends StatelessWidget {
             'Main',
             stats.totalMainSites.toString(),
             Icons.location_city,
-            AppColors.success,
+            context.successColor,
+            context,
           ),
         ),
         const SizedBox(width: AppSizes.spacing8),
@@ -128,7 +130,8 @@ class SiteSummaryCard extends StatelessWidget {
             'Sub',
             stats.totalSubSites.toString(),
             Icons.domain,
-            AppColors.info,
+            context.infoColor,
+            context,
           ),
         ),
         const SizedBox(width: AppSizes.spacing8),
@@ -137,7 +140,8 @@ class SiteSummaryCard extends StatelessWidget {
             'Active',
             stats.activeSites.toString(),
             Icons.check_circle_outline,
-            AppColors.warning,
+            context.warningColor,
+            context,
           ),
         ),
       ],
@@ -149,6 +153,7 @@ class SiteSummaryCard extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
+    BuildContext context,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing8),
@@ -179,7 +184,7 @@ class SiteSummaryCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -193,7 +198,9 @@ class SiteSummaryCard extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
+    BuildContext context,
   ) {
+
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing6),
       decoration: BoxDecoration(
@@ -218,7 +225,7 @@ class SiteSummaryCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: AppSizes.fontSizeExtraSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
             maxLines: 1,

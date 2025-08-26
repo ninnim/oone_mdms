@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/season.dart';
 import '../common/blunest_data_table.dart';
@@ -16,6 +16,7 @@ class SeasonTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<Season>? data,
+    required BuildContext context,
   }) {
     return [
       // No. (Row Number)
@@ -32,10 +33,10 @@ class SeasonTableColumns {
             padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
             child: Text(
               '$rowNumber',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -48,7 +49,7 @@ class SeasonTableColumns {
         title: 'Name',
         sortable: true,
         flex: 2,
-        builder: (season) => _buildNameColumn(season),
+        builder: (season) => _buildNameColumn(season, context),
       ),
 
       // Description column
@@ -57,7 +58,7 @@ class SeasonTableColumns {
         title: 'Description',
         sortable: true,
         flex: 3,
-        builder: (season) => _buildDescriptionColumn(season),
+        builder: (season) => _buildDescriptionColumn(season, context),
       ),
 
       // Month Range column
@@ -66,7 +67,7 @@ class SeasonTableColumns {
         title: 'Month Range',
         sortable: false,
         flex: 3,
-        builder: (season) => _buildMonthRangeColumn(season),
+        builder: (season) => _buildMonthRangeColumn(season, context),
       ),
 
       // Status column
@@ -75,7 +76,7 @@ class SeasonTableColumns {
         title: 'Status',
         sortable: true,
         flex: 1,
-        builder: (season) => _buildStatusColumn(season),
+        builder: (season) => _buildStatusColumn(season, context),
       ),
 
       // Actions column
@@ -87,6 +88,7 @@ class SeasonTableColumns {
         flex: 1,
         alignment: Alignment.centerRight,
         builder: (season) => _buildActionsColumn(
+          context: context,
           season,
           onEdit: onEdit,
           onDelete: onDelete,
@@ -96,7 +98,7 @@ class SeasonTableColumns {
     ];
   }
 
-  static Widget _buildNameColumn(Season season) {
+  static Widget _buildNameColumn(Season season, BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
       child: Column(
@@ -104,10 +106,10 @@ class SeasonTableColumns {
         children: [
           Text(
             season.name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -116,14 +118,14 @@ class SeasonTableColumns {
     );
   }
 
-  static Widget _buildDescriptionColumn(Season season) {
+  static Widget _buildDescriptionColumn(Season season, BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
       child: Text(
         season.description,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
         ),
         overflow: TextOverflow.ellipsis,
         maxLines: 2,
@@ -131,14 +133,17 @@ class SeasonTableColumns {
     );
   }
 
-  static Widget _buildMonthRangeColumn(Season season) {
+  static Widget _buildMonthRangeColumn(Season season, BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-      child: SeasonSmartMonthChips.buildSmartMonthChips(season.monthRange),
+      child: SeasonSmartMonthChips.buildSmartMonthChips(
+        season.monthRange,
+        context,
+      ),
     );
   }
 
-  static Widget _buildStatusColumn(Season season) {
+  static Widget _buildStatusColumn(Season season, BuildContext context) {
     return Container(
       alignment: Alignment.centerLeft,
       child: StatusChip(
@@ -154,47 +159,48 @@ class SeasonTableColumns {
     Function(Season)? onEdit,
     Function(Season)? onDelete,
     Function(Season)? onView,
+    required BuildContext context,
   }) {
     return Container(
       alignment: Alignment.centerRight,
       height: AppSizes.spacing40,
       child: PopupMenuButton<String>(
-        icon: const Icon(
+        icon: Icon(
           Icons.more_vert,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           size: 16,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         ),
         itemBuilder: (context) => [
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'view',
             child: Row(
               children: [
-                Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                Icon(Icons.visibility, size: 16, color: context.primaryColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('View Details'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'edit',
             child: Row(
               children: [
-                Icon(Icons.edit, size: 16, color: AppColors.warning),
+                Icon(Icons.edit, size: 16, color: context.warningColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('Edit'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'delete',
             child: Row(
               children: [
-                Icon(Icons.delete, size: 16, color: AppColors.error),
+                Icon(Icons.delete, size: 16, color: context.errorColor),
                 SizedBox(width: AppSizes.spacing8),
-                Text('Delete', style: TextStyle(color: AppColors.error)),
+                Text('Delete', style: TextStyle(color: context.errorColor)),
               ],
             ),
           ),
@@ -224,8 +230,10 @@ class SeasonTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<Season>? data,
+    required BuildContext context,
   }) {
     return buildAllColumns(
+      context: context,
       onEdit: onEdit,
       onDelete: onDelete,
       onView: onView,
@@ -242,6 +250,7 @@ class SeasonTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<Season>? data,
+    required BuildContext context,
   }) {
     return [
       // No. (Row Number)
@@ -258,10 +267,10 @@ class SeasonTableColumns {
             padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
             child: Text(
               '$rowNumber',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -274,7 +283,7 @@ class SeasonTableColumns {
         title: 'Name',
         sortable: true,
         flex: 2,
-        builder: (season) => _buildNameColumn(season),
+        builder: (season) => _buildNameColumn(season, context),
       ),
 
       // Month Range column
@@ -283,7 +292,7 @@ class SeasonTableColumns {
         title: 'Month Range',
         sortable: false,
         flex: 3,
-        builder: (season) => _buildMonthRangeColumn(season),
+        builder: (season) => _buildMonthRangeColumn(season, context),
       ),
 
       // Status column
@@ -292,7 +301,7 @@ class SeasonTableColumns {
         title: 'Status',
         sortable: true,
         flex: 1,
-        builder: (season) => _buildStatusColumn(season),
+        builder: (season) => _buildStatusColumn(season, context),
       ),
 
       // Actions column
@@ -304,6 +313,7 @@ class SeasonTableColumns {
         flex: 1,
         alignment: Alignment.centerRight,
         builder: (season) => _buildActionsColumn(
+          context: context,
           season,
           onEdit: onEdit,
           onDelete: onDelete,

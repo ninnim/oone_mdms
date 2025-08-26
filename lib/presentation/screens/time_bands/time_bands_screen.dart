@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_band.dart';
@@ -76,17 +75,11 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
   bool _sortAscending = true;
 
   void _toggleSummaryCard() {
-    print(
-      '🔽 TimeBandsScreen: Manual summary card toggle - current: $_summaryCardCollapsed',
-    );
     setState(() {
       _summaryCardCollapsed = !_summaryCardCollapsed;
       // Reset the mobile tracking to prevent responsive logic from overriding manual changes
       _previousSummaryStateBeforeMobile = null;
     });
-    print(
-      '🔽 TimeBandsScreen: Summary card manually toggled to: $_summaryCardCollapsed',
-    );
   }
 
   @override
@@ -98,24 +91,16 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
     final isTablet =
         mediaQuery.size.width >= 768 && mediaQuery.size.width < 1024;
 
-    print(
-      '📱 TimeBandsScreen: Responsive check (mobile: $isMobile, kanban: $_isKanbanView, view: $_currentView, prevMode: $_previousViewModeBeforeMobile)',
-    );
-
     // Auto-collapse summary card on mobile, keep visible but allow toggle
     if (isMobile && !_summaryCardCollapsed) {
       // Save previous summary state before collapsing for mobile
       if (_previousSummaryStateBeforeMobile == null) {
         _previousSummaryStateBeforeMobile = _summaryCardCollapsed;
-        print(
-          '📱 TimeBandsScreen: Saving summary state for mobile: $_summaryCardCollapsed',
-        );
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
               _summaryCardCollapsed = true; // Default to collapsed on mobile
             });
-            print('📱 TimeBandsScreen: Auto-collapsed summary card for mobile');
           }
         });
       }
@@ -134,7 +119,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                   _previousSummaryStateBeforeMobile ?? false;
               _previousSummaryStateBeforeMobile = null; // Reset tracking
             });
-            print('📱 TimeBandsScreen: Auto-expanded summary card for desktop');
           }
         });
       }
@@ -147,9 +131,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
       if (_previousViewModeBeforeMobile == null &&
           _currentView != TimeBandViewMode.kanban) {
         _previousViewModeBeforeMobile = _currentView;
-        print(
-          '📱 TimeBandsScreen: Saved previous view mode: $_previousViewModeBeforeMobile',
-        );
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -157,7 +138,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
             _isKanbanView = true;
             _currentView = TimeBandViewMode.kanban;
           });
-          print('📱 TimeBandsScreen: AUTO-SWITCHED to kanban for mobile');
         }
       });
     }
@@ -172,16 +152,9 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
             _currentView = restoreViewMode;
             _previousViewModeBeforeMobile = null; // Reset tracking
           });
-          print(
-            '📱 TimeBandsScreen: AUTO-SWITCHED back to $restoreViewMode for desktop',
-          );
         }
       });
     }
-
-    print(
-      '📱 TimeBandsScreen: Responsive state updated (mobile: $isMobile, kanban: $_isKanbanView, view: $_currentView) - UI ONLY, no API calls',
-    );
   }
 
   @override
@@ -203,11 +176,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
     if (!_isInitialized) {
       _isInitialized = true;
       _loadInitialData();
-      print('🚀 TimeBandsScreen: Initial data load triggered');
-    } else {
-      print(
-        '📱 TimeBandsScreen: Dependencies changed (likely screen resize) - NO API call',
-      );
     }
   }
 
@@ -231,7 +199,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
         });
       }
     } catch (e) {
-      print('Warning: Failed to load seasons: $e');
+      // Silently handle season loading failure
     }
   }
 
@@ -244,7 +212,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
         });
       }
     } catch (e) {
-      print('Warning: Failed to load special days: $e');
+      // Silently handle special days loading failure
     }
   }
 
@@ -255,10 +223,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
     });
 
     try {
-      print(
-        '🔄 TimeBandsScreen: Loading time bands (page: $_currentPage, search: "$_searchQuery", formatted: "${_searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%'}")',
-      );
-
       final response = await _timeBandService!.getTimeBands(
         search: _searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%',
         offset: (_currentPage - 1) * _itemsPerPage,
@@ -273,16 +237,11 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
             _totalPages = (_totalItems / _itemsPerPage).ceil();
             _isLoading = false;
           });
-
-          print(
-            '✅ TimeBandsScreen: Loaded ${_timeBands.length} time bands (total: $_totalItems)',
-          );
         } else {
           setState(() {
             _errorMessage = response.message ?? 'Failed to load time bands';
             _isLoading = false;
           });
-          print('❌ TimeBandsScreen: Load failed: $_errorMessage');
         }
       }
     } catch (e) {
@@ -291,7 +250,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
           _errorMessage = 'Error loading time bands: $e';
           _isLoading = false;
         });
-        print('❌ TimeBandsScreen: Exception loading time bands: $e');
       }
     }
   }
@@ -340,9 +298,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
         setState(() {
           _currentPage = 1; // Reset to first page when search changes
         });
-        print(
-          '🔍 TimeBandsScreen: Search triggered for: "$query" (formatted: "%$query%")',
-        );
         _loadTimeBands(); // Trigger API call after delay
       }
     });
@@ -352,16 +307,9 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
     if (viewMode != null) {
       final isMobile = MediaQuery.of(context).size.width < 768;
 
-      print(
-        '🔄 TimeBandsScreen: View mode change requested to $viewMode (mobile: $isMobile, current: $_currentView)',
-      );
-
       // On mobile, always force kanban mode regardless of user choice
       if (isMobile) {
         if (viewMode != TimeBandViewMode.kanban) {
-          print(
-            '📱 TimeBandsScreen: Ignoring user choice on mobile - forcing kanban (user tried: $viewMode)',
-          );
           // Don't change anything, mobile should stay in kanban
           return;
         }
@@ -384,10 +332,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
         // This ensures their choice becomes the new "previous" mode
         _previousViewModeBeforeMobile = null;
       });
-
-      print(
-        '� TimeBandsScreen: View mode changed to $viewMode (kanban: $_isKanbanView)',
-      );
     }
   }
 
@@ -428,6 +372,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
 
   Future<void> _createTimeBand() async {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => TimeBandFormDialogEnhanced(
         onSaved: () {
@@ -464,25 +409,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
     }
   }
 
-  Future<void> _deleteSelectedTimeBands() async {
-    if (_selectedTimeBands.isEmpty) return;
-
-    final confirmed = await AppConfirmDialog.show(
-      context,
-      title: 'Delete Time Bands',
-      message:
-          'Are you sure you want to delete ${_selectedTimeBands.length} time band(s)?',
-      confirmText: 'Delete All',
-      confirmType: AppButtonType.danger,
-      icon: Icons.delete_outline,
-    );
-
-    if (confirmed == true) {
-      final ids = _selectedTimeBands.map((tb) => tb.id).toList();
-      await _performDeleteTimeBands(ids);
-    }
-  }
-
   Future<void> _performDeleteTimeBand(int id) async {
     setState(() => _isLoading = true);
 
@@ -508,38 +434,6 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
       if (mounted) {
         setState(() => _isLoading = false);
         AppToast.showError(context, error: 'Error deleting time band: $e');
-      }
-    }
-  }
-
-  Future<void> _performDeleteTimeBands(List<int> ids) async {
-    setState(() => _isLoading = true);
-
-    try {
-      final response = await _timeBandService!.deleteTimeBands(ids);
-
-      if (mounted) {
-        if (response.success) {
-          setState(() {
-            _selectedTimeBands.clear();
-          });
-          AppToast.showSuccess(
-            context,
-            message: 'Time bands deleted successfully',
-          );
-          await _loadTimeBands();
-        } else {
-          setState(() => _isLoading = false);
-          AppToast.showError(
-            context,
-            error: response.message ?? 'Failed to delete time bands',
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        AppToast.showError(context, error: 'Error deleting time bands: $e');
       }
     }
   }
@@ -585,7 +479,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
         final isMobile = screenWidth < 768;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.backgroundColor, //AppColors.background,
           body: SafeArea(
             child: Column(
               children: [
@@ -650,7 +544,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -671,7 +565,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                     children: [
                       Icon(
                         Icons.access_time,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -683,7 +577,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -695,7 +589,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                           _summaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -750,7 +644,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               );
             },
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -772,7 +666,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -807,7 +701,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -857,7 +751,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                   Icons.view_kanban,
                   size: 18,
                   color: _currentView == TimeBandViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -865,7 +759,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                   'Kanban View',
                   style: TextStyle(
                     color: _currentView == TimeBandViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -880,7 +774,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                   Icons.table_chart,
                   size: 18,
                   color: _currentView == TimeBandViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -888,7 +782,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
                   'Table View',
                   style: TextStyle(
                     color: _currentView == TimeBandViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -940,9 +834,9 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -958,7 +852,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Total Time Bands',
               _totalItems.toString(),
               Icons.access_time,
-              AppColors.primary,
+              context.primaryColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -967,7 +861,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Active',
               activeTimeBands.toString(),
               Icons.check_circle_outline,
-              AppColors.success,
+              context.successColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -976,7 +870,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Inactive',
               inactiveTimeBands.toString(),
               Icons.pause_circle_outline,
-              AppColors.error,
+              context.errorColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -985,7 +879,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Total Attributes',
               totalAttributes.toString(),
               Icons.settings,
-              AppColors.info,
+              context.infoColor,
             ),
           ),
         ],
@@ -1001,9 +895,9 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -1019,7 +913,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Total',
               _totalItems.toString(),
               Icons.access_time,
-              AppColors.primary,
+              context.primaryColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing8),
@@ -1028,7 +922,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Active',
               activeTimeBands.toString(),
               Icons.check_circle_outline,
-              AppColors.success,
+              context.successColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing8),
@@ -1037,7 +931,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Inactive',
               inactiveTimeBands.toString(),
               Icons.pause_circle_outline,
-              AppColors.error,
+              context.errorColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing8),
@@ -1046,7 +940,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
               'Attributes',
               totalAttributes.toString(),
               Icons.settings,
-              AppColors.info,
+              context.infoColor,
             ),
           ),
         ],
@@ -1087,9 +981,9 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
           const SizedBox(height: AppSizes.spacing8),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor, //AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1128,7 +1022,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
             title,
             style: TextStyle(
               fontSize: AppSizes.fontSizeExtraSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
@@ -1241,6 +1135,7 @@ class _TimeBandsScreenState extends State<TimeBandsScreen>
 
   List<BluNestTableColumn<TimeBand>> _buildTableColumns() {
     return TimeBandTableColumns.buildAllColumns(
+      context: context,
       sortBy: _sortBy,
       sortAscending: _sortAscending,
       onEdit: _editTimeBand,

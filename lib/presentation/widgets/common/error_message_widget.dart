@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/error_translation_service.dart';
 
@@ -50,7 +50,7 @@ class ErrorMessageWidget extends StatelessWidget {
         children: [
           Icon(
             Icons.error_outline,
-            color: AppColors.error,
+            color: Theme.of(context).colorScheme.error,
             size: AppSizes.iconSmall,
           ),
           const SizedBox(width: AppSizes.spacing8),
@@ -58,7 +58,7 @@ class ErrorMessageWidget extends StatelessWidget {
             child: Text(
               message,
               style: TextStyle(
-                color: AppColors.error,
+                color: Theme.of(context).colorScheme.error,
                 fontSize: AppSizes.fontSizeSmall,
               ),
             ),
@@ -68,7 +68,7 @@ class ErrorMessageWidget extends StatelessWidget {
             TextButton(
               onPressed: onRetry,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.error,
+                foregroundColor: Theme.of(context).colorScheme.error,
                 minimumSize: const Size(0, 32),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSizes.spacing8,
@@ -94,10 +94,10 @@ class ErrorMessageWidget extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         border: Border.all(
-          color: AppColors.error.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -109,7 +109,7 @@ class ErrorMessageWidget extends StatelessWidget {
             children: [
               Icon(
                 Icons.error_outline,
-                color: AppColors.error,
+                color: Theme.of(context).colorScheme.error,
                 size: AppSizes.iconMedium,
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -120,7 +120,7 @@ class ErrorMessageWidget extends StatelessWidget {
                     Text(
                       'Error',
                       style: TextStyle(
-                        color: AppColors.error,
+                        color: Theme.of(context).colorScheme.error,
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -148,8 +148,8 @@ class ErrorMessageWidget extends StatelessWidget {
                 icon: const Icon(Icons.refresh, size: AppSizes.iconSmall),
                 label: Text(retryButtonText ?? 'Try Again'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: BorderSide(color: AppColors.error),
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
                   padding: const EdgeInsets.symmetric(
                     vertical: AppSizes.spacing12,
                   ),
@@ -195,7 +195,7 @@ class ErrorSnackBar {
             ),
           ],
         ),
-        backgroundColor: AppColors.error,
+        backgroundColor: Theme.of(context).colorScheme.error,
         duration: duration,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(AppSizes.spacing16),
@@ -234,14 +234,14 @@ class ErrorDialog {
           children: [
             Icon(
               Icons.error_outline,
-              color: AppColors.error,
+              color: Theme.of(context).colorScheme.error,
               size: AppSizes.iconMedium,
             ),
             const SizedBox(width: AppSizes.spacing8),
             Text(
               title ?? 'Error',
               style: TextStyle(
-                color: AppColors.error,
+                color: Theme.of(context).colorScheme.error,
                 fontSize: AppSizes.fontSizeLarge,
                 fontWeight: FontWeight.w600,
               ),

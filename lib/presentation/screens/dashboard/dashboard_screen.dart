@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/status_chip.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../widgets/common/theme_switch.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/constants/app_colors.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -15,9 +17,9 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildWelcomeHeader(),
+          _buildWelcomeHeader(context),
           const SizedBox(height: AppSizes.spacing24),
-          _buildStatsGrid(),
+          _buildStatsGrid(context),
           const SizedBox(height: AppSizes.spacing24),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,9 +28,9 @@ class DashboardScreen extends StatelessWidget {
                 flex: 2,
                 child: Column(
                   children: [
-                    _buildRecentDevicesCard(),
+                    _buildRecentDevicesCard(context),
                     const SizedBox(height: AppSizes.spacing24),
-                    _buildDeviceStatusChart(),
+                    _buildDeviceStatusChart(context),
                   ],
                 ),
               ),
@@ -36,9 +38,9 @@ class DashboardScreen extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    _buildQuickActions(),
+                    _buildQuickActions(context),
                     const SizedBox(height: AppSizes.spacing24),
-                    _buildSystemAlerts(),
+                    _buildSystemAlerts(context),
                   ],
                 ),
               ),
@@ -49,7 +51,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWelcomeHeader() {
+  Widget _buildWelcomeHeader(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -58,30 +60,31 @@ class DashboardScreen extends StatelessWidget {
             children: [
               Text(
                 'Device Management Dashboard',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(height: AppSizes.spacing8),
               Text(
                 'Welcome back! Here\'s an overview of your device network.',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
             ],
           ),
         ),
+        const ThemeSwitch(isCompact: true, showLabel: false),
         // AppButton(
         //   text: 'Add Device',
         //   type: AppButtonType.primary,
         //   icon: const Icon(
         //     Icons.add,
         //     size: AppSizes.iconSmall,
-        //     color: AppColors.textInverse,
+        //     color: Theme.of(context).colorScheme.onInverseSurface,
         //   ),
         //   onPressed: () {
         //     // Navigate to devices screen or show add modal
@@ -91,11 +94,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid() {
+  Widget _buildStatsGrid(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
+            context,
             'Total Devices',
             '1,247',
             Icons.electrical_services,
@@ -106,6 +110,7 @@ class DashboardScreen extends StatelessWidget {
         const SizedBox(width: AppSizes.spacing16),
         Expanded(
           child: _buildStatCard(
+            context,
             'Active Devices',
             '1,189',
             Icons.power,
@@ -116,6 +121,7 @@ class DashboardScreen extends StatelessWidget {
         const SizedBox(width: AppSizes.spacing16),
         Expanded(
           child: _buildStatCard(
+            context,
             'Offline Devices',
             '58',
             Icons.power_off,
@@ -126,6 +132,7 @@ class DashboardScreen extends StatelessWidget {
         const SizedBox(width: AppSizes.spacing16),
         Expanded(
           child: _buildStatCard(
+            context,
             'Device Groups',
             '23',
             Icons.group_work,
@@ -138,6 +145,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String title,
     String value,
     IconData icon,
@@ -169,44 +177,44 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: AppSizes.spacing16),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           const SizedBox(height: AppSizes.spacing4),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: AppSizes.spacing8),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 12, color: context.textTertiaryColor),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentDevicesCard() {
+  Widget _buildRecentDevicesCard(BuildContext context) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'Recent Devices',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const Spacer(),
@@ -214,18 +222,21 @@ class DashboardScreen extends StatelessWidget {
                 onPressed: () {
                   // Navigate to devices screen
                 },
-                child: const Text('View All'),
+                child: Text('View All'),
               ),
             ],
           ),
           const SizedBox(height: AppSizes.spacing16),
-          ...List.generate(5, (index) => _buildRecentDeviceItem(index)),
+          ...List.generate(
+            5,
+            (index) => _buildRecentDeviceItem(context, index),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentDeviceItem(int index) {
+  Widget _buildRecentDeviceItem(BuildContext context, int index) {
     final devices = [
       {
         'serial': 'SN000219151707',
@@ -264,7 +275,7 @@ class DashboardScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
       padding: const EdgeInsets.all(AppSizes.spacing12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
       child: Row(
@@ -288,17 +299,19 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Text(
                   device['name']!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSizes.spacing4),
                 Text(
                   '${device['serial']!} • ${device['location']!}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
               ],
@@ -314,17 +327,17 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceStatusChart() {
+  Widget _buildDeviceStatusChart(BuildContext context) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Device Status Overview',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSizes.spacing24),
@@ -332,6 +345,7 @@ class DashboardScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildStatusMetric(
+                  context,
                   'Commissioned',
                   '852',
                   AppColors.success,
@@ -340,6 +354,7 @@ class DashboardScreen extends StatelessWidget {
               ),
               Expanded(
                 child: _buildStatusMetric(
+                  context,
                   'Offline/None',
                   '337',
                   AppColors.secondary,
@@ -348,6 +363,7 @@ class DashboardScreen extends StatelessWidget {
               ),
               Expanded(
                 child: _buildStatusMetric(
+                  context,
                   'Renovation',
                   '58',
                   AppColors.warning,
@@ -362,6 +378,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildStatusMetric(
+    BuildContext context,
     String status,
     String count,
     Color color,
@@ -390,37 +407,41 @@ class DashboardScreen extends StatelessWidget {
         const SizedBox(height: AppSizes.spacing8),
         Text(
           count,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: AppSizes.spacing4),
         Text(
           status,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          ),
           textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BuildContext context) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Quick Actions',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSizes.spacing16),
           _buildQuickActionItem(
+            context,
             'Add New Device',
             'Register a new device in the system',
             Icons.add_circle_outline,
@@ -428,6 +449,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildQuickActionItem(
+            context,
             'Device Groups',
             'Manage device groupings and categories',
             Icons.group_work,
@@ -435,6 +457,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildQuickActionItem(
+            context,
             'System Reports',
             'Generate performance and usage reports',
             Icons.analytics,
@@ -442,6 +465,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildQuickActionItem(
+            context,
             'Device Map',
             'View devices on interactive map',
             Icons.map,
@@ -453,6 +477,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildQuickActionItem(
+    BuildContext context,
     String title,
     String subtitle,
     IconData icon,
@@ -461,7 +486,7 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
       child: Row(
@@ -481,47 +506,50 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSizes.spacing4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(
+          Icon(
             Icons.arrow_forward_ios,
             size: 16,
-            color: AppColors.textTertiary,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSystemAlerts() {
+  Widget _buildSystemAlerts(BuildContext context) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'System Alerts',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSizes.spacing16),
           _buildAlertItem(
+            context,
             'Device Offline',
             '3 devices have been offline for >24h',
             Icons.warning,
@@ -530,6 +558,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildAlertItem(
+            context,
             'High Usage',
             'Unusual power consumption detected',
             Icons.bolt,
@@ -538,6 +567,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildAlertItem(
+            context,
             'Maintenance Due',
             '15 devices scheduled for maintenance',
             Icons.build,
@@ -557,6 +587,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildAlertItem(
+    BuildContext context,
     String title,
     String message,
     IconData icon,
@@ -580,25 +611,29 @@ class DashboardScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSizes.spacing4),
               Text(
                 message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
               const SizedBox(height: AppSizes.spacing4),
               Text(
                 time,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textTertiary,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.5),
                 ),
               ),
             ],

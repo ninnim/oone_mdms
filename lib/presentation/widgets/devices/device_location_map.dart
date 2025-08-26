@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/models/address.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 
 class DeviceLocationMap extends StatefulWidget {
   final Address? address;
@@ -22,19 +23,26 @@ class _DeviceLocationMapState extends State<DeviceLocationMap> {
       return Container(
         height: 300,
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: context.surfaceVariantColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: context.borderColor),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.location_off, size: 48, color: Colors.grey),
-              SizedBox(height: 8),
+              Icon(
+                Icons.location_off,
+                size: 48,
+                color: context.textSecondaryColor,
+              ),
+              const SizedBox(height: 8),
               Text(
                 'No location data available',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+                style: TextStyle(
+                  color: context.textSecondaryColor,
+                  fontSize: 16,
+                ),
               ),
             ],
           ),
@@ -51,7 +59,7 @@ class _DeviceLocationMapState extends State<DeviceLocationMap> {
       height: 300,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: context.borderColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -95,18 +103,18 @@ class _DeviceLocationMapState extends State<DeviceLocationMap> {
     return Container(
       width: double.infinity,
       height: 300,
-      color: Colors.grey[100],
+      color: context.surfaceVariantColor,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.map, size: 48, color: Colors.grey),
+          Icon(Icons.map, size: 48, color: context.textSecondaryColor),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Map View',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.grey,
+              color: context.textSecondaryColor,
             ),
           ),
           const SizedBox(height: 4),
@@ -115,7 +123,7 @@ class _DeviceLocationMapState extends State<DeviceLocationMap> {
             Text(
               'Lat: ${widget.address!.latitude!.toStringAsFixed(6)}, '
               'Lng: ${widget.address!.longitude!.toStringAsFixed(6)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: context.textSecondaryColor),
             ),
           const SizedBox(height: 12),
           ElevatedButton.icon(

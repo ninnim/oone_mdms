@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/device.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 
 class DeviceSummaryCard extends StatelessWidget {
   final List<Device> devices;
@@ -16,12 +17,12 @@ class DeviceSummaryCard extends StatelessWidget {
       // margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: context.shadowColor,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -34,7 +35,7 @@ class DeviceSummaryCard extends StatelessWidget {
           //   children: [
           //     Icon(
           //       Icons.dashboard_outlined,
-          //       color: AppColors.primary,
+          //       color: context.primaryColor,
           //       size: 24,
           //     ),
           //     const SizedBox(width: AppSizes.spacing12),
@@ -43,7 +44,7 @@ class DeviceSummaryCard extends StatelessWidget {
           //       style: TextStyle(
           //         fontSize: AppSizes.fontSizeLarge,
           //         fontWeight: FontWeight.bold,
-          //         color: AppColors.textPrimary,
+          //         color: context.textPrimaryColor,
           //       ),
           //     ),
           //   ],
@@ -56,7 +57,8 @@ class DeviceSummaryCard extends StatelessWidget {
                   'Total Devices',
                   stats.totalDevices.toString(),
                   Icons.devices,
-                  AppColors.primary,
+                  context.primaryColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -65,7 +67,8 @@ class DeviceSummaryCard extends StatelessWidget {
                   'Commissioned',
                   stats.commissionedDevices.toString(),
                   Icons.check_circle_outline,
-                  AppColors.success,
+                  context.successColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -74,7 +77,8 @@ class DeviceSummaryCard extends StatelessWidget {
                   'Discommissioned / None',
                   stats.discommissionedDevices.toString(),
                   Icons.electric_meter,
-                  AppColors.warning,
+                  context.warningColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -83,7 +87,8 @@ class DeviceSummaryCard extends StatelessWidget {
                   'Connected',
                   stats.connectedDevices.toString(),
                   Icons.link,
-                  AppColors.info,
+                  context.infoColor,
+                  context,
                 ),
               ),
             ],
@@ -98,6 +103,7 @@ class DeviceSummaryCard extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
+    BuildContext context,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing8),
@@ -125,10 +131,11 @@ class DeviceSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.spacing8),
           Text(
+            overflow: TextOverflow.ellipsis,
             title,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),

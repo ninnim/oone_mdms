@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/chart_type.dart';
 import '../common/app_card.dart';
@@ -256,25 +258,13 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
       return AppCard(
         child: Container(
           height: 500,
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Loading Metrics...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+          child: Center(
+            child: AppLottieStateWidget.loading(lottieSize: 80),
+
+            // CircularProgressIndicator(
+            //   strokeWidth: 3,
+            //   valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            // ),
           ),
         ),
       );
@@ -313,7 +303,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
       child:
           //Row(
           // children: [
-          //   const Text(
+          //   Text(
           //     'Metrics Visualizationss',
           //     style: TextStyle(
           //       fontSize: AppSie,
@@ -348,8 +338,8 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   icon: const Icon(Icons.download),
                   tooltip: 'Export Chart',
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.textSecondary,
+                    backgroundColor: context.surfaceColor,
+                    foregroundColor: context.textSecondaryColor,
                   ),
                 ),
               const SizedBox(width: AppSizes.spacing8),
@@ -364,9 +354,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.refresh, size: 16),
-                  label: const Text('Refresh'),
+                  label: Text('Refresh'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.primaryColor,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
@@ -384,7 +374,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
 
   Widget _buildEmptyState() {
     return AppCard(
-      child: const SizedBox(
+      child: SizedBox(
         height: 400,
         child: Center(
           child: Column(
@@ -393,7 +383,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
               Icon(
                 Icons.analytics_outlined,
                 size: 64,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
               SizedBox(height: AppSizes.spacing16),
               Text(
@@ -401,13 +391,16 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
               SizedBox(height: AppSizes.spacing8),
               Text(
                 'Load data to view interactive charts and analytics',
-                style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.textSecondaryColor,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -430,12 +423,12 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'Chart Fields',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
               const Spacer(),
@@ -443,13 +436,13 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: _selectedFields.isEmpty
-                      ? Colors.grey.shade200
-                      : AppColors.primary.withOpacity(0.1),
+                      ? context.borderColor
+                      : context.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _selectedFields.isEmpty
-                        ? Colors.grey.shade300
-                        : AppColors.primary.withOpacity(0.3),
+                        ? context.borderColor
+                        : context.primaryColor.withOpacity(0.3),
                   ),
                 ),
                 child: Text(
@@ -458,8 +451,8 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                     fontSize: 9,
                     fontWeight: FontWeight.w500,
                     color: _selectedFields.isEmpty
-                        ? Colors.grey.shade600
-                        : AppColors.primary,
+                        ? context.textSecondaryColor
+                        : context.primaryColor,
                   ),
                 ),
               ),
@@ -471,14 +464,14 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
             runSpacing: AppSizes.spacing6,
             children: availableFields.map((field) {
               final isSelected = _selectedFields.contains(field);
-              final color = _fieldColors[field] ?? AppColors.primary;
+              final color = _fieldColors[field] ?? context.primaryColor;
 
               return Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: isSelected ? color : Colors.grey.shade100,
+                  color: isSelected ? color : context.surfaceVariantColor,
                   border: Border.all(
-                    color: isSelected ? color : Colors.grey.shade300,
+                    color: isSelected ? color : context.borderColor,
                     width: 1,
                   ),
                 ),
@@ -517,7 +510,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             fontWeight: FontWeight.w500,
                             color: isSelected
                                 ? Colors.white
-                                : Colors.grey.shade700,
+                                : context.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -538,17 +531,17 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
         child: Container(
           height: 350,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.show_chart,
                   size: 48,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
                 SizedBox(height: AppSizes.spacing12),
                 Text(
@@ -556,7 +549,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: context.textSecondaryColor,
                   ),
                 ),
               ],
@@ -577,19 +570,19 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Metrics Visualization',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     Text(
                       'Total Points: ${_prepareChartData().length}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     ),
                   ],
@@ -603,11 +596,11 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Points: ',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -618,7 +611,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                         controller: _pageSizeController,
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -629,29 +622,29 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(6),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
+                            borderSide: BorderSide(
+                              color: context.borderColor,
                               width: 1,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(6),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
+                            borderSide: BorderSide(
+                              color: context.borderColor,
                               width: 1,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(6),
-                            borderSide: const BorderSide(
-                              color: AppColors.primary,
+                            borderSide: BorderSide(
+                              color: context.primaryColor,
                               width: 2,
                             ),
                           ),
                           hintText: _pageSize == 0 ? 'All' : '${_pageSize}',
-                          hintStyle: const TextStyle(
+                          hintStyle: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: context.textSecondaryColor,
                           ),
                         ),
                         onChanged: (value) {
@@ -738,7 +731,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
             Wrap(
               spacing: AppSizes.spacing16,
               children: _selectedFields.map((field) {
-                final color = _fieldColors[field] ?? AppColors.primary;
+                final color = _fieldColors[field] ?? context.primaryColor;
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -753,9 +746,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                     const SizedBox(width: AppSizes.spacing4),
                     Text(
                       _formatFieldName(field),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     ),
                   ],
@@ -776,9 +769,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 height:
                     300, // Increased height to accommodate vertical timestamps
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -816,8 +809,8 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                           opacity: 1.0 - _animation.value,
                           duration: const Duration(milliseconds: 200),
                           child: Container(
-                            color: Colors.white.withOpacity(0.8),
-                            child: const Center(
+                            color: context.surfaceColor.withOpacity(0.8),
+                            child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -827,7 +820,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppColors.primary,
+                                        context.primaryColor,
                                       ),
                                     ),
                                   ),
@@ -836,7 +829,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                                     'Updating chart...',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: AppColors.textSecondary,
+                                      color: context.textSecondaryColor,
                                     ),
                                   ),
                                 ],
@@ -859,10 +852,10 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
     final chartData = _prepareChartData();
 
     if (chartData.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No valid chart data available',
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 14, color: context.textSecondaryColor),
         ),
       );
     }
@@ -901,7 +894,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
               drawVerticalLine: false,
               horizontalInterval: null,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: AppColors.border,
+                color: context.borderColor,
                 strokeWidth: 1,
                 dashArray: [3, 3],
               ),
@@ -932,9 +925,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             angle: -1.5708, // -90 degrees in radians (π/2)
                             child: Text(
                               _formatEnhancedTimestamp(timestamp),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondaryColor,
                               ),
                             ),
                           ),
@@ -953,9 +946,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   getTitlesWidget: (value, meta) {
                     return Text(
                       _formatNumber(value),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     );
                   },
@@ -969,7 +962,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
             lineBarsData: spots.entries.map((entry) {
               final field = entry.key;
               final fieldSpots = entry.value;
-              final color = _fieldColors[field] ?? AppColors.primary;
+              final color = _fieldColors[field] ?? context.primaryColor;
 
               return LineChartBarData(
                 spots: fieldSpots,
@@ -1019,7 +1012,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             spot.barIndex,
                           );
                           final color =
-                              _fieldColors[field] ?? AppColors.primary;
+                              _fieldColors[field] ?? context.primaryColor;
 
                           return LineTooltipItem(
                             '${_formatFieldName(field)}\n',
@@ -1031,7 +1024,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             children: [
                               TextSpan(
                                 text: '${_formatTableNumber(spot.y)}\n',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
@@ -1039,7 +1032,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                               ),
                               TextSpan(
                                 text: _formatFullTimestamp(timestamp),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white70,
                                   fontWeight: FontWeight.w400,
                                   fontSize: 10,
@@ -1102,7 +1095,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
           final average = values.reduce((a, b) => a + b) / values.length;
           maxY = math.max(maxY, average);
 
-          final color = _fieldColors[field] ?? AppColors.primary;
+          final color = _fieldColors[field] ?? context.primaryColor;
 
           rods.add(
             BarChartRodData(
@@ -1171,7 +1164,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
 
                     return BarTooltipItem(
                       '${_formatFieldName(field)}\n${_formatTableNumber(rod.toY)}$timeRange',
-                      const TextStyle(
+                      TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
@@ -1214,9 +1207,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             angle: -1.5708, // -90 degrees in radians (π/2)
                             child: Text(
                               _formatEnhancedTimestamp(timestamp),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondaryColor,
                               ),
                             ),
                           ),
@@ -1235,9 +1228,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   getTitlesWidget: (value, meta) {
                     return Text(
                       _formatNumber(value),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     );
                   },
@@ -1249,7 +1242,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
               drawVerticalLine: false,
               horizontalInterval: null,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: AppColors.border.withOpacity(0.3),
+                color: context.borderColor.withOpacity(0.3),
                 strokeWidth: 1,
                 dashArray: [3, 3],
               ),
@@ -1285,7 +1278,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
               drawVerticalLine: false,
               horizontalInterval: null,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: AppColors.border.withOpacity(0.3),
+                color: context.borderColor.withOpacity(0.3),
                 strokeWidth: 1,
                 dashArray: [3, 3],
               ),
@@ -1316,9 +1309,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             angle: -1.5708, // -90 degrees in radians (π/2)
                             child: Text(
                               _formatEnhancedTimestamp(timestamp),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondaryColor,
                               ),
                             ),
                           ),
@@ -1337,9 +1330,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   getTitlesWidget: (value, meta) {
                     return Text(
                       _formatNumber(value),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     );
                   },
@@ -1353,7 +1346,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
             lineBarsData: spots.entries.map((entry) {
               final field = entry.key;
               final fieldSpots = entry.value;
-              final color = _fieldColors[field] ?? AppColors.primary;
+              final color = _fieldColors[field] ?? context.primaryColor;
 
               return LineChartBarData(
                 spots: fieldSpots,
@@ -1399,7 +1392,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             spot.barIndex,
                           );
                           final color =
-                              _fieldColors[field] ?? AppColors.primary;
+                              _fieldColors[field] ?? context.primaryColor;
 
                           return LineTooltipItem(
                             '${_formatFieldName(field)}\n',
@@ -1411,7 +1404,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                             children: [
                               TextSpan(
                                 text: '${_formatTableNumber(spot.y)}\n',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
@@ -1419,7 +1412,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                               ),
                               TextSpan(
                                 text: _formatFullTimestamp(timestamp),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white70,
                                   fontWeight: FontWeight.w400,
                                   fontSize: 10,
@@ -1457,12 +1450,12 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Metrics Summary',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         const SizedBox(height: AppSizes.spacing16),
@@ -1472,7 +1465,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
             children: stats.entries.map((entry) {
               final field = entry.key;
               final fieldStats = entry.value;
-              final color = _fieldColors[field] ?? AppColors.primary;
+              final color = _fieldColors[field] ?? context.primaryColor;
 
               return Container(
                 margin: const EdgeInsets.only(right: AppSizes.spacing16),
@@ -1497,15 +1490,16 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
       width: 220,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.backgroundColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+          AppSizes.shadowSmall,
+          // BoxShadow(
+          //   color:  Colors.black.withOpacity(0.04),
+          //   blurRadius: 8,
+          //   offset: const Offset(0, 2),
+          // ),
         ],
       ),
       child: Column(
@@ -1547,7 +1541,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   'Average',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey.shade600,
+                    color: context.textSecondaryColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1577,7 +1571,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                       'Min',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Colors.grey.shade600,
+                        color: context.textSecondaryColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1601,7 +1595,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                       'Max',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Colors.grey.shade600,
+                        color: context.textSecondaryColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1634,7 +1628,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 '${(stats['count'] ?? 0.0).toInt()} points',
                 style: TextStyle(
                   fontSize: 9,
-                  color: Colors.grey.shade600,
+                  color: context.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),

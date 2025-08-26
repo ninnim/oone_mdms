@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 
 enum DeviceViewMode { table, kanban, map }
 
@@ -79,9 +79,9 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
   Widget _buildMainToolbar() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Row(
         children: [
@@ -111,7 +111,9 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
             icon: Icon(
               _showFilters ? Icons.filter_list : Icons.filter_list_outlined,
               size: AppSizes.iconMedium,
-              color: _showFilters ? AppColors.primary : AppColors.textSecondary,
+              color: _showFilters
+                  ? context.primaryColor
+                  : context.textSecondaryColor,
             ),
             tooltip: 'Filters',
           ),
@@ -122,7 +124,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
           Container(
             height: AppSizes.buttonHeightSmall,
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.borderColor),
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             ),
             child: Row(
@@ -194,7 +196,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
               IconButton(
                 onPressed: widget.onRefresh,
                 icon: const Icon(Icons.refresh, size: AppSizes.iconMedium),
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
                 tooltip: 'Refresh',
               ),
 
@@ -206,7 +208,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
                     Icons.file_download,
                     size: AppSizes.iconMedium,
                   ),
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                   tooltip: 'Export',
                 ),
 
@@ -218,7 +220,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
                     Icons.file_upload,
                     size: AppSizes.iconMedium,
                   ),
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                   tooltip: 'Import',
                 ),
 
@@ -236,7 +238,7 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
 
               //   onPressed: widget.onAddDevice,
               //   icon: const Icon(Icons.add, size: AppSizes.iconSmall),
-              //   label: const Text('Add Device'),
+              //   label: Text('Add Device'),
               //   style: ElevatedButton.styleFrom(
               //     backgroundColor: AppColors.primary,
               //     foregroundColor: AppColors.surface,
@@ -264,15 +266,14 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
       height: AppSizes.buttonHeightSmall,
       width: AppSizes.buttonHeightSmall,
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : Colors.transparent,
+        color: isSelected ? context.primaryColor : Colors.transparent,
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
       ),
       child: IconButton(
         onPressed: () => widget.onViewModeChanged(mode),
         icon: Icon(
-          
           icon,
-          color: isSelected ? AppColors.surface : AppColors.textSecondary,
+          color: isSelected ? context.surfaceColor : context.textSecondaryColor,
           size: AppSizes.iconMedium,
         ),
         tooltip: tooltip,
@@ -283,9 +284,9 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
   Widget _buildFiltersPanel() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -339,9 +340,9 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
               widget.onLinkStatusFilterChanged(null);
             },
             icon: const Icon(Icons.clear),
-            label: const Text('Clear Filters'),
+            label: Text('Clear Filters'),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
+              foregroundColor: context.textSecondaryColor,
             ),
           ),
         ],
@@ -360,10 +361,10 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
+            color: context.textSecondaryColor,
           ),
         ),
         const SizedBox(height: AppSizes.spacing4),
@@ -373,12 +374,12 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
             value: value ?? 'All',
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: context.borderColor),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.spacing12,
@@ -398,19 +399,19 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
   Widget _buildColumnSettings() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Show/Hide Columns',
             style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           const SizedBox(height: AppSizes.spacing12),
@@ -433,8 +434,8 @@ class _DeviceFiltersAndActionsState extends State<DeviceFiltersAndActions> {
                   }
                   widget.onColumnVisibilityChanged(newHiddenColumns);
                 },
-                selectedColor: AppColors.primary.withOpacity(0.2),
-                checkmarkColor: AppColors.primary,
+                selectedColor: context.primaryColor.withOpacity(0.2),
+                checkmarkColor: context.primaryColor,
               );
             }).toList(),
           ),

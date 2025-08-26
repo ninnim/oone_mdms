@@ -13,7 +13,7 @@ import '../../widgets/seasons/season_form_dialog.dart';
 import '../../widgets/seasons/season_table_columns.dart';
 import '../../widgets/seasons/season_summary_card.dart';
 import '../../widgets/seasons/seasons_kanban_view.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/models/season.dart';
@@ -178,10 +178,6 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
     });
 
     try {
-      print(
-        '🔄 SeasonsScreen: Loading seasons (page: $_currentPage, search: "$_searchQuery", formatted: "${_searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%'}")',
-      );
-
       final response = await _seasonService!.getSeasons(
         search: _searchQuery.isNotEmpty ? '%$_searchQuery%' : '%%',
         offset: (_currentPage - 1) * _itemsPerPage,
@@ -201,23 +197,17 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
 
         // Apply any existing sorting
         _applySorting();
-
-        print(
-          '✅ SeasonsScreen: Loaded ${_seasons.length} seasons (total: $_totalItems)',
-        );
       } else {
         setState(() {
           _errorMessage = response.message ?? 'Failed to load seasons';
           _isLoading = false;
         });
-        print('❌ SeasonsScreen: Load failed: $_errorMessage');
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'Error loading seasons: $e';
         _isLoading = false;
       });
-      print('❌ SeasonsScreen: Exception loading seasons: $e');
     }
   }
 
@@ -488,7 +478,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
     final isMobile = screenWidth < 768;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -528,7 +518,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
             onRefresh: _loadSeasons,
             selectedStatus: _selectedStatus,
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -571,7 +561,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor, // AppColors.surface,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -592,7 +582,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
                     children: [
                       Icon(
                         Icons.calendar_today,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -604,7 +594,8 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context
+                                    .textPrimaryColor, //AppColors.textPrimary,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -620,7 +611,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
                           _summaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -669,7 +660,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -704,7 +695,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -754,7 +745,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
                   Icons.view_kanban,
                   size: 18,
                   color: _currentView == SeasonViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -762,7 +753,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
                   'Kanban View',
                   style: TextStyle(
                     color: _currentView == SeasonViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -777,7 +768,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
                   Icons.table_chart,
                   size: 18,
                   color: _currentView == SeasonViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -785,7 +776,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
                   'Table View',
                   style: TextStyle(
                     color: _currentView == SeasonViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -864,6 +855,7 @@ class _SeasonsScreenState extends State<SeasonsScreen> with ResponsiveMixin {
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       child: BluNestDataTable<Season>(
         columns: SeasonTableColumns.buildAllColumns(
+          context: context,
           onEdit: _editSeason,
           onDelete: _handleDeleteSeason,
           onView: _viewSeasonDetails,

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 
 class AppCard extends StatelessWidget {
   final Widget child;
@@ -24,8 +24,8 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final card = Card(
       elevation: elevation ?? 1,
-      color: backgroundColor ?? AppColors.surface,
-      shadowColor: AppColors.textSecondary.withOpacity(0.1),
+      color: backgroundColor ?? context.surfaceColor,
+      shadowColor: context.textSecondaryColor.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius:
             borderRadius ?? BorderRadius.circular(AppSizes.radiusLarge),
@@ -77,19 +77,19 @@ class AppCardHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: AppSizes.spacing4),
                 Text(
                   subtitle!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
-                    color: AppColors.textSecondary,
+                    color: context.textSecondaryColor,
                   ),
                 ),
               ],
@@ -134,7 +134,7 @@ class AppCardDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: height ?? 1,
-      color: color ?? AppColors.border,
+      color: color ?? context.borderColor,
       margin: const EdgeInsets.symmetric(vertical: AppSizes.spacing12),
     );
   }

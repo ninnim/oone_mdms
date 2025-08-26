@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/models/address.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../common/app_card.dart';
 
 class DeviceLocationViewer extends StatefulWidget {
@@ -19,11 +20,21 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
   final MapController _mapController = MapController();
   late LatLng _deviceLocation;
   List<Marker> _markers = [];
+  bool _markersInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_markersInitialized) {
+      _createMarker();
+      _markersInitialized = true;
+    }
   }
 
   void _initializeLocation() {
@@ -37,8 +48,6 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
       // Default location (Phnom Penh, Cambodia)
       _deviceLocation = const LatLng(11.5564, 104.9282);
     }
-
-    _createMarker();
   }
 
   void _createMarker() {
@@ -49,12 +58,17 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
         height: 50,
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: context.primaryColor,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? context.surfaceColor
+                  : Colors.white,
+              width: 3,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: context.shadowColor,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -69,24 +83,6 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
   bool get _hasValidLocation {
     return widget.address?.latitude != null &&
         widget.address?.longitude != null;
-  }
-
-  String get _locationText {
-    if (!_hasValidLocation) {
-      return 'Location not available';
-    }
-
-    return widget.addressText?.isNotEmpty == true
-        ? widget.addressText!
-        : widget.address!.street ?? 'Unknown address';
-  }
-
-  String get _coordinatesText {
-    if (!_hasValidLocation) {
-      return 'Coordinates not available';
-    }
-
-    return '${widget.address!.latitude!.toStringAsFixed(6)}, ${widget.address!.longitude!.toStringAsFixed(6)}';
   }
 
   @override
@@ -107,7 +103,9 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: Theme.of(context).brightness == Brightness.dark
+                      ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.mdms_clone',
                 ),
                 MarkerLayer(markers: _markers),
@@ -115,7 +113,7 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
             )
           : Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: context.surfaceVariantColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -125,21 +123,24 @@ class _DeviceLocationViewerState extends State<DeviceLocationViewer> {
                     Icon(
                       Icons.location_off,
                       size: 64,
-                      color: const Color(0xFF9CA3AF),
+                      color: context.textSecondaryColor,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Location Not Available',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF6B7280),
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'No GPS coordinates are set for this device',
-                      style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: context.textSecondaryColor,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],

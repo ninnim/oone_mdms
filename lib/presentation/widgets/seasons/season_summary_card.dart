@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/models/season.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class SeasonSummaryCard extends StatelessWidget {
@@ -15,9 +15,9 @@ class SeasonSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -36,7 +36,8 @@ class SeasonSummaryCard extends StatelessWidget {
                   'Total Seasons',
                   stats.totalSeasons.toString(),
                   Icons.calendar_month,
-                  AppColors.primary,
+                  context.primaryColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -45,7 +46,8 @@ class SeasonSummaryCard extends StatelessWidget {
                   'Active',
                   stats.activeSeasons.toString(),
                   Icons.check_circle_outline,
-                  AppColors.success,
+                  context.successColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -54,7 +56,8 @@ class SeasonSummaryCard extends StatelessWidget {
                   'Inactive',
                   stats.inactiveSeasons.toString(),
                   Icons.pause_circle_outline,
-                  AppColors.error,
+                  context.errorColor,
+                  context,
                 ),
               ),
             ],
@@ -69,6 +72,7 @@ class SeasonSummaryCard extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
+    BuildContext context,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing8),
@@ -99,7 +103,7 @@ class SeasonSummaryCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),

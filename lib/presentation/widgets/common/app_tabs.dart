@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 
 class AppTab {
   final String label;
@@ -54,7 +55,7 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
       if (_tabController.indexIsChanging && widget.onTabChanged != null) {
         widget.onTabChanged!(_tabController.index);
       }
-      setState(() {}); // Update UI when tab changes
+      setState(() {});
     });
   }
 
@@ -70,17 +71,21 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
       children: [
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             border: Border(
-              bottom: BorderSide(color: AppColors.border, width: 1.0),
+              bottom: BorderSide(
+                color: Theme.of(context).colorScheme.outline,
+                width: 1.0,
+              ),
             ),
           ),
           child: TabBar(
             controller: _tabController,
             isScrollable: widget.isScrollable,
-            labelColor: widget.selectedTabColor ?? AppColors.primary,
+            labelColor: widget.selectedTabColor ?? context.primaryColor,
             unselectedLabelColor:
-                widget.unselectedTabColor ?? AppColors.textSecondary,
+                widget.unselectedTabColor ??
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             labelStyle: const TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
@@ -89,15 +94,15 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w500,
             ),
-            indicatorColor: widget.indicatorColor ?? AppColors.primary,
+            indicatorColor: widget.indicatorColor ?? context.primaryColor,
             indicatorSize: widget.indicatorSize,
             indicatorWeight: 1.0,
             indicator: BoxDecoration(
               color: Colors.transparent,
               border: Border(
                 bottom: BorderSide(
-                  color: widget.indicatorColor ?? AppColors.primary,
-                  width: 1.0, // Adjusted to a reasonable width
+                  color: widget.indicatorColor ?? context.primaryColor,
+                  width: 1.0,
                 ),
               ),
             ),
@@ -128,18 +133,16 @@ class _AppTabsWidgetState extends State<AppTabsWidget>
                           data: IconThemeData(
                             color: isSelected
                                 ? (widget.selectedTabColor ??
-                                      const Color.fromARGB(255, 192, 199, 213))
+                                      context.primaryColor)
                                 : (widget.unselectedTabColor ??
-                                      AppColors.textSecondary),
+                                      Theme.of(context).colorScheme.onSurface
+                                          .withValues(alpha: 0.7)),
                           ),
                           child: tab.icon!,
                         ),
                         SizedBox(width: AppSizes.spacing8),
                       ],
-                      Text(
-                        tab.label,
-                        //  style: TextStyle(fontSize: AppSizes.fontSizeSmall),
-                      ),
+                      Text(tab.label),
                     ],
                   ),
                 ),
@@ -259,7 +262,7 @@ class _AppPillTabsState extends State<AppPillTabs>
           height: 45,
           padding: EdgeInsets.all(AppSizes.spacing4),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           ),
           child: LayoutBuilder(
@@ -269,7 +272,6 @@ class _AppPillTabsState extends State<AppPillTabs>
 
               return Stack(
                 children: [
-                  /// ✅ Animated sliding background (active tab)
                   AnimatedBuilder(
                     animation: _animationController,
                     builder: (context, child) {
@@ -279,13 +281,13 @@ class _AppPillTabsState extends State<AppPillTabs>
                         child: Container(
                           height: 35,
                           decoration: BoxDecoration(
-                            color: widget.selectedColor ?? AppColors.primary,
+                            color: widget.selectedColor ?? context.primaryColor,
                             borderRadius: BorderRadius.circular(
                               AppSizes.radiusLarge,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: AppSizes.radiusLarge,
                                 offset: const Offset(0, 2),
                               ),
@@ -295,8 +297,6 @@ class _AppPillTabsState extends State<AppPillTabs>
                       );
                     },
                   ),
-
-                  /// ✅ Tabs
                   Row(
                     children: widget.tabs.asMap().entries.map((entry) {
                       final index = entry.key;
@@ -304,14 +304,12 @@ class _AppPillTabsState extends State<AppPillTabs>
                       final isSelected = index == selectedIndex;
 
                       return GestureDetector(
-                        behavior: HitTestBehavior
-                            .opaque, // Ensures whole area is tappable
+                        behavior: HitTestBehavior.opaque,
                         onTap: () => _animateToTab(index),
                         child: Container(
                           width: tabWidth,
                           height: 35,
                           alignment: Alignment.center,
-                          // No need to set background here — it's handled by the sliding layer
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -322,9 +320,14 @@ class _AppPillTabsState extends State<AppPillTabs>
                                     size: AppSizes.iconMedium,
                                     color: isSelected
                                         ? (widget.selectedTextColor ??
-                                              AppColors.onPrimary)
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimary)
                                         : (widget.unselectedTextColor ??
-                                              AppColors.textSecondary),
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.7)),
                                   ),
                                   child: tab.icon!,
                                 ),
@@ -337,9 +340,14 @@ class _AppPillTabsState extends State<AppPillTabs>
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
                                       ? (widget.selectedTextColor ??
-                                            AppColors.onPrimary)
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimary)
                                       : (widget.unselectedTextColor ??
-                                            AppColors.textSecondary),
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.7)),
                                 ),
                               ),
                             ],

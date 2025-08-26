@@ -1,14 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../common/status_chip.dart';
 import '../common/app_lottie_state_widget.dart';
+import '../common/responsive_map_pagination.dart';
 
 class GroupDeviceMapView extends StatefulWidget {
   final int deviceGroupId;
@@ -135,16 +137,23 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _getStatusColor(device.status),
-              border: Border.all(color: Colors.white, width: 2),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onPrimary,
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: context.shadowColor.withOpacity(0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: const Icon(Icons.location_on, color: Colors.white, size: 20),
+            child: Icon(
+              Icons.location_on,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 20,
+            ),
           ),
         ),
       );
@@ -174,24 +183,6 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
       setState(() {
         _selectedDevice = device;
       });
-    }
-  }
-
-  void _previousPage() {
-    if (_currentPage > 1) {
-      setState(() {
-        _currentPage--;
-      });
-      _loadDeviceListPage();
-    }
-  }
-
-  void _nextPage() {
-    if (_currentPage < _totalPages) {
-      setState(() {
-        _currentPage++;
-      });
-      _loadDeviceListPage();
     }
   }
 
@@ -227,8 +218,8 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
           title: 'Loading Device Locations',
           message: 'Please wait while we fetch device locations.',
           lottieSize: 80,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.secondary,
+          titleColor: context.primaryColor,
+          messageColor: context.secondaryColor,
         ),
       );
     }
@@ -238,11 +229,15 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.location_off, size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.location_off,
+              size: 64,
+              color: context.textSecondaryColor,
+            ),
             const SizedBox(height: 16),
             Text(
               'No devices with location found',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 18, color: context.textSecondaryColor),
             ),
           ],
         ),
@@ -257,7 +252,7 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
         // Device list sidebar
         if (_showDeviceList) ...[
           _buildDeviceListSidebar(),
-          Container(width: 1, color: AppColors.border),
+          Container(width: 1, color: Theme.of(context).colorScheme.outline),
         ],
 
         // Map view
@@ -279,9 +274,17 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: Theme.of(context).brightness == Brightness.dark
+                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                     subdomains: const ['a', 'b', 'c'],
+                    additionalOptions:
+                        Theme.of(context).brightness == Brightness.dark
+                        ? {
+                            'attribution':
+                                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                          }
+                        : {},
                   ),
                   MarkerClusterLayerWidget(
                     options: MarkerClusterLayerOptions(
@@ -309,7 +312,7 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
 
   Widget _buildClusterMarker(int count) {
     final isLarge = count > 10;
-    final color = isLarge ? Colors.red : const Color(0xFF2F3CFE);
+    final color = isLarge ? AppColors.error : AppColors.primary;
 
     return Container(
       width: 40,
@@ -328,7 +331,7 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
       child: Center(
         child: Text(
           count > 99 ? '99+' : count.toString(),
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 12,
@@ -343,11 +346,16 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
       width: 48,
       height: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
+        color: context.surfaceColor,
+        border: Border(
+          right: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: context.textSecondaryColor.withOpacity(0.05),
             blurRadius: 4,
             offset: const Offset(1, 0),
           ),
@@ -359,7 +367,7 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
           IconButton(
             icon: Icon(
               _showDeviceList ? Icons.chevron_left : Icons.chevron_right,
-              color: AppColors.primary,
+              color: context.primaryColor,
             ),
             onPressed: () {
               setState(() {
@@ -377,7 +385,7 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
+                  color: context.textSecondaryColor,
                 ),
               ),
             ),
@@ -391,10 +399,10 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
     return Container(
       width: 320,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: context.textSecondaryColor.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(2, 0),
           ),
@@ -405,21 +413,21 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
           // Header
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8F9FA),
-              border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9))),
+            decoration: BoxDecoration(
+              color: context.surfaceColor,
+              border: Border(bottom: BorderSide(color: context.borderColor)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.location_on, color: AppColors.primary),
+                Icon(Icons.location_on, color: context.primaryColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Device Locations ($_totalItems)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppSizes.fontSizeSmall,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimaryColor,
                     ),
                   ),
                 ),
@@ -437,11 +445,13 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.primary),
+                  borderSide: BorderSide(color: context.primaryColor),
                 ),
               ),
             ),
@@ -455,8 +465,8 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
                       title: 'Loading Devices',
                       message: 'Please wait while we fetch devices.',
                       lottieSize: 50,
-                      titleColor: AppColors.primary,
-                      messageColor: AppColors.secondary,
+                      titleColor: context.primaryColor,
+                      messageColor: context.secondaryColor,
                     ),
                   )
                 : _errorMessage.isNotEmpty
@@ -467,18 +477,18 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
                         Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: Colors.grey[400],
+                          color: context.textSecondaryColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           _errorMessage,
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: context.textSecondaryColor),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _loadDevicesForMap,
-                          child: const Text('Retry'),
+                          child: Text('Retry'),
                         ),
                       ],
                     ),
@@ -491,12 +501,12 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
                         Icon(
                           Icons.location_off,
                           size: 48,
-                          color: Colors.grey[400],
+                          color: context.textSecondaryColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'No devices found',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: context.textSecondaryColor),
                         ),
                       ],
                     ),
@@ -525,11 +535,11 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
         width: 300,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: context.textSecondaryColor.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -546,10 +556,7 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
                     _selectedDevice!.serialNumber.isNotEmpty
                         ? _selectedDevice!.serialNumber
                         : 'Device ${_selectedDevice!.id?.substring(0, 6)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 IconButton(
@@ -573,10 +580,10 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
             ElevatedButton(
               onPressed: () => widget.onDeviceSelected(_selectedDevice!),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: context.primaryColor,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
-              child: const Text('View Details'),
+              child: Text('View Details'),
             ),
           ],
         ),
@@ -600,10 +607,10 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
           device.serialNumber.isNotEmpty
               ? device.serialNumber
               : 'Device ${device.id?.substring(0, 6)}',
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: TextStyle(fontWeight: FontWeight.w500),
         ),
         subtitle: Text(device.status.isNotEmpty ? device.status : 'None'),
-        trailing: const Icon(Icons.location_on, color: AppColors.primary),
+        trailing: Icon(Icons.location_on, color: context.primaryColor),
         onTap: () => _onDeviceListItemTapped(device),
       ),
     );
@@ -612,25 +619,22 @@ class _GroupDeviceMapViewState extends State<GroupDeviceMapView> {
   Widget _buildPaginationControls() {
     if (_totalPages <= 1) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: _currentPage > 1 ? _previousPage : null,
-          ),
-          Text('$_currentPage / $_totalPages'),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: _currentPage < _totalPages ? _nextPage : null,
-          ),
-        ],
-      ),
+    return ResponsiveMapPagination(
+      currentPage: _currentPage,
+      totalPages: _totalPages,
+      totalItems: _totalItems,
+      startItem: (_currentPage - 1) * _itemsPerPage + 1,
+      endItem: (_currentPage * _itemsPerPage > _totalItems)
+          ? _totalItems
+          : _currentPage * _itemsPerPage,
+      onPageChanged: (page) {
+        setState(() {
+          _currentPage = page;
+        });
+        _loadDeviceListPage();
+      },
+      itemLabel: 'devices',
+      isLoading: _isLoadingDevices,
     );
   }
 }

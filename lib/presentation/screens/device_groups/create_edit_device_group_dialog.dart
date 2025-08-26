@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/device.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/services/device_group_service.dart';
@@ -15,6 +14,7 @@ import '../../widgets/common/app_dialog_header.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
+import '../../themes/app_theme.dart';
 
 class CreateEditDeviceGroupDialog extends StatefulWidget {
   final DeviceGroup? deviceGroup;
@@ -359,7 +359,7 @@ class _CreateEditDeviceGroupDialogState
                       ? AppSizes.fontSizeMedium
                       : AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
             ),
@@ -370,16 +370,18 @@ class _CreateEditDeviceGroupDialogState
                   vertical: AppSizes.spacing4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: context.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(
+                    color: context.primaryColor.withOpacity(0.3),
+                  ),
                 ),
                 child: Text(
                   '${_selectedDevices.length} selected',
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                   ),
                 ),
               ),
@@ -401,9 +403,9 @@ class _CreateEditDeviceGroupDialogState
         Container(
           height: isMobile ? 300 : 400,
           decoration: BoxDecoration(
-            color: AppColors.surface.withOpacity(0.5),
+            color: context.surfaceColor.withOpacity(0.5),
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+            border: Border.all(color: context.borderColor.withOpacity(0.5)),
           ),
           child: _isLoadingDevices || _isSearching
               ? AppLottieStateWidget.loading(lottieSize: 80)
@@ -414,8 +416,8 @@ class _CreateEditDeviceGroupDialogState
                       ? 'No devices available for selection.'
                       : 'No devices match your search criteria.',
                   lottieSize: 80,
-                  titleColor: AppColors.primary,
-                  messageColor: AppColors.textSecondary,
+                  titleColor: context.primaryColor,
+                  messageColor: context.textSecondaryColor,
                 )
               : Column(
                   children: [
@@ -465,10 +467,10 @@ class _CreateEditDeviceGroupDialogState
                     if (_totalDevices > 0)
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: context.surfaceColor,
                           border: Border(
                             top: BorderSide(
-                              color: AppColors.border.withOpacity(0.1),
+                              color: context.borderColor.withOpacity(0.1),
                               width: 1,
                             ),
                           ),
@@ -516,9 +518,9 @@ class _CreateEditDeviceGroupDialogState
         builder: (device) => Text(
           device.serialNumber.isNotEmpty ? device.serialNumber : 'Unknown',
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: AppColors.primary,
+            color: context.primaryColor,
           ),
         ),
       ),
@@ -530,7 +532,7 @@ class _CreateEditDeviceGroupDialogState
         builder: (device) => Text(
           device.model.isNotEmpty ? device.model : 'None',
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: context.textPrimaryColor),
         ),
       ),
       // BluNestTableColumn<Device>(
@@ -544,7 +546,7 @@ class _CreateEditDeviceGroupDialogState
       //           type: StatusChipType.info,
       //           compact: true,
       //         )
-      //       : const Text('-'),
+      //       : Text('-'),
       // ),
       BluNestTableColumn<Device>(
         key: 'status',
@@ -636,8 +638,8 @@ class _CreateEditDeviceGroupDialogState
             ),
             Container(
               padding: ResponsiveHelper.getPadding(context),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: context.borderColor)),
               ),
               child: ResponsiveHelper.shouldUseCompactUI(context)
                   ? _buildMobileFooter()
@@ -682,7 +684,7 @@ class _CreateEditDeviceGroupDialogState
                 ? AppSizes.fontSizeMedium
                 : AppSizes.fontSizeLarge,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -710,7 +712,7 @@ class _CreateEditDeviceGroupDialogState
                   AppInputField(
                     label: 'Description',
                     controller: _descriptionController,
-                    hintText: 'Enter group description (optional)',
+                    hintText: 'Enter group description',
                     enabled: _isEditMode && !_isLoading,
                   ),
                 ],
@@ -739,7 +741,7 @@ class _CreateEditDeviceGroupDialogState
                     child: AppInputField(
                       label: 'Description',
                       controller: _descriptionController,
-                      hintText: 'Enter group description (optional)',
+                      hintText: 'Enter group description',
                       enabled: _isEditMode && !_isLoading,
                     ),
                   ),

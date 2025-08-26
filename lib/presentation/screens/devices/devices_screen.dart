@@ -14,6 +14,7 @@ import '../../widgets/common/blunest_data_table.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_lottie_state_widget.dart';
 import '../../widgets/devices/device_table_columns.dart';
+import '../../themes/app_theme.dart';
 import '../../widgets/devices/flutter_map_device_view.dart';
 import '../../widgets/devices/device_summary_card.dart';
 import 'create_edit_device_screen.dart';
@@ -361,7 +362,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
           Expanded(
             child: Text(
               _errorMessage,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.error,
                 fontSize: AppSizes.fontSizeMedium,
               ),
@@ -419,7 +420,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
             final isMobile = screenWidth < 768;
 
             return Scaffold(
-              backgroundColor: AppColors.background,
+              backgroundColor: context.backgroundColor,
               body: SafeArea(
                 child: Column(
                   children: [
@@ -487,7 +488,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -520,7 +521,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -538,7 +539,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                           _summaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -591,7 +592,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
             selectedStatus: _selectedStatus,
             selectedLinkStatus: _selectedLinkStatus,
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -613,7 +614,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -652,7 +653,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+        icon: Icon(Icons.more_vert, color: context.surfaceColor, size: 20),
         onSelected: (value) {
           switch (value) {
             case 'add':
@@ -779,7 +780,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
   //     ),
   //     child: Row(
   //       children: [
-  //         const Text(
+  //         Text(
   //           'Devices',
   //           style: TextStyle(
   //             fontSize: AppSizes.fontSizeMedium,
@@ -799,7 +800,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
   //           ),
   //           child: Text(
   //             '${_filteredDevices.length}',
-  //             style: const TextStyle(
+  //             style: TextStyle(
   //               fontSize: AppSizes.fontSizeSmall,
   //               fontWeight: FontWeight.w600,
   //               color: AppColors.primary,
@@ -832,6 +833,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       child: BluNestDataTable<Device>(
         columns: DeviceTableColumns.getColumns(
+          context: context,
           onView: (device) =>
               _viewDeviceDetails(device), // Keep original view action
           onEdit: (device) => _editDevice(device),
@@ -931,6 +933,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
 
   void _showAddDeviceModal() {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => CreateEditDeviceDialog(
         onSaved: () {
@@ -1003,6 +1006,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
 
   void _editDevice(Device device) {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => CreateEditDeviceDialog(
         device: device,
@@ -1188,7 +1192,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
         titleColor: AppColors.primary,
         messageColor: AppColors.secondary,
         message: 'Please wait while we fetch your devices...',
-        lottieSize: 100,
+        lottieSize: 80,
       );
     }
 
@@ -1290,7 +1294,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
   //       const SizedBox(width: AppSizes.spacing8),
   //       Text(
   //         '$label:',
-  //         style: const TextStyle(
+  //         style: TextStyle(
   //           fontSize: AppSizes.fontSizeSmall,
   //           color: AppColors.textSecondary,
   //           fontWeight: FontWeight.w500,
@@ -1300,7 +1304,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
   //       Expanded(
   //         child: Text(
   //           value.isNotEmpty ? value : 'Not specified',
-  //           style: const TextStyle(
+  //           style: TextStyle(
   //             fontSize: AppSizes.fontSizeSmall,
   //             color: AppColors.textPrimary,
   //           ),
@@ -1393,8 +1397,8 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: AppColors.border)),
+            color: context.surfaceColor,
+            border: Border(bottom: BorderSide(color: context.borderColor)),
           ),
         ),
 

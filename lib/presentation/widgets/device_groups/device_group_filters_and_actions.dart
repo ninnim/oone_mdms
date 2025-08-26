@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_dropdown_field.dart';
@@ -282,7 +282,7 @@ class _DeviceGroupFiltersAndActionsState
               widget.onStatusFilterChanged(null);
             },
             icon: const Icon(Icons.clear, size: AppSizes.iconSmall),
-            label: const Text('Clear Filters'),
+            label: Text('Clear Filters'),
           ),
         ],
       ),
@@ -299,7 +299,7 @@ class _DeviceGroupFiltersAndActionsState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Show/Hide Columns',
             style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
@@ -327,7 +327,7 @@ class _DeviceGroupFiltersAndActionsState
                   }
                   widget.onColumnVisibilityChanged(newHiddenColumns);
                 },
-                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                selectedColor: AppColors.primary.withOpacity(0.2),
                 checkmarkColor: AppColors.primary,
               );
             }).toList(),
@@ -337,3 +337,8 @@ class _DeviceGroupFiltersAndActionsState
     );
   }
 }
+
+
+
+
+

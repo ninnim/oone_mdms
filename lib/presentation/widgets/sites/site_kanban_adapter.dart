@@ -1,5 +1,5 @@
-import '../../../core/models/site.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import '../../../core/models/site.dart';
+import '../../themes/app_theme.dart';
 import '../common/kanban_view.dart';
 import '../common/status_chip.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +7,9 @@ import 'package:flutter/material.dart';
 /// Adapter class to make Site compatible with KanbanItem
 class SiteKanbanItem extends KanbanItem {
   final Site site;
+  final BuildContext context;
 
-  SiteKanbanItem(this.site);
+  SiteKanbanItem(this.site, this.context);
 
   @override
   String get id => site.id?.toString() ?? '';
@@ -73,7 +74,7 @@ class SiteKanbanItem extends KanbanItem {
           icon: Icons.location_city,
           label: 'Sub Sites',
           value: site.subSiteCount.toString(),
-          valueColor: AppColors.info,
+          valueColor: context.infoColor,
         ),
       );
     }
@@ -91,13 +92,13 @@ class SiteKanbanItem extends KanbanItem {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: site.isMainSite
-              ? AppColors.primary.withValues(alpha: 0.1)
-              : AppColors.info.withValues(alpha: 0.1),
+              ? context.primaryColor.withOpacity(0.1)
+              : context.infoColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: site.isMainSite
-                ? AppColors.primary.withValues(alpha: 0.3)
-                : AppColors.info.withValues(alpha: 0.3),
+                ? context.primaryColor.withOpacity(0.3)
+                : context.infoColor.withOpacity(0.3),
           ),
         ),
         child: Text(
@@ -105,7 +106,7 @@ class SiteKanbanItem extends KanbanItem {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w500,
-            color: site.isMainSite ? AppColors.primary : AppColors.info,
+            color: site.isMainSite ? context.primaryColor : context.infoColor,
           ),
         ),
       ),
@@ -117,16 +118,16 @@ class SiteKanbanItem extends KanbanItem {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: AppColors.success.withValues(alpha: 0.1),
+            color: context.successColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+            border: Border.all(color: context.successColor.withOpacity(0.3)),
           ),
           child: Text(
             '${site.subSiteCount} sub-sites',
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: AppColors.success,
+              color: context.surfaceColor,//AppColors.success,
             ),
           ),
         ),
@@ -139,16 +140,16 @@ class SiteKanbanItem extends KanbanItem {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: AppColors.warning.withValues(alpha: 0.1),
+            color: context.warningColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+            border: Border.all(color: context.warningColor.withOpacity(0.3)),
           ),
           child: Text(
             'Parent: ${site.parentId}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: AppColors.warning,
+              color: context.warningColor,
             ),
           ),
         ),
@@ -186,6 +187,7 @@ class SiteKanbanConfig {
     Function(Site)? onEdit,
     Function(Site)? onDelete,
     Function(Site)? onViewSubSites,
+    required BuildContext context,
   }) {
     final actions = <KanbanAction>[];
 
@@ -195,7 +197,7 @@ class SiteKanbanConfig {
           key: 'view',
           label: 'View Details',
           icon: Icons.visibility,
-          color: AppColors.primary,
+          color: context.primaryColor,
           onTap: (item) => onView((item as SiteKanbanItem).site),
         ),
       );
@@ -207,7 +209,7 @@ class SiteKanbanConfig {
           key: 'edit',
           label: 'Edit',
           icon: Icons.edit,
-          color: AppColors.warning,
+          color: context.warningColor,
           onTap: (item) => onEdit((item as SiteKanbanItem).site),
         ),
       );
@@ -219,7 +221,7 @@ class SiteKanbanConfig {
           key: 'subsites',
           label: 'View Sub Sites',
           icon: Icons.location_city,
-          color: AppColors.info,
+          color: context.infoColor,
           onTap: (item) => onViewSubSites((item as SiteKanbanItem).site),
         ),
       );
@@ -231,7 +233,7 @@ class SiteKanbanConfig {
           key: 'delete',
           label: 'Delete',
           icon: Icons.delete,
-          color: AppColors.error,
+          color: context.errorColor,
           onTap: (item) => onDelete((item as SiteKanbanItem).site),
         ),
       );
@@ -240,3 +242,6 @@ class SiteKanbanConfig {
     return actions;
   }
 }
+
+
+

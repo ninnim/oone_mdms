@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 enum TimeInterval {
@@ -38,9 +39,9 @@ class _TimeIntervalFilterState extends State<TimeIntervalFilter> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -54,7 +55,7 @@ class _TimeIntervalFilterState extends State<TimeIntervalFilter> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
+                color: isSelected ? context.primaryColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -65,8 +66,8 @@ class _TimeIntervalFilterState extends State<TimeIntervalFilter> {
                   color: isSelected
                       ? Colors.white
                       : widget.enabled
-                      ? AppColors.textSecondary
-                      : AppColors.textDisabled,
+                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.7)
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
                 ),
               ),
             ),
@@ -76,3 +77,7 @@ class _TimeIntervalFilterState extends State<TimeIntervalFilter> {
     );
   }
 }
+
+
+
+

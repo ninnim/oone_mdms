@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'app_button.dart';
 
@@ -86,7 +86,7 @@ class AppLottieStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    // final isDark = theme.brightness == Brightness.dark;
 
     return Center(
       child: Container(
@@ -114,17 +114,13 @@ class AppLottieStateWidget extends StatelessWidget {
                     width: lottieSize ?? 200,
                     height: lottieSize ?? 200,
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.surface.withOpacity(0.1)
-                          : AppColors.surfaceVariant.withOpacity(0.1),
+                      color: context.surfaceColor,
                       borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
                     ),
                     child: Icon(
                       _getIconForState(),
                       size: (lottieSize ?? 200) * 0.4,
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textTertiary,
+                      color: context.surfaceColor.withOpacity(0.7),
                     ),
                   );
                 },
@@ -138,9 +134,7 @@ class AppLottieStateWidget extends StatelessWidget {
               title,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color:
-                    titleColor ??
-                    (isDark ? AppColors.textInverse : AppColors.textPrimary),
+                color: titleColor ?? context.textPrimaryColor,
               ),
               textAlign: TextAlign.center,
             ),
@@ -151,9 +145,7 @@ class AppLottieStateWidget extends StatelessWidget {
             Text(
               message,
               style: theme.textTheme.bodyLarge?.copyWith(
-                color:
-                    messageColor ??
-                    (isDark ? AppColors.textTertiary : AppColors.textSecondary),
+                color: messageColor ?? (context.primaryColor.withOpacity(0.5)),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,

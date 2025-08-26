@@ -1,13 +1,14 @@
-import '../../../core/models/time_of_use.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import '../../../core/models/time_of_use.dart';
+import '../../themes/app_theme.dart';
 import '../common/kanban_view.dart';
 import 'package:flutter/material.dart';
 
 /// Adapter class to make TimeOfUse compatible with KanbanItem
 class TimeOfUseKanbanItem extends KanbanItem {
   final TimeOfUse timeOfUse;
+  final BuildContext context;
 
-  TimeOfUseKanbanItem(this.timeOfUse);
+  TimeOfUseKanbanItem(this.timeOfUse, this.context);
 
   @override
   String get id => timeOfUse.id?.toString() ?? '';
@@ -47,19 +48,19 @@ class TimeOfUseKanbanItem extends KanbanItem {
       icon: Icons.list,
       label: 'Details',
       value: '${timeOfUse.timeOfUseDetails.length}',
-      valueColor: AppColors.info,
+      valueColor: context.infoColor,
     ),
     KanbanDetail(
       icon: Icons.schedule,
       label: 'Time Bands',
       value: '${timeOfUse.totalTimeBands}',
-      valueColor: AppColors.primary,
+      valueColor: context.primaryColor,
     ),
     KanbanDetail(
       icon: Icons.stream,
       label: 'Channels',
       value: '${timeOfUse.totalChannels}',
-      valueColor: AppColors.secondary,
+      valueColor: context.secondaryColor,
     ),
   ];
 
@@ -91,6 +92,7 @@ class TimeOfUseKanbanConfig {
     Function(TimeOfUse)? onEdit,
     Function(TimeOfUse)? onDelete,
     Function(TimeOfUse)? onValidate,
+    required BuildContext context,
   }) {
     final actions = <KanbanAction>[];
 
@@ -100,7 +102,7 @@ class TimeOfUseKanbanConfig {
           key: 'view',
           label: 'View Details',
           icon: Icons.visibility,
-          color: AppColors.primary,
+          color: context.primaryColor,
           onTap: (item) => onView((item as TimeOfUseKanbanItem).timeOfUse),
         ),
       );
@@ -112,7 +114,7 @@ class TimeOfUseKanbanConfig {
           key: 'edit',
           label: 'Edit',
           icon: Icons.edit,
-          color: AppColors.warning,
+          color: context.warningColor,
           onTap: (item) => onEdit((item as TimeOfUseKanbanItem).timeOfUse),
         ),
       );
@@ -124,7 +126,7 @@ class TimeOfUseKanbanConfig {
           key: 'validate',
           label: 'Validate',
           icon: Icons.verified,
-          color: AppColors.info,
+          color: context.infoColor,
           onTap: (item) => onValidate((item as TimeOfUseKanbanItem).timeOfUse),
         ),
       );
@@ -136,7 +138,7 @@ class TimeOfUseKanbanConfig {
           key: 'delete',
           label: 'Delete',
           icon: Icons.delete,
-          color: AppColors.error,
+          color: context.errorColor,
           onTap: (item) => onDelete((item as TimeOfUseKanbanItem).timeOfUse),
         ),
       );
@@ -145,3 +147,6 @@ class TimeOfUseKanbanConfig {
     return actions;
   }
 }
+
+
+

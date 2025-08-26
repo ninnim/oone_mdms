@@ -34,6 +34,7 @@ class ScheduleKanbanView extends StatelessWidget {
 
     // Configure actions
     final actions = ScheduleKanbanConfig.getActions(
+      context: context, 
       onView: onScheduleView,
       onEdit: onScheduleEdit,
       onDelete: onScheduleDelete,

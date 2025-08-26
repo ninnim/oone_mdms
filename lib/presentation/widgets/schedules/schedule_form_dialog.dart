@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/models/schedule.dart';
 import '../../../core/models/site.dart';
@@ -98,7 +99,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
     _deviceGroupService = DeviceGroupService(serviceLocator.apiService);
     _timeOfUseService = TimeOfUseService(serviceLocator.apiService);
 
-    _retryCountController.text = '1'; // Default retry count
+    _retryCountController.text = '0'; // Default retry count (optional)
 
     // Handle preselected values for new schedules
     if (widget.schedule == null) {
@@ -281,7 +282,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
         _startBillingDate!,
         _interval,
       );
-      final retryCount = int.tryParse(_retryCountController.text) ?? 1;
+      final retryCount = int.tryParse(_retryCountController.text) ?? 0;
 
       final billingDevice = BillingDevice(
         id: widget.schedule?.billingDeviceId, // Include existing ID for updates
@@ -405,10 +406,10 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
             Container(
               padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.border.withOpacity(0.1),
+                    color: context.borderColor.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -428,10 +429,10 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
   // Responsive body with form content
   Widget _buildBody() {
     return Container(
-      color: AppColors.background,
+      color: context.backgroundColor,
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: _isLoadingData
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: AppLottieStateWidget.loading(lottieSize: 80))
           : Form(
               key: _formKey,
               child: SingleChildScrollView(
@@ -510,9 +511,9 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: context.borderColor.withValues(alpha: 0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -525,7 +526,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                   ? AppSizes.fontSizeMedium
                   : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -656,9 +657,9 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: context.borderColor.withValues(alpha: 0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -671,7 +672,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                   ? AppSizes.fontSizeMedium
                   : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -720,40 +721,58 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: context.borderColor.withValues(alpha: 0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Icon(
+                Icons.settings,
+                size: AppSizes.iconSmall,
+                color: context.primaryColor,
+              ),
+              const SizedBox(width: AppSizes.spacing8),
+              Text(
+                'Schedule Settings',
+                style: TextStyle(
+                  fontSize: isMobile
+                      ? AppSizes.fontSizeMedium
+                      : AppSizes.fontSizeLarge,
+                  fontWeight: FontWeight.w600,
+                  color: context.textPrimaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spacing4),
           Text(
-            'Schedule Settings',
+            'Configure execution behavior and status',
             style: TextStyle(
-              fontSize: isMobile
-                  ? AppSizes.fontSizeMedium
-                  : AppSizes.fontSizeLarge,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              fontSize: AppSizes.fontSizeSmall,
+              color: context.textSecondaryColor,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
 
-          // Retry Count and Active Schedule Toggle (responsive)
+          // Settings Grid
           isMobile
               ? Column(
                   children: [
-                    _buildRetryCountField(),
+                    _buildEnhancedRetryCountField(),
                     SizedBox(height: ResponsiveHelper.getSpacing(context)),
-                    _buildActiveToggleField(),
+                    _buildEnhancedActiveToggleField(),
                   ],
                 )
               : Row(
                   children: [
-                    Expanded(child: _buildRetryCountField()),
+                    Expanded(child: _buildEnhancedRetryCountField()),
                     SizedBox(width: ResponsiveHelper.getSpacing(context) * 2),
-                    Expanded(child: _buildActiveToggleField()),
+                    Expanded(child: _buildEnhancedActiveToggleField()),
                   ],
                 ),
         ],
@@ -964,6 +983,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
       hintText: 'Select start billing date',
       isRequired: true,
       enabled: !_isViewMode,
+
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
       onDateSelected: (selectedDate) {
@@ -1050,218 +1070,319 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
     );
   }
 
-  Widget _buildRetryCountField() {
-    final retryCount = int.tryParse(_retryCountController.text) ?? 1;
+  Widget _buildEnhancedRetryCountField() {
+    final retryCount = int.tryParse(_retryCountController.text) ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Retry Count',
-          style: TextStyle(
-            fontSize: AppSizes.fontSizeMedium,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
+        Row(
+          children: [
+            Icon(
+              Icons.replay,
+              size: AppSizes.iconSmall,
+              color: context.textSecondaryColor,
+            ),
+            const SizedBox(width: AppSizes.spacing8),
+            Text(
+              'Retry Count',
+              style: TextStyle(
+                fontSize: AppSizes.fontSizeMedium,
+                fontWeight: FontWeight.w500,
+                color: context.textPrimaryColor,
+              ),
+            ),
+            const SizedBox(width: AppSizes.spacing8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing6,
+                vertical: AppSizes.spacing2,
+              ),
+              decoration: BoxDecoration(
+                color: context.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+              ),
+              child: Text(
+                'Optional',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeSmall - 1,
+                  fontWeight: FontWeight.w500,
+                  color: context.primaryColor,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Container(
-          height: 36,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Decrement button
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isViewMode || retryCount <= 1
-                      ? null
-                      : () {
-                          setState(() {
-                            _retryCountController.text = (retryCount - 1)
-                                .toString();
-                          });
-                        },
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(18),
-                    bottomLeft: Radius.circular(18),
-                  ),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _isViewMode || retryCount <= 1
-                          ? AppColors.background
-                          : AppColors.surface,
+        const SizedBox(height: AppSizes.spacing8),
+
+        // Compact counter
+        Row(
+          children: [
+            Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                border: Border.all(color: context.borderColor),
+              ),
+              child: Row(
+                children: [
+                  // Decrement button
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _isViewMode || retryCount <= 0
+                          ? null
+                          : () {
+                              setState(() {
+                                _retryCountController.text = (retryCount - 1)
+                                    .toString();
+                              });
+                            },
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(18),
-                        bottomLeft: Radius.circular(18),
+                        topLeft: Radius.circular(AppSizes.radiusLarge),
+                        bottomLeft: Radius.circular(AppSizes.radiusLarge),
+                      ),
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Icon(
+                          Icons.remove,
+                          color: _isViewMode || retryCount <= 0
+                              ? context.textSecondaryColor
+                              : context.textPrimaryColor,
+                          size: 16,
+                        ),
                       ),
                     ),
-                    child: Icon(
-                      Icons.remove,
-                      color: _isViewMode || retryCount <= 1
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
-                      size: 16,
+                  ),
+
+                  // Value display
+                  Container(
+                    width: 50,
+                    alignment: Alignment.center,
+                    child: TextFormField(
+                      controller: _retryCountController,
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      readOnly: _isViewMode,
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeMedium,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimaryColor,
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        fillColor: Colors.transparent,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onChanged: (value) {
+                        final count = int.tryParse(value);
+                        if (count != null && count >= 0 && count <= 9) {
+                          // Valid input, do nothing special
+                        } else if (value.isNotEmpty) {
+                          // Invalid input, revert to previous valid value
+                          setState(() {
+                            _retryCountController.text = retryCount.toString();
+                            _retryCountController.selection =
+                                TextSelection.fromPosition(
+                                  TextPosition(
+                                    offset: _retryCountController.text.length,
+                                  ),
+                                );
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (_isViewMode) return null;
+                        if (value?.trim().isNotEmpty == true) {
+                          final count = int.tryParse(value!);
+                          if (count == null || count < 0 || count > 9) {
+                            return 'Enter a number (0-9)';
+                          }
+                        }
+                        return null;
+                      },
                     ),
                   ),
-                ),
-              ),
-              // Count input field
-              Container(
-                width: 60,
-                height: AppSizes.inputHeight,
-                alignment: Alignment.center,
-                child: TextFormField(
-                  controller: _retryCountController,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  readOnly: _isViewMode,
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeSmall,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    fillColor: Colors.transparent,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onChanged: (value) {
-                    final count = int.tryParse(value);
-                    if (count != null && count >= 1 && count <= 9) {
-                      // Valid input, do nothing special
-                    } else if (value.isNotEmpty) {
-                      // Invalid input, revert to previous valid value
-                      setState(() {
-                        _retryCountController.text = retryCount.toString();
-                        _retryCountController.selection =
-                            TextSelection.fromPosition(
-                              TextPosition(
-                                offset: _retryCountController.text.length,
-                              ),
-                            );
-                      });
-                    }
-                  },
-                  validator: (value) {
-                    if (_isViewMode) return null;
-                    if (value?.trim().isNotEmpty == true) {
-                      final count = int.tryParse(value!);
-                      if (count == null || count < 1 || count > 9) {
-                        return 'Enter a number (1-9)';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              // Increment button
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isViewMode || retryCount >= 9
-                      ? null
-                      : () {
-                          setState(() {
-                            _retryCountController.text = (retryCount + 1)
-                                .toString();
-                          });
-                        },
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(18),
-                    bottomRight: Radius.circular(18),
-                  ),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _isViewMode || retryCount >= 9
-                          ? AppColors.background
-                          : AppColors.surface,
+
+                  // Increment button
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _isViewMode || retryCount >= 9
+                          ? null
+                          : () {
+                              setState(() {
+                                _retryCountController.text = (retryCount + 1)
+                                    .toString();
+                              });
+                            },
                       borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(18),
-                        bottomRight: Radius.circular(18),
+                        topRight: Radius.circular(AppSizes.radiusLarge),
+                        bottomRight: Radius.circular(AppSizes.radiusLarge),
+                      ),
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Icon(
+                          Icons.add,
+                          color: _isViewMode || retryCount >= 9
+                              ? context.textSecondaryColor
+                              : context.textPrimaryColor,
+                          size: 16,
+                        ),
                       ),
                     ),
-                    child: Icon(
-                      Icons.add,
-                      color: _isViewMode || retryCount >= 9
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
-                      size: 16,
-                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // const SizedBox(width: AppSizes.spacing12),
+            // Expanded(
+            //   child: Text(
+            //     retryCount == 0
+            //         ? 'Execute once only'
+            //         : '$retryCount retr${retryCount == 1 ? 'y' : 'ies'}',
+            //     style: TextStyle(
+            //       fontSize: AppSizes.fontSizeSmall,
+            //       color: context.textSecondaryColor,
+            //     ),
+            //   ),
+            // ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildActiveToggleField() {
+  Widget _buildEnhancedActiveToggleField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Active Schedule',
-          style: TextStyle(
-            fontSize: AppSizes.fontSizeMedium,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
         Row(
           children: [
-            GestureDetector(
-              onTap: _isViewMode
-                  ? null
-                  : () {
-                      setState(() {
-                        _isActive = !_isActive;
-                      });
-                    },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 60,
-                height: 30,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: _isActive ? AppColors.primary : AppColors.border,
-                ),
-                child: AnimatedAlign(
+            Icon(
+              _isActive ? Icons.play_circle : Icons.pause_circle,
+              size: AppSizes.iconSmall,
+              color: _isActive ? Colors.green : context.textSecondaryColor,
+            ),
+            const SizedBox(width: AppSizes.spacing8),
+            Text(
+              'Schedule Status',
+              style: TextStyle(
+                fontSize: AppSizes.fontSizeMedium,
+                fontWeight: FontWeight.w500,
+                color: context.textPrimaryColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.spacing8),
+
+        // Compact toggle buttons
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: _isViewMode
+                    ? null
+                    : () {
+                        setState(() {
+                          _isActive = true;
+                        });
+                      },
+                child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  alignment: _isActive
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.surface,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _isActive
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : context.surfaceColor,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                    border: Border.all(
+                      color: _isActive ? Colors.green : context.borderColor,
+                      width: _isActive ? 2 : 1,
                     ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.play_circle,
+                        color: _isActive
+                            ? Colors.green
+                            : context.textSecondaryColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: AppSizes.spacing4),
+                      Text(
+                        'Enabled',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeSmall,
+                          fontWeight: FontWeight.w500,
+                          color: _isActive
+                              ? Colors.green
+                              : context.textSecondaryColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              _isActive ? 'Enabled' : 'Disabled',
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeMedium,
-                fontWeight: FontWeight.w500,
-                color: _isActive ? AppColors.primary : AppColors.textSecondary,
+
+            const SizedBox(width: AppSizes.spacing8),
+
+            Expanded(
+              child: GestureDetector(
+                onTap: _isViewMode
+                    ? null
+                    : () {
+                        setState(() {
+                          _isActive = false;
+                        });
+                      },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: !_isActive
+                        ? context.errorColor.withValues(alpha: 0.1)
+                        : context.surfaceColor,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                    border: Border.all(
+                      color: !_isActive
+                          ? context.errorColor
+                          : context.borderColor,
+                      width: !_isActive ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.pause_circle,
+                        color: !_isActive
+                            ? context.errorColor
+                            : context.textSecondaryColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: AppSizes.spacing4),
+                      Text(
+                        'Disabled',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeSmall,
+                          fontWeight: FontWeight.w500,
+                          color: !_isActive
+                              ? context.errorColor
+                              : context.textSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],

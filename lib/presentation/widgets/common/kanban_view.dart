@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 /// Generic data model for Kanban items
@@ -138,7 +139,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
         child: Text(
           'No items to display',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: context.textSecondaryColor,
             fontSize: AppSizes.fontSizeMedium,
           ),
         ),
@@ -168,6 +169,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
             children: nonEmptyColumns.map((column) {
               final columnItems = groupedItems[column.key] ?? [];
               return _buildStatusColumn(
+                context,
                 column,
                 columnItems,
                 dynamicColumnWidth,
@@ -286,6 +288,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
   }
 
   Widget _buildStatusColumn(
+    BuildContext context,
     KanbanColumn column,
     List<T> items,
     double effectiveColumnWidth,
@@ -294,9 +297,9 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
       width: effectiveColumnWidth,
       margin: const EdgeInsets.only(right: AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [AppSizes.shadowSmall],
       ),
       child: Column(
@@ -357,7 +360,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
           // Items list
           Expanded(
             child: items.isEmpty
-                ? _buildEmptyState(column)
+                ? _buildEmptyState(context, column)
                 : ListView.builder(
                     padding: const EdgeInsets.all(AppSizes.spacing8),
                     itemCount: enablePagination
@@ -368,7 +371,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final item = items[index];
                       return customItemBuilder?.call(item) ??
-                          _buildItemCard(item);
+                          _buildItemCard(context, item);
                     },
                   ),
           ),
@@ -377,7 +380,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(KanbanColumn column) {
+  Widget _buildEmptyState(BuildContext context, KanbanColumn column) {
     if (customEmptyBuilder != null) {
       return customEmptyBuilder!(column.key);
     }
@@ -390,13 +393,13 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
           Icon(
             column.icon,
             size: 48,
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
+            color: context.textSecondaryColor.withValues(alpha: 0.5),
           ),
           const SizedBox(height: AppSizes.spacing12),
           Text(
             column.emptyMessage,
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontSize: AppSizes.fontSizeSmall,
             ),
             textAlign: TextAlign.center,
@@ -406,14 +409,14 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
     );
   }
 
-  Widget _buildItemCard(T item) {
+  Widget _buildItemCard(BuildContext context, T item) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [AppSizes.shadowSmall],
       ),
       child: InkWell(
@@ -428,7 +431,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
                 if (item.icon != null) ...[
                   Icon(
                     item.icon!,
-                    color: item.itemColor ?? AppColors.primary,
+                    color: item.itemColor ?? context.primaryColor,
                     size: 18,
                   ),
                   const SizedBox(width: AppSizes.spacing8),
@@ -436,9 +439,9 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
                 Expanded(
                   child: Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimaryColor,
                       fontSize: AppSizes.fontSizeMedium,
                     ),
                     maxLines: 2,
@@ -446,14 +449,14 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSizes.spacing8),
-                if (item.badge != null) _buildBadge(item.badge!),
+                if (item.badge != null) _buildBadge(item.badge!, context),
                 if (item.statusBadge != null) ...[
                   const SizedBox(width: AppSizes.spacing4),
                   item.statusBadge!,
                 ],
                 if (actions.isNotEmpty) ...[
                   const SizedBox(width: AppSizes.spacing4),
-                  _buildActionsDropdown(item),
+                  _buildActionsDropdown(context, item),
                 ],
               ],
             ),
@@ -463,8 +466,8 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
               const SizedBox(height: AppSizes.spacing8),
               Text(
                 item.subtitle!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: context.textSecondaryColor,
                   fontSize: AppSizes.fontSizeSmall,
                 ),
                 maxLines: 2,
@@ -489,7 +492,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
               ...item.details.map(
                 (detail) => Padding(
                   padding: const EdgeInsets.only(bottom: AppSizes.spacing6),
-                  child: _buildDetailRow(detail),
+                  child: _buildDetailRow(detail, context),
                 ),
               ),
             ],
@@ -499,42 +502,42 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
     );
   }
 
-  Widget _buildBadge(String text) {
+  Widget _buildBadge(String text, BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSizes.spacing8,
         vertical: AppSizes.spacing4,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
+        color: context.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: context.primaryColor.withValues(alpha: 0.2)),
       ),
       child: Text(
         text,
         style: TextStyle(
           fontSize: AppSizes.fontSizeExtraSmall,
-          color: AppColors.primary,
+          color: context.primaryColor,
           fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(KanbanDetail detail) {
+  Widget _buildDetailRow(KanbanDetail detail, BuildContext context) {
     return Row(
       children: [
         Icon(
           detail.icon,
           size: AppSizes.iconSmall,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
         ),
         const SizedBox(width: AppSizes.spacing8),
         Text(
           '${detail.label}:',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: AppColors.textSecondary,
+            color: context.textSecondaryColor,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -544,7 +547,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
             detail.value,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: detail.valueColor ?? AppColors.textPrimary,
+              color: detail.valueColor ?? context.textPrimaryColor,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -554,15 +557,11 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsDropdown(T item) {
+  Widget _buildActionsDropdown(BuildContext context, T item) {
     if (actions.isEmpty) return const SizedBox.shrink();
 
     return PopupMenuButton<String>(
-      icon: const Icon(
-        Icons.more_vert,
-        color: AppColors.textSecondary,
-        size: 16,
-      ),
+      icon: Icon(Icons.more_vert, color: context.textSecondaryColor, size: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       ),
@@ -575,7 +574,7 @@ class KanbanView<T extends KanbanItem> extends StatelessWidget {
               const SizedBox(width: AppSizes.spacing8),
               Text(
                 action.label,
-                style: action.color == AppColors.error
+                style: action.color == context.errorColor
                     ? TextStyle(color: action.color)
                     : null,
               ),

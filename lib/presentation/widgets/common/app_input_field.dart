@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mdms_clone/core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 
 class AppInputField extends StatefulWidget {
   final String? label;
@@ -220,7 +220,7 @@ class _AppInputFieldState extends State<AppInputField> {
                 borderSide: BorderSide(
                   color: _errorText != null
                       ? colorScheme.error
-                      : AppColors.border,
+                      : context.borderColor,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
@@ -228,7 +228,7 @@ class _AppInputFieldState extends State<AppInputField> {
                 borderSide: BorderSide(
                   color: _errorText != null
                       ? colorScheme.error
-                      : AppColors.border,
+                      : context.borderColor,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -250,7 +250,7 @@ class _AppInputFieldState extends State<AppInputField> {
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-                borderSide: BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: context.borderColor),
               ),
               contentPadding:
                   widget.contentPadding ??
@@ -399,7 +399,7 @@ class AppDropdownField<T> extends StatelessWidget {
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               borderSide: BorderSide(
-                color: colorScheme.outline.withValues(alpha: 0.5),
+                color: colorScheme.outline.withOpacity(0.5),
               ),
             ),
             contentPadding: const EdgeInsets.symmetric(

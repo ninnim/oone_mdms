@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 
 class SidebarDrawer extends StatelessWidget {
   final Widget child;
@@ -26,19 +27,21 @@ class SidebarDrawer extends StatelessWidget {
           width: width,
           height: double.infinity,
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: context.surfaceColor,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(AppSizes.radiusMedium),
               bottomLeft: Radius.circular(AppSizes.radiusMedium),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.black.withOpacity(0.1),
                 blurRadius: 24,
                 offset: const Offset(-8, 0),
               ),
             ],
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(color: context.borderColor, width: 1),
           ),
           child: Stack(
             children: [
@@ -57,11 +60,13 @@ class SidebarDrawer extends StatelessWidget {
                   right: 12,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.surfaceVariantColor,
                       borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.black.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -71,7 +76,7 @@ class SidebarDrawer extends StatelessWidget {
                       icon: const Icon(Icons.close, size: 20),
                       onPressed: onClose,
                       tooltip: 'Close sidebar',
-                      color: AppColors.textSecondary,
+                      color: context.textSecondaryColor,
                     ),
                   ),
                 ),

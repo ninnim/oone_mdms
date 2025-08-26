@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../common/app_card.dart';
 import '../common/app_button.dart';
+import '../../themes/app_theme.dart';
 
 class DeviceDetailsDialog extends StatelessWidget {
   final Device device;
@@ -25,9 +25,9 @@ class DeviceDetailsDialog extends StatelessWidget {
               // Header
               Container(
                 padding: const EdgeInsets.all(AppSizes.spacing24),
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: context.surfaceVariantColor,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(AppSizes.radiusMedium),
                     topRight: Radius.circular(AppSizes.radiusMedium),
                   ),
@@ -37,7 +37,7 @@ class DeviceDetailsDialog extends StatelessWidget {
                     Icon(
                       Icons.devices,
                       size: AppSizes.iconLarge,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                     ),
                     const SizedBox(width: AppSizes.spacing16),
                     Expanded(
@@ -46,10 +46,10 @@ class DeviceDetailsDialog extends StatelessWidget {
                         children: [
                           Text(
                             'Device Details',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeLarge,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimaryColor,
                             ),
                           ),
                           const SizedBox(height: AppSizes.spacing4),
@@ -57,9 +57,9 @@ class DeviceDetailsDialog extends StatelessWidget {
                             device.serialNumber.isNotEmpty
                                 ? device.serialNumber
                                 : 'N/A',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeMedium,
-                              color: AppColors.textSecondary,
+                              color: context.textPrimaryColor.withOpacity(0.7),
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -69,7 +69,7 @@ class DeviceDetailsDialog extends StatelessWidget {
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close),
-                      color: AppColors.textSecondary,
+                      color: context.textPrimaryColor.withOpacity(0.7),
                     ),
                   ],
                 ),
@@ -83,26 +83,43 @@ class DeviceDetailsDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Basic Information
-                      _buildSection('Basic Information', [
-                        _buildDetailRow('Serial Number', device.serialNumber),
-                        _buildDetailRow('Model', device.model),
-                        _buildDetailRow('Manufacturer', device.manufacturer),
-                        _buildDetailRow('Device Type', device.deviceType),
+                      _buildSection(context, 'Basic Information', [
+                        _buildDetailRow(
+                          context,
+                          'Serial Number',
+                          device.serialNumber,
+                        ),
+                        _buildDetailRow(context, 'Model', device.model),
+                        _buildDetailRow(
+                          context,
+                          'Manufacturer',
+                          device.manufacturer,
+                        ),
+                        _buildDetailRow(
+                          context,
+                          'Device Type',
+                          device.deviceType,
+                        ),
                       ]),
 
                       const SizedBox(height: AppSizes.spacing24),
 
                       // Status Information
-                      _buildSection('Status Information', [
+                      _buildSection(context, 'Status Information', [
                         _buildDetailRow(
+                          context,
                           'Status',
                           device.status,
-                          statusChip: _buildStatusChip(device.status),
+                          statusChip: _buildStatusChip(context, device.status),
                         ),
                         _buildDetailRow(
+                          context,
                           'Link Status',
                           device.linkStatus,
-                          statusChip: _buildLinkStatusChip(device.linkStatus),
+                          statusChip: _buildLinkStatusChip(
+                            context,
+                            device.linkStatus,
+                          ),
                         ),
                       ]),
 
@@ -111,16 +128,33 @@ class DeviceDetailsDialog extends StatelessWidget {
                       // Location Information
                       if (device.address != null ||
                           device.addressText.isNotEmpty)
-                        _buildSection('Location Information', [
-                          _buildDetailRow('Address', device.addressText),
+                        _buildSection(context, 'Location Information', [
+                          _buildDetailRow(
+                            context,
+                            'Address',
+                            device.addressText,
+                          ),
                           if (device.address?.street?.isNotEmpty == true)
-                            _buildDetailRow('Street', device.address!.street!),
+                            _buildDetailRow(
+                              context,
+                              'Street',
+                              device.address!.street!,
+                            ),
                           if (device.address?.city?.isNotEmpty == true)
-                            _buildDetailRow('City', device.address!.city!),
+                            _buildDetailRow(
+                              context,
+                              'City',
+                              device.address!.city!,
+                            ),
                           if (device.address?.state?.isNotEmpty == true)
-                            _buildDetailRow('State', device.address!.state!),
+                            _buildDetailRow(
+                              context,
+                              'State',
+                              device.address!.state!,
+                            ),
                           if (device.address?.postalCode?.isNotEmpty == true)
                             _buildDetailRow(
+                              context,
                               'Postal Code',
                               device.address!.postalCode!,
                             ),
@@ -133,9 +167,9 @@ class DeviceDetailsDialog extends StatelessWidget {
               // Footer
               Container(
                 padding: const EdgeInsets.all(AppSizes.spacing24),
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: context.surfaceVariantColor,
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(AppSizes.radiusMedium),
                     bottomRight: Radius.circular(AppSizes.radiusMedium),
                   ),
@@ -147,7 +181,7 @@ class DeviceDetailsDialog extends StatelessWidget {
                       onPressed: () => Navigator.of(context).pop(),
                       text: 'Close',
                       type: AppButtonType.secondary,
-                    //  size: AppButtonSize.medium,
+                      //  size: AppButtonSize.medium,
                     ),
                     const SizedBox(width: AppSizes.spacing12),
                     AppButton(
@@ -157,7 +191,7 @@ class DeviceDetailsDialog extends StatelessWidget {
                       },
                       text: 'View Full Details',
                       type: AppButtonType.primary,
-                    //  size: AppButtonSize.medium,
+                      //  size: AppButtonSize.medium,
                     ),
                   ],
                 ),
@@ -169,16 +203,20 @@ class DeviceDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(String title, List<Widget> children) {
+  Widget _buildSection(
+    BuildContext context,
+    String title,
+    List<Widget> children,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: AppSizes.fontSizeMedium,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         const SizedBox(height: AppSizes.spacing12),
@@ -186,9 +224,9 @@ class DeviceDetailsDialog extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSizes.spacing16),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
+            color: context.surfaceVariantColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.borderColor),
           ),
           child: Column(children: children),
         ),
@@ -196,7 +234,12 @@ class DeviceDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {Widget? statusChip}) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value, {
+    Widget? statusChip,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
       child: Row(
@@ -206,10 +249,10 @@ class DeviceDetailsDialog extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textPrimaryColor.withOpacity(0.7),
               ),
             ),
           ),
@@ -219,9 +262,9 @@ class DeviceDetailsDialog extends StatelessWidget {
                 statusChip ??
                 Text(
                   value.isNotEmpty ? value : 'N/A',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
-                    color: AppColors.textPrimary,
+                    color: context.textPrimaryColor,
                   ),
                 ),
           ),
@@ -230,25 +273,25 @@ class DeviceDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(String status) {
+  Widget _buildStatusChip(BuildContext context, String status) {
     Color backgroundColor;
     Color textColor;
     String displayText;
 
     switch (status.toLowerCase()) {
       case 'commissioned':
-        backgroundColor = AppColors.success.withValues(alpha: 0.1);
-        textColor = AppColors.success;
+        backgroundColor = context.successColor.withOpacity(0.1);
+        textColor = context.successColor;
         displayText = 'Commissioned';
         break;
       case 'none':
-        backgroundColor = AppColors.secondary.withValues(alpha: 0.1);
-        textColor = AppColors.secondary;
+        backgroundColor = context.secondaryColor.withOpacity(0.1);
+        textColor = context.secondaryColor;
         displayText = 'None';
         break;
       case 'error':
-        backgroundColor = AppColors.error.withValues(alpha: 0.1);
-        textColor = AppColors.error;
+        backgroundColor = context.errorColor.withOpacity(0.1);
+        textColor = context.errorColor;
         displayText = 'Error';
         break;
       default:
@@ -262,7 +305,7 @@ class DeviceDetailsDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: textColor.withValues(alpha: 0.3)),
+        border: Border.all(color: textColor.withOpacity(0.3)),
       ),
       child: Text(
         displayText,
@@ -275,25 +318,25 @@ class DeviceDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildLinkStatusChip(String linkStatus) {
+  Widget _buildLinkStatusChip(BuildContext context, String linkStatus) {
     Color backgroundColor;
     Color textColor;
     String displayText;
 
     switch (linkStatus.toLowerCase()) {
       case 'multidrive':
-        backgroundColor = AppColors.primary.withValues(alpha: 0.1);
-        textColor = AppColors.primary;
+        backgroundColor = context.primaryColor.withOpacity(0.1);
+        textColor = context.primaryColor;
         displayText = 'MULTIDRIVE';
         break;
       case 'e-power':
-        backgroundColor = AppColors.warning.withValues(alpha: 0.1);
-        textColor = AppColors.warning;
+        backgroundColor = context.warningColor.withOpacity(0.1);
+        textColor = context.warningColor;
         displayText = 'E-POWER';
         break;
       case 'none':
-        backgroundColor = AppColors.secondary.withValues(alpha: 0.1);
-        textColor = AppColors.secondary;
+        backgroundColor = context.secondaryColor.withOpacity(0.1);
+        textColor = context.secondaryColor;
         displayText = 'None';
         break;
       default:
@@ -307,7 +350,7 @@ class DeviceDetailsDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: textColor.withValues(alpha: 0.3)),
+        border: Border.all(color: textColor.withOpacity(0.3)),
       ),
       child: Text(
         displayText,

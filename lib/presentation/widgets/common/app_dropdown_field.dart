@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 
 class AppSearchableDropdown<T> extends StatefulWidget {
   final String? label;
@@ -227,7 +227,7 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                 child: Material(
                   elevation: 8,
                   borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   child: Container(
                     constraints: BoxConstraints(
                       maxHeight: maxDropdownHeight,
@@ -237,7 +237,7 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                       borderRadius: BorderRadius.circular(
                         AppSizes.radiusMedium,
                       ),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -250,9 +250,9 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                               controller: _searchController,
                               onChanged: _onSearchChanged,
                               hintText: 'Search...',
-                              prefixIcon: const Icon(
+                              prefixIcon: Icon(
                                 Icons.search,
-                                color: AppColors.textTertiary,
+                                color: context.textSecondaryColor,
                                 size: 20,
                               ),
                               onTap: () {
@@ -260,7 +260,7 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                               },
                             ),
                           ),
-                          const Divider(height: 1, color: AppColors.border),
+                          Divider(height: 1, color: context.borderColor),
                         ],
 
                         // Loading indicator
@@ -297,12 +297,12 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
 
                         // Empty state
                         if (!widget.isLoading && widget.items.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16.0),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
                             child: Text(
                               'No items found',
                               style: TextStyle(
-                                color: AppColors.textTertiary,
+                                color: context.textSecondaryColor,
                                 fontSize: AppSizes.fontSizeSmall,
                               ),
                             ),
@@ -335,13 +335,15 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.1)
+                ? context.primaryColor.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
           ),
           child: DefaultTextStyle(
             style: TextStyle(
-              color: isSelected ? AppColors.primary : AppColors.textPrimary,
+              color: isSelected
+                  ? context.primaryColor
+                  : context.textPrimaryColor,
               fontSize: AppSizes.fontSizeSmall,
               fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
             ),
@@ -361,37 +363,37 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: widget.isLoading
-              ? const Row(
+              ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
                       'Loading more...',
                       style: TextStyle(
-                        color: AppColors.textTertiary,
+                        color: context.textSecondaryColor,
                         fontSize: AppSizes.fontSizeSmall,
                       ),
                     ),
                   ],
                 )
-              : const Row(
+              : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.expand_more,
-                      color: AppColors.textTertiary,
+                      color: context.textSecondaryColor,
                       size: AppSizes.iconSmall,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
                       'Load more',
                       style: TextStyle(
-                        color: AppColors.textTertiary,
+                        color: context.textSecondaryColor,
                         fontSize: AppSizes.fontSizeSmall,
                       ),
                     ),
@@ -412,10 +414,10 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
           if (widget.label != null && widget.label!.isNotEmpty) ...[
             Text(
               widget.label!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -473,15 +475,15 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                           ),
                           border: Border.all(
                             color: field.hasError
-                                ? AppColors.error
+                                ? Theme.of(context).colorScheme.error
                                 : _isDropdownOpen
-                                ? AppColors.primary
-                                : AppColors.border,
+                                ? context.primaryColor
+                                : context.borderColor,
                             width: _isDropdownOpen ? 2 : 1,
                           ),
                           color: widget.enabled
-                              ? AppColors.surface
-                              : AppColors.surface.withValues(alpha: 0.5),
+                              ? context.surfaceColor
+                              : context.surfaceColor.withValues(alpha: 0.5),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -495,10 +497,10 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                                   style: TextStyle(
                                     fontSize: AppSizes.fontSizeSmall,
                                     color: displayText.isEmpty
-                                        ? AppColors.textTertiary
+                                        ? context.textSecondaryColor
                                         : widget.enabled
-                                        ? AppColors.textPrimary
-                                        : AppColors.textTertiary,
+                                        ? context.textPrimaryColor
+                                        : context.textSecondaryColor,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
@@ -506,13 +508,13 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                               ),
 
                               if (widget.isLoading && widget.items.isEmpty)
-                                const SizedBox(
+                                SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 1,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.primary,
+                                      Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
                                 )
@@ -522,8 +524,8 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                                       ? Icons.keyboard_arrow_up
                                       : Icons.keyboard_arrow_down,
                                   color: widget.enabled
-                                      ? AppColors.textSecondary
-                                      : AppColors.textTertiary,
+                                      ? context.textSecondaryColor
+                                      : context.textSecondaryColor,
                                   size: AppSizes.iconSmall,
                                 ),
                             ],
@@ -538,9 +540,9 @@ class _AppSearchableDropdownState<T> extends State<AppSearchableDropdown<T>> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         field.errorText!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: AppSizes.fontSizeSmall,
-                          color: AppColors.error,
+                          color: Theme.of(context).colorScheme.error,
                         ),
                       ),
                     ),

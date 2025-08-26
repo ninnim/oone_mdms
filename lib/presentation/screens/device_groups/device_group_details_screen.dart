@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
@@ -30,6 +30,7 @@ import '../../widgets/schedules/schedule_summary_card.dart';
 import '../../widgets/schedules/schedule_kanban_view.dart';
 import '../../widgets/schedules/schedule_table_columns.dart';
 import '../devices/create_edit_device_screen.dart';
+import '../../themes/app_theme.dart';
 
 class DeviceGroupDetailsScreen extends StatefulWidget {
   final DeviceGroup deviceGroup;
@@ -596,8 +597,11 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
         isMobile ? AppSizes.spacing12 : AppSizes.spacing16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+        color: context.surfaceColor,
+
+        border: Border(
+          bottom: BorderSide(color: context.borderColor, width: 1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -619,7 +623,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                                 ? AppSizes.fontSizeMedium
                                 : AppSizes.fontSizeLarge,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: context.primaryColor,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -637,7 +641,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                           fontSize: isMobile
                               ? AppSizes.fontSizeSmall
                               : AppSizes.fontSizeMedium,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                         ),
                         maxLines: isMobile ? 2 : 3,
                         overflow: TextOverflow.ellipsis,
@@ -680,12 +684,12 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: AppColors.error),
+              Icon(Icons.error_outline, size: 48, color: context.errorColor),
               const SizedBox(height: AppSizes.spacing16),
               Text(
                 _overviewError!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.error),
+                style: TextStyle(color: context.errorColor),
               ),
               const SizedBox(height: AppSizes.spacing16),
               AppButton(text: 'Retry', onPressed: _loadOverviewData),
@@ -722,12 +726,12 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Basic Information',
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeLarge,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.textPrimaryColor,
                   ),
                 ),
                 const SizedBox(height: AppSizes.spacing16),
@@ -754,12 +758,12 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Statistics',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeLarge,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     if (_allDevices.isEmpty &&
@@ -767,9 +771,9 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                       TextButton.icon(
                         onPressed: _loadOverviewData,
                         icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('Load Details'),
+                        label: Text('Load Details'),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
+                          foregroundColor: context.primaryColor,
                         ),
                       ),
                   ],
@@ -801,7 +805,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                       'Click "Load Details" to see comprehensive device statistics',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeSmall,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -819,8 +823,8 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
     if (_isDevicesLoading) {
       return AppLottieStateWidget.loading(
         title: 'Loading Devices',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
         message: 'Please wait while we fetch devices in this group...',
         lottieSize: 100,
       );
@@ -903,7 +907,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -924,7 +928,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                     children: [
                       Icon(
                         Icons.devices,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -936,7 +940,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -955,7 +959,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                           _deviceSummaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -1008,7 +1012,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
             selectedStatus: _deviceStatusFilter,
             selectedLinkStatus: null,
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -1030,7 +1034,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -1068,7 +1072,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -1121,7 +1125,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   Icons.table_chart,
                   size: 18,
                   color: _deviceViewMode == DeviceDisplayMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -1129,7 +1133,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   'Table View',
                   style: TextStyle(
                     color: _deviceViewMode == DeviceDisplayMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -1144,7 +1148,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   Icons.view_kanban,
                   size: 18,
                   color: _deviceViewMode == DeviceDisplayMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -1152,7 +1156,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   'Kanban View',
                   style: TextStyle(
                     color: _deviceViewMode == DeviceDisplayMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -1167,7 +1171,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   Icons.map,
                   size: 18,
                   color: _deviceViewMode == DeviceDisplayMode.map
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -1175,7 +1179,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   'Map View',
                   style: TextStyle(
                     color: _deviceViewMode == DeviceDisplayMode.map
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -1226,7 +1230,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -1247,7 +1251,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                     children: [
                       Icon(
                         Icons.schedule,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -1259,7 +1263,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -1278,7 +1282,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                           _scheduleSummaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -1331,7 +1335,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
             selectedStatus: _scheduleStatusFilter,
             selectedTargetType: _scheduleTargetTypeFilter,
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -1353,7 +1357,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -1391,7 +1395,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -1441,7 +1445,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   Icons.table_chart,
                   size: 18,
                   color: _scheduleViewMode == ScheduleViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -1449,7 +1453,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   'Table View',
                   style: TextStyle(
                     color: _scheduleViewMode == ScheduleViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -1464,7 +1468,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   Icons.view_kanban,
                   size: 18,
                   color: _scheduleViewMode == ScheduleViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -1472,7 +1476,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
                   'Kanban View',
                   style: TextStyle(
                     color: _scheduleViewMode == ScheduleViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -1495,8 +1499,8 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
             ? 'No devices match the current filters.'
             : 'This device group has no devices assigned.',
         buttonText: 'Add Device',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
         onButtonPressed: _showCreateDeviceDialog,
       );
     }
@@ -1519,6 +1523,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
           Expanded(
             child: BluNestDataTable<Device>(
               columns: DeviceTableColumns.getColumns(
+                context: context,
                 onView: (device) => _viewDevice(device),
                 onEdit: (device) => _editDevice(device),
                 onDelete: (device) => _removeDeviceFromGroup(device),
@@ -1592,7 +1597,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border(bottom: BorderSide(color: AppColors.border)),
+            border: Border(bottom: BorderSide(color: context.borderColor)),
           ),
         ),
 
@@ -1651,24 +1656,24 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
   Widget _buildMultiSelectToolbar() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.info,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.infoColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Row(
         children: [
           Icon(
             Icons.info_outline,
-            color: AppColors.surface,
+            color: context.surfaceColor,
             size: AppSizes.iconSmall,
           ),
           const SizedBox(width: AppSizes.spacing8),
           Text(
             '${_selectedDevicesForActions.length} device${_selectedDevicesForActions.length == 1 ? '' : 's'} selected',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.surface,
+              color: context.surfaceColor,
             ),
           ),
           const Spacer(),
@@ -1676,14 +1681,14 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
             onPressed: () {
               _bulkRemoveDevicesFromGroup();
             },
-            icon: const Icon(
+            icon: Icon(
               Icons.remove_circle_outline,
-              color: AppColors.surface,
+              color: context.surfaceColor,
               size: AppSizes.iconSmall,
             ),
-            label: const Text(
+            label: Text(
               'Remove from Group',
-              style: TextStyle(color: AppColors.surface),
+              style: TextStyle(color: context.surfaceColor),
             ),
           ),
         ],
@@ -1723,15 +1728,16 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
   void _exportGroupDevices() {
     // TODO: Implement export functionality for group devices
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('Export functionality coming soon'),
-        backgroundColor: AppColors.info,
+        backgroundColor: context.infoColor,
       ),
     );
   }
 
   void _editDevice(Device device) {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => CreateEditDeviceDialog(
         device: device,
@@ -1756,21 +1762,22 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
   Future<void> _bulkRemoveDevicesFromGroup() async {
     final deviceCount = _selectedDevicesForActions.length;
     final confirmed = await showDialog<bool>(
+      barrierDismissible: false,
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Devices from Group'),
+        title: Text('Remove Devices from Group'),
         content: Text(
           'Are you sure you want to remove $deviceCount selected device${deviceCount == 1 ? '' : 's'} from this group?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Remove All'),
+            style: TextButton.styleFrom(foregroundColor: context.errorColor),
+            child: Text('Remove All'),
           ),
         ],
       ),
@@ -1800,7 +1807,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
               content: Text(
                 '$deviceCount device${deviceCount == 1 ? '' : 's'} removed from group successfully',
               ),
-              backgroundColor: AppColors.success,
+              backgroundColor: context.successColor,
             ),
           );
         }
@@ -1809,7 +1816,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to remove devices: $e'),
-              backgroundColor: AppColors.error,
+              backgroundColor: context.errorColor,
             ),
           );
         }
@@ -1831,10 +1838,10 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeMedium,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           ),
@@ -1842,9 +1849,9 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeMedium,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
           ),
@@ -1857,28 +1864,28 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: context.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: context.primaryColor.withOpacity(0.2)),
       ),
       child: Column(
         children: [
-          Icon(icon, size: AppSizes.iconLarge, color: AppColors.primary),
+          Icon(icon, size: AppSizes.iconLarge, color: context.primaryColor),
           const SizedBox(height: AppSizes.spacing8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeHeading,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: context.primaryColor,
             ),
           ),
           const SizedBox(height: AppSizes.spacing4),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1892,10 +1899,10 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
     if (_isSchedulesLoading) {
       return AppLottieStateWidget.loading(
         title: 'Loading Schedules',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
         message: 'Please wait while we fetch schedules for this group...',
-        lottieSize: 100,
+        lottieSize: 80,
       );
     }
 
@@ -1943,8 +1950,9 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
         title: 'No Schedules Found',
         message: 'This device group has no scheduled tasks configured.',
         buttonText: 'Create Schedule',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        lottieSize: 80,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
         onButtonPressed: _showCreateScheduleDialog,
       );
     }
@@ -1995,6 +2003,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
 
     return BluNestDataTable<Schedule>(
       columns: ScheduleTableColumns.getBluNestColumns(
+        context: context,
         onView: (schedule) => _showViewScheduleDialog(schedule),
         onEdit: (schedule) => _showEditScheduleDialog(schedule),
         onDelete: (schedule) => _showDeleteScheduleDialog(schedule),
@@ -2031,6 +2040,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
 
   void _showCreateDeviceDialog() {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => CreateEditDeviceDialog(
         device: null,
@@ -2054,21 +2064,22 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
   Future<void> _removeDeviceFromGroup(Device device) async {
     // Show confirmation dialog
     final confirm = await showDialog<bool>(
+      barrierDismissible: false,
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Device'),
+        title: Text('Remove Device'),
         content: Text(
           'Are you sure you want to remove "${device.serialNumber}" from this group?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Remove'),
+            style: TextButton.styleFrom(foregroundColor: context.errorColor),
+            child: Text('Remove'),
           ),
         ],
       ),
@@ -2087,9 +2098,9 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Device removed from group successfully'),
-              backgroundColor: AppColors.success,
+              backgroundColor: context.successColor,
             ),
           );
         }
@@ -2098,7 +2109,7 @@ class _DeviceGroupDetailsScreenState extends State<DeviceGroupDetailsScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to remove device: $e'),
-              backgroundColor: AppColors.error,
+              backgroundColor: context.errorColor,
             ),
           );
         }

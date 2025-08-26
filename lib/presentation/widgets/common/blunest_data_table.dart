@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class BluNestDataTable<T> extends StatefulWidget {
@@ -106,11 +106,11 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
   Widget _buildTable() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusXLarge),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: context.shadowColor.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -126,14 +126,14 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               horizontal: AppSizes.spacing16,
               vertical: AppSizes.spacing8,
             ),
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: context.surfaceVariantColor,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppSizes.radiusXLarge),
                 topRight: Radius.circular(AppSizes.radiusXLarge),
               ),
               border: Border(
-                bottom: BorderSide(color: AppColors.border, width: 1),
+                bottom: BorderSide(color: context.borderColor, width: 1),
               ),
             ),
             child: Row(
@@ -157,9 +157,12 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                         },
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
-                        activeColor: AppColors.primary,
-                        checkColor: AppColors.textInverse,
-                        side: BorderSide(color: AppColors.border, width: 1.5),
+                        activeColor: context.primaryColor,
+                        checkColor: Colors.white,
+                        side: BorderSide(
+                          color: context.borderColor,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -192,10 +195,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                             Flexible(
                               child: Text(
                                 column.title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: AppSizes.fontSizeSmall,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
+                                  color: context.textPrimaryColor,
                                   letterSpacing: 0.25,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -214,8 +217,8 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                     : Icons.unfold_more,
                                 size: AppSizes.iconSmall,
                                 color: widget.sortBy == column.key
-                                    ? AppColors.primary
-                                    : AppColors.textTertiary,
+                                    ? context.primaryColor
+                                    : context.textSecondaryColor,
                               ),
                             ],
                           ],
@@ -244,15 +247,12 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                   // ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.1)
+                        ? context.primaryColor.withValues(alpha: 0.1)
                         : (isEven
-                              ? AppColors.surface
-                              : AppColors.surfaceVariant),
+                              ? context.surfaceColor
+                              : context.surfaceVariantColor),
                     border: Border(
-                      bottom: BorderSide(
-                        color: AppColors.borderLight,
-                        width: 1,
-                      ),
+                      bottom: BorderSide(color: context.borderColor, width: 1),
                     ),
                   ),
                   child: Material(
@@ -295,10 +295,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                     materialTapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
                                     visualDensity: VisualDensity.compact,
-                                    activeColor: AppColors.primary,
-                                    checkColor: AppColors.textInverse,
+                                    activeColor: context.primaryColor,
+                                    checkColor: Colors.white,
                                     side: BorderSide(
-                                      color: AppColors.border,
+                                      color: context.borderColor,
                                       width: 1.5,
                                     ),
                                   ),
@@ -334,9 +334,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Row(
         children: [
@@ -354,9 +354,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                   widget.onSelectionChanged?.call({});
                 },
                 icon: const Icon(Icons.clear, size: AppSizes.iconMedium),
-                label: const Text('Clear'),
+                label: Text('Clear'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
+                  foregroundColor: context.textSecondaryColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.spacing12,
                     vertical: AppSizes.spacing8,
@@ -374,7 +374,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               icon: Icon(
                 Icons.view_column,
                 size: AppSizes.iconMedium,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
               tooltip: 'Show/Hide Columns',
               elevation: 8,
@@ -391,7 +391,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                         Icon(
                           Icons.visibility,
                           size: AppSizes.iconSmall,
-                          color: AppColors.primary,
+                          color: context.primaryColor,
                         ),
                         const SizedBox(width: AppSizes.spacing8),
                         Text(
@@ -399,7 +399,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                           style: TextStyle(
                             fontSize: AppSizes.fontSizeMedium,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            color: context.primaryColor,
                           ),
                         ),
                       ],
@@ -421,7 +421,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                               _toggleColumnVisibility(col.key);
                               Navigator.pop(context);
                             },
-                            activeColor: AppColors.primary,
+                            activeColor: context.primaryColor,
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                           ),
@@ -429,9 +429,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                         const SizedBox(width: AppSizes.spacing8),
                         Text(
                           col.title,
-                          style: const TextStyle(
-                            fontSize: AppSizes.fontSizeMedium,
-                          ),
+                          style: TextStyle(fontSize: AppSizes.fontSizeMedium),
                         ),
                       ],
                     ),
@@ -470,9 +468,9 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
           widget.onSelectionChanged?.call(widget.data.toSet());
         },
         icon: const Icon(Icons.select_all, size: AppSizes.iconMedium),
-        label: const Text('Select All'),
+        label: Text('Select All'),
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: context.primaryColor,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.spacing12,
             vertical: AppSizes.spacing8,
@@ -500,7 +498,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Failed to select all items: $e'),
-                  backgroundColor: AppColors.error,
+                  backgroundColor: Theme.of(context).colorScheme.error,
                 ),
               );
             }
@@ -546,7 +544,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
             : const Icon(Icons.select_all, size: AppSizes.iconMedium),
         label: Text(_isSelectingAllItems ? 'Selecting...' : 'Select All'),
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: context.primaryColor,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.spacing12,
             vertical: AppSizes.spacing8,
@@ -568,11 +566,11 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(AppSizes.radiusXLarge),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: context.shadowColor.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -587,14 +585,14 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                     horizontal: AppSizes.spacing16,
                     vertical: AppSizes.spacing8,
                   ),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: context.surfaceVariantColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(AppSizes.radiusXLarge),
                       topRight: Radius.circular(AppSizes.radiusXLarge),
                     ),
                     border: Border(
-                      bottom: BorderSide(color: AppColors.border, width: 1),
+                      bottom: BorderSide(color: context.borderColor, width: 1),
                     ),
                   ),
                   child: Row(
@@ -611,10 +609,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                               visualDensity: VisualDensity.compact,
-                              activeColor: AppColors.primary,
-                              checkColor: AppColors.textInverse,
+                              activeColor: context.primaryColor,
+                              checkColor: Colors.white,
                               side: BorderSide(
-                                color: AppColors.border,
+                                color: context.borderColor,
                                 width: 1.5,
                               ),
                             ),
@@ -650,10 +648,10 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                   Flexible(
                                     child: Text(
                                       column.title,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: AppSizes.fontSizeSmall,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.textPrimary,
+                                        color: context.textPrimaryColor,
                                         letterSpacing: 0.25,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -672,8 +670,8 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
                                           : Icons.unfold_more,
                                       size: AppSizes.iconSmall,
                                       color: widget.sortBy == column.key
-                                          ? AppColors.primary
-                                          : AppColors.textTertiary,
+                                          ? context.primaryColor
+                                          : context.textSecondaryColor,
                                     ),
                                   ],
                                 ],
@@ -704,11 +702,11 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
     return Container(
       height: 400,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: context.shadowColor.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -722,7 +720,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
               title: 'Loading',
               message: '',
               lottieSize: 80,
-              titleColor: AppColors.primary,
+              titleColor: context.primaryColor,
             ),
           ],
         ),

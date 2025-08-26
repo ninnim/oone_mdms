@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 
 enum AppButtonType { primary, secondary, outline, text, danger }
 
@@ -31,7 +31,7 @@ class AppButton extends StatelessWidget {
     return SizedBox(
       width: fullWidth ? double.infinity : null,
       height: _getHeight(),
-      child: _buildButton(),
+      child: _buildButton(context),
     );
   }
 
@@ -77,7 +77,7 @@ class AppButton extends StatelessWidget {
     }
   }
 
-  Widget _buildButton() {
+  Widget _buildButton(BuildContext context) {
     final content = _buildContent();
 
     switch (type) {
@@ -85,8 +85,8 @@ class AppButton extends StatelessWidget {
         return ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textInverse,
+            backgroundColor: context.primaryColor, //context.primaryColor,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: _getPadding(),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
@@ -100,8 +100,8 @@ class AppButton extends StatelessWidget {
         return ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.secondary,
-            foregroundColor: AppColors.textInverse,
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            foregroundColor: Theme.of(context).colorScheme.onSecondary,
             padding: _getPadding(),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
@@ -115,8 +115,8 @@ class AppButton extends StatelessWidget {
         return OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.border),
+            foregroundColor: context.primaryColor,
+            side: BorderSide(color: context.borderColor),
             padding: _getPadding(),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
@@ -129,7 +129,7 @@ class AppButton extends StatelessWidget {
         return TextButton(
           onPressed: isLoading ? null : onPressed,
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
+            foregroundColor: context.primaryColor,
             padding: _getPadding(),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
@@ -142,8 +142,8 @@ class AppButton extends StatelessWidget {
         return ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: AppColors.textInverse,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
             padding: _getPadding(),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
@@ -162,7 +162,7 @@ class AppButton extends StatelessWidget {
         height: _getFontSize(),
         child: const CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.textInverse),
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
       );
     }

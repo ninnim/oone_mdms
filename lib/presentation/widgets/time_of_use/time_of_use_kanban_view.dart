@@ -29,7 +29,7 @@ class TimeOfUseKanbanView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Convert time of use to kanban items
     List<KanbanItem> items = timeOfUseList
-        .map((timeOfUse) => TimeOfUseKanbanItem(timeOfUse))
+        .map((timeOfUse) => TimeOfUseKanbanItem(timeOfUse, context))
         .toList();
 
     // Apply search filter if provided
@@ -50,6 +50,7 @@ class TimeOfUseKanbanView extends StatelessWidget {
         }
       },
       actions: TimeOfUseKanbanConfig.getActions(
+        context: context,
         onView: onItemTap,
         onEdit: onItemEdit,
         onDelete: onItemDelete,

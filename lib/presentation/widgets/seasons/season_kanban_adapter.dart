@@ -1,5 +1,5 @@
-import '../../../core/models/season.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import '../../../core/models/season.dart';
+import '../../themes/app_theme.dart';
 import '../common/kanban_view.dart';
 import 'season_smart_month_chips.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 /// Adapter class to make Season compatible with KanbanItem
 class SeasonKanbanItem extends KanbanItem {
   final Season season;
-
-  SeasonKanbanItem(this.season);
+  final BuildContext context;
+  SeasonKanbanItem(this.season, this.context);
 
   @override
   String get id => season.id.toString();
@@ -39,7 +39,7 @@ class SeasonKanbanItem extends KanbanItem {
   @override
   List<Widget> get smartChips => [
     if (season.monthRange.isNotEmpty)
-      SeasonSmartMonthChips.buildSmartMonthChips(season.monthRange),
+      SeasonSmartMonthChips.buildSmartMonthChips(season.monthRange, context),
   ];
 
   @override
@@ -92,6 +92,7 @@ class SeasonKanbanConfig {
     Function(Season)? onView,
     Function(Season)? onEdit,
     Function(Season)? onDelete,
+    required BuildContext context,
   }) {
     final actions = <KanbanAction>[];
 
@@ -101,7 +102,7 @@ class SeasonKanbanConfig {
           key: 'view',
           label: 'View Details',
           icon: Icons.visibility,
-          color: AppColors.primary,
+          color: context.primaryColor,
           onTap: (item) => onView((item as SeasonKanbanItem).season),
         ),
       );
@@ -113,7 +114,7 @@ class SeasonKanbanConfig {
           key: 'edit',
           label: 'Edit',
           icon: Icons.edit,
-          color: AppColors.warning,
+          color: context.warningColor,
           onTap: (item) => onEdit((item as SeasonKanbanItem).season),
         ),
       );
@@ -125,7 +126,7 @@ class SeasonKanbanConfig {
           key: 'delete',
           label: 'Delete',
           icon: Icons.delete,
-          color: AppColors.error,
+          color: context.errorColor,
           onTap: (item) => onDelete((item as SeasonKanbanItem).season),
         ),
       );
@@ -134,3 +135,6 @@ class SeasonKanbanConfig {
     return actions;
   }
 }
+
+
+

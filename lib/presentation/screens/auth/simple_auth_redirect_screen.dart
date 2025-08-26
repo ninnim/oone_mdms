@@ -63,7 +63,7 @@ class _SimpleAuthRedirectScreenState extends State<SimpleAuthRedirectScreen> {
           // Clean the URL by replacing the current history state
           // This removes the callback parameters from the browser's address bar
           try {
-            final cleanUrl = '${html.window.location.origin}/dashboard';
+            final cleanUrl = '${html.window.location.origin}';
             html.window.history.replaceState(null, '', cleanUrl);
             print('SimpleAuthRedirectScreen: URL cleaned to: $cleanUrl');
           } catch (e) {

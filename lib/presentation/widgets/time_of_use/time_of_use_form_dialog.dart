@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/models/time_of_use.dart';
@@ -16,6 +15,7 @@ import '../common/blunest_data_table.dart';
 import '../common/results_pagination.dart';
 import '../time_bands/time_band_smart_chips.dart';
 import 'tou_form_validation_grid.dart';
+import '../../themes/app_theme.dart';
 
 class TimeOfUseFormDialog extends StatefulWidget {
   final TimeOfUse? timeOfUse;
@@ -126,7 +126,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading data: $error'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.errorColor,
           ),
         );
       }
@@ -767,8 +767,8 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   Widget _buildFooter() {
     return Container(
       padding: ResponsiveHelper.getPadding(context),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.borderColor)),
       ),
       child: ResponsiveHelper.shouldUseCompactUI(context)
           ? _buildMobileFooter()
@@ -947,7 +947,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                 ? AppSizes.fontSizeMedium
                 : AppSizes.fontSizeLarge,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -1059,7 +1059,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                     ? AppSizes.fontSizeMedium
                     : AppSizes.fontSizeLarge,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
             const Spacer(),
@@ -1077,9 +1077,9 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         Container(
           height: context.isMobile ? 200 : 300,
           decoration: BoxDecoration(
-            color: AppColors.surface.withOpacity(0.5),
+            color: context.surfaceColor.withOpacity(0.5),
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+            border: Border.all(color: context.borderColor.withOpacity(0.5)),
           ),
           child: _details.isEmpty
               ? Container(
@@ -1090,13 +1090,13 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                       children: [
                         Icon(
                           Icons.schedule,
-                          color: AppColors.textSecondary.withOpacity(0.5),
+                          color: context.textSecondaryColor.withOpacity(0.5),
                         ),
                         const SizedBox(height: AppSizes.spacing8),
                         Text(
                           'No Time of Use details added yet',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: context.textSecondaryColor,
                             fontSize: AppSizes.fontSizeSmall,
                           ),
                         ),
@@ -1148,7 +1148,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     if (_details.isNotEmpty) ...[
@@ -1207,7 +1207,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeLarge,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: context.textPrimaryColor,
                         ),
                       ),
                     ),
@@ -1271,9 +1271,9 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
         Container(
           height: context.isMobile ? 250 : 550,
           decoration: BoxDecoration(
-            color: AppColors.surface.withOpacity(0.5),
+            color: context.surfaceColor.withOpacity(0.5),
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+            border: Border.all(color: context.borderColor.withOpacity(0.5)),
           ),
           child: _details.isEmpty
               ? Container(
@@ -1284,13 +1284,13 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                       children: [
                         Icon(
                           Icons.grid_view,
-                          color: AppColors.textSecondary.withOpacity(0.5),
+                          color: context.textSecondaryColor.withOpacity(0.5),
                         ),
                         const SizedBox(height: AppSizes.spacing8),
                         Text(
                           'No data to validate yet',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: context.textSecondaryColor,
                             fontSize: AppSizes.fontSizeSmall,
                           ),
                         ),
@@ -1324,13 +1324,13 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
           height: 28,
           margin: const EdgeInsets.only(top: 24), // Align with input fields
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: context.primaryColor,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
             child: Text(
               '${detail.priorityOrder}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -1377,7 +1377,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: context.textPrimaryColor,
                 ),
               ),
               const SizedBox(height: AppSizes.spacing8),
@@ -1387,7 +1387,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                   controller: _getRegisterCodeController(index),
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: context.textPrimaryColor,
                   ),
                   readOnly: _isViewMode,
                   onChanged: (value) {
@@ -1399,14 +1399,14 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                   decoration: InputDecoration(
                     hintText: 'Enter code',
                     filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
+                    fillColor: context.surfaceColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-                      borderSide: BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: context.borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-                      borderSide: BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: context.borderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
@@ -1445,9 +1445,9 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                   message: 'First order will be calculated first',
                   child: ReorderableDragStartListener(
                     index: index,
-                    child: const Icon(
+                    child: Icon(
                       Icons.drag_handle,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondaryColor,
                       size: 20,
                     ),
                   ),
@@ -1458,7 +1458,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                   onPressed: () => _removeDetail(index),
                   icon: const Icon(Icons.delete_outline),
                   style: IconButton.styleFrom(
-                    foregroundColor: AppColors.error,
+                    foregroundColor: context.errorColor,
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(32, 32),
                   ),
@@ -1526,12 +1526,12 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Time Band',
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         const SizedBox(height: AppSizes.spacing8),
@@ -1546,11 +1546,11 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.borderColor),
                 borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
                 color: _isEditMode
-                    ? Theme.of(context).colorScheme.surface
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ? context.surfaceColor
+                    : context.surfaceVariantColor,
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -1566,8 +1566,8 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeSmall,
                           color: detail.timeBandId > 0
-                              ? Theme.of(context).colorScheme.onSurface
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                              ? context.textPrimaryColor
+                              : context.textSecondaryColor,
                           fontWeight: FontWeight.w400,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -1576,7 +1576,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
                     if (_isEditMode)
                       Icon(
                         Icons.arrow_drop_down,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                         size: 20,
                       ),
                   ],
@@ -1653,12 +1653,12 @@ class _CustomChannelDropdown extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text(
+            Text(
               'Channel',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
             // if (!enabled) ...[
@@ -1691,8 +1691,8 @@ class _CustomChannelDropdown extends StatelessWidget {
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeSmall,
                           color: enabled
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
+                              ? context.textPrimaryColor
+                              : context.textSecondaryColor,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1853,10 +1853,10 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
           children: [
             Text(
               timeBand.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1864,7 +1864,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
             const SizedBox(height: 2),
             Text(
               'ID: ${timeBand.id}',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: context.textSecondaryColor),
             ),
           ],
         ),
@@ -1882,12 +1882,12 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
             vertical: AppSizes.spacing4,
           ),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: context.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           ),
           child: Text(
             '${timeBand.startTime} - ${timeBand.endTime}',
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
             textAlign: TextAlign.center,
           ),
         ),
@@ -1899,8 +1899,10 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
         title: 'Days of Week',
         sortable: false,
         flex: 2,
-        builder: (timeBand) =>
-            TimeBandSmartChips.buildDayOfWeekChips(timeBand.daysOfWeek),
+        builder: (timeBand) => TimeBandSmartChips.buildDayOfWeekChips(
+          timeBand.daysOfWeek,
+          context,
+        ),
       ),
 
       // Months column
@@ -1909,8 +1911,10 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
         title: 'Months',
         sortable: false,
         flex: 2,
-        builder: (timeBand) =>
-            TimeBandSmartChips.buildMonthOfYearChips(timeBand.monthsOfYear),
+        builder: (timeBand) => TimeBandSmartChips.buildMonthOfYearChips(
+          timeBand.monthsOfYear,
+          context,
+        ),
       ),
 
       // Description column
@@ -1926,8 +1930,8 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
           style: TextStyle(
             fontSize: 13,
             color: timeBand.description.isNotEmpty
-                ? AppColors.textPrimary
-                : AppColors.textSecondary,
+                ? context.textPrimaryColor
+                : context.textSecondaryColor,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -1969,9 +1973,9 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
             // Search and Filter Section
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                border: Border(bottom: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1994,17 +1998,17 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                           vertical: AppSizes.spacing8,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: context.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMedium,
                           ),
                         ),
                         child: Text(
                           '${_filteredTimeBands.length} items',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: AppSizes.fontSizeSmall,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.primary,
+                            color: context.primaryColor,
                           ),
                         ),
                       ),
@@ -2019,12 +2023,12 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                       vertical: AppSizes.spacing8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.info.withValues(alpha: 0.1),
+                      color: context.infoColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                         AppSizes.radiusMedium,
                       ),
                       border: Border.all(
-                        color: AppColors.info.withValues(alpha: 0.3),
+                        color: context.infoColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -2033,7 +2037,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                         Icon(
                           Icons.info_outline,
                           size: AppSizes.iconSmall,
-                          color: AppColors.info,
+                          color: context.infoColor,
                         ),
                         const SizedBox(width: AppSizes.spacing8),
                         Expanded(
@@ -2041,7 +2045,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                             'Click on any row to select the time band',
                             style: TextStyle(
                               fontSize: AppSizes.fontSizeSmall,
-                              color: AppColors.info,
+                              color: context.infoColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2104,9 +2108,9 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
             // Pagination and footer
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                border: Border(top: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                border: Border(top: BorderSide(color: context.borderColor)),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(AppSizes.radiusLarge),
                   bottomRight: Radius.circular(AppSizes.radiusLarge),

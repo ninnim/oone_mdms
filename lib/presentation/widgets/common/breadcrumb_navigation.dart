@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/site.dart';
+import '../../themes/app_theme.dart';
 
 class BreadcrumbNavigation extends StatelessWidget {
   const BreadcrumbNavigation({super.key});
@@ -52,10 +52,10 @@ class BreadcrumbNavigation extends StatelessWidget {
           for (int i = 0; i < breadcrumbs.length; i++) ...[
             if (i > 0) ...[
               const SizedBox(width: 8),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 size: AppSizes.iconSmall,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
               const SizedBox(width: 8),
             ],
@@ -231,7 +231,9 @@ class BreadcrumbNavigation extends StatelessWidget {
         style: TextStyle(
           fontSize: AppSizes.fontSizeMedium,
           fontWeight: FontWeight.w500,
-          color: item.isLast ? AppColors.textPrimary : AppColors.primary,
+          color: item.isLast
+              ? Theme.of(context).colorScheme.onSurface
+              : context.primaryColor,
           //  decoration: item.isLast ? null : TextDecoration.underline,
         ),
       ),

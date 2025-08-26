@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
 import '../common/blunest_data_table.dart';
@@ -28,7 +28,7 @@ class SpecialDayDetailTableColumns {
               index.toString(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -45,7 +45,7 @@ class SpecialDayDetailTableColumns {
             detail.name,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
               fontWeight: FontWeight.w600,
             ),
             overflow: TextOverflow.ellipsis,
@@ -63,7 +63,7 @@ class SpecialDayDetailTableColumns {
             detail.description.isEmpty ? '-' : detail.description,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -77,7 +77,7 @@ class SpecialDayDetailTableColumns {
         sortable: true,
         builder: (detail) => Container(
           alignment: Alignment.centerLeft,
-          child: _buildStartDateColumn(detail),
+          child: _buildStartDateColumn(detail, context),
         ),
       ),
       BluNestTableColumn<SpecialDayDetail>(
@@ -87,7 +87,7 @@ class SpecialDayDetailTableColumns {
         sortable: true,
         builder: (detail) => Container(
           alignment: Alignment.centerLeft,
-          child: _buildEndDateColumn(detail),
+          child: _buildEndDateColumn(detail, context),
         ),
       ),
       // BluNestTableColumn<SpecialDayDetail>(
@@ -135,23 +135,23 @@ class SpecialDayDetailTableColumns {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem<String>(
+               PopupMenuItem<String>(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit, size: 16, color: AppColors.primary),
+                    Icon(Icons.edit, size: 16, color: context.primaryColor),
                     SizedBox(width: 8),
                     Text('Edit'),
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 16, color: AppColors.error),
+                    Icon(Icons.delete, size: 16, color: context.errorColor),
                     SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: AppColors.error)),
+                    Text('Delete', style: TextStyle(color: context.errorColor)),
                   ],
                 ),
               ),
@@ -159,7 +159,7 @@ class SpecialDayDetailTableColumns {
             child: Icon(
               Icons.more_vert,
               size: 18,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
           ),
         ),
@@ -171,7 +171,7 @@ class SpecialDayDetailTableColumns {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  static Widget _buildStartDateColumn(SpecialDayDetail detail) {
+  static Widget _buildStartDateColumn(SpecialDayDetail detail, BuildContext context) {
     final now = DateTime.now();
     final startDate = detail.startDate;
     final endDate = detail.endDate;
@@ -186,19 +186,19 @@ class SpecialDayDetailTableColumns {
     IconData? icon;
 
     if (isPast) {
-      textColor = AppColors.textSecondary;
-      backgroundColor = AppColors.textSecondary.withOpacity(0.1);
+      textColor = context.textSecondaryColor;
+      backgroundColor = context.textSecondaryColor.withOpacity(0.1);
       icon = Icons.history;
     } else if (isActive) {
-      textColor = AppColors.success;
-      backgroundColor = AppColors.success.withOpacity(0.1);
+      textColor = context.successColor;
+      backgroundColor = context.successColor.withOpacity(0.1);
       icon = Icons.play_circle_filled;
     } else if (isUpcoming) {
-      textColor = AppColors.primary;
-      backgroundColor = AppColors.primary.withOpacity(0.1);
+      textColor = context.primaryColor;
+      backgroundColor = context.primaryColor.withOpacity(0.1);
       icon = Icons.schedule;
     } else {
-      textColor = AppColors.textPrimary;
+      textColor = context.textPrimaryColor;
       backgroundColor = Colors.transparent;
     }
 
@@ -231,7 +231,7 @@ class SpecialDayDetailTableColumns {
     );
   }
 
-  static Widget _buildEndDateColumn(SpecialDayDetail detail) {
+  static Widget _buildEndDateColumn(SpecialDayDetail detail, BuildContext context) {
     final now = DateTime.now();
     final startDate = detail.startDate;
     final endDate = detail.endDate;
@@ -248,27 +248,27 @@ class SpecialDayDetailTableColumns {
     String? tooltip;
 
     if (isExpired) {
-      textColor = AppColors.error;
-      backgroundColor = AppColors.error.withOpacity(0.1);
+      textColor = context.errorColor;
+      backgroundColor = context.errorColor.withOpacity(0.1);
       icon = Icons.cancel;
       tooltip = 'Expired';
     } else if (isExpiringSoon) {
-      textColor = AppColors.warning;
-      backgroundColor = AppColors.warning.withOpacity(0.1);
+      textColor = context.warningColor;
+      backgroundColor = context.warningColor.withOpacity(0.1);
       icon = Icons.warning_amber;
       tooltip = 'Expiring soon';
     } else if (isActive) {
-      textColor = AppColors.success;
-      backgroundColor = AppColors.success.withOpacity(0.1);
+      textColor = context.successColor;
+      backgroundColor = context.successColor.withOpacity(0.1);
       icon = Icons.check_circle;
       tooltip = 'Currently active';
     } else if (isUpcoming) {
-      textColor = AppColors.primary;
-      backgroundColor = AppColors.primary.withOpacity(0.1);
+      textColor = context.primaryColor;
+      backgroundColor = context.primaryColor.withOpacity(0.1);
       icon = Icons.access_time;
       tooltip = 'Upcoming';
     } else {
-      textColor = AppColors.textPrimary;
+      textColor = context.textPrimaryColor;
       backgroundColor = Colors.transparent;
     }
 
@@ -307,3 +307,8 @@ class SpecialDayDetailTableColumns {
     return content;
   }
 }
+
+
+
+
+

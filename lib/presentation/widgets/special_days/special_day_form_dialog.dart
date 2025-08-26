@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
 import '../../../core/utils/responsive_helper.dart';
@@ -319,18 +319,22 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
         Container(
           padding: const EdgeInsets.all(AppSizes.spacing24),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor, //AppColors.surface,
             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.borderColor),
           ),
           child: Column(
             children: [
-              Icon(Icons.event_note, size: 48, color: AppColors.textSecondary),
+              Icon(
+                Icons.event_note,
+                size: 48,
+                color: context.textSecondaryColor,
+              ),
               const SizedBox(height: AppSizes.spacing12),
               Text(
                 'No Special Day Details Added',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
               const SizedBox(height: AppSizes.spacing8),
@@ -339,7 +343,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                     ? 'This special day has no details'
                     : 'Click "Add Detail" to create special day periods',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
             ],
@@ -363,9 +367,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveHelper.getSpacing(context)),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.backgroundColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        border: Border.all(color: AppColors.border.withOpacity(0.2)),
+        border: Border.all(color: context.borderColor.withOpacity(0.2)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: isMobile
@@ -392,14 +396,14 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
               IconButton(
                 onPressed: () => _removeSpecialDayDetail(index),
                 icon: const Icon(Icons.delete_outline),
                 style: IconButton.styleFrom(
-                  foregroundColor: AppColors.error,
+                  foregroundColor: context.errorColor,
                   backgroundColor: Colors.transparent,
                   padding: EdgeInsets.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -596,7 +600,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                 onPressed: () => _removeSpecialDayDetail(index),
                 icon: const Icon(Icons.delete_outline),
                 style: IconButton.styleFrom(
-                  foregroundColor: AppColors.error,
+                  foregroundColor: context.errorColor,
                   backgroundColor: Colors.transparent,
                   padding: EdgeInsets.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -662,10 +666,10 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
             Container(
               padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.border.withOpacity(0.1),
+                    color: context.borderColor.withOpacity(0.1),
                     width: 1,
                   ),
                 ),
@@ -685,7 +689,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
   // Responsive body with form content
   Widget _buildBody() {
     return Container(
-      color: AppColors.background,
+      color: context.backgroundColor,
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Form(
         key: _formKey,
@@ -755,9 +759,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: context.borderColor.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -770,7 +774,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                   ? AppSizes.fontSizeMedium
                   : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -856,9 +860,9 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: context.borderColor.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -874,7 +878,7 @@ class _SpecialDayFormDialogState extends State<SpecialDayFormDialog> {
                       ? AppSizes.fontSizeMedium
                       : AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
               if (!_isReadOnlyMode)

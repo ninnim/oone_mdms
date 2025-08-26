@@ -5,13 +5,14 @@ import 'package:mdms_clone/presentation/screens/schedules/schedule_screen.dart';
 import 'package:mdms_clone/presentation/screens/tou_management/seasons_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_bands/time_bands_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_of_use/time_of_use_screen.dart';
-import 'package:mdms_clone/presentation/screens/schedules/schedule_screen.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
+import 'package:mdms_clone/presentation/widgets/common/theme_switch.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
 import 'dart:async';
-import '../../core/constants/app_colors.dart';
+import '../themes/app_theme.dart';
 import '../../core/constants/app_sizes.dart';
+import '../themes/app_theme.dart';
 import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
@@ -69,8 +70,8 @@ class AppRouter {
 
         // If authenticated and on auth route (without code), redirect to dashboard
         if (isAuthenticated && currentPath == '/auth' && !hasCode) {
-          print('GoRouter: Redirecting to /dashboard because authenticated');
-          return '/dashboard';
+          print('GoRouter: Redirecting to / because authenticated');
+          return '/';
         }
 
         // No redirect needed
@@ -203,26 +204,26 @@ class AppRouter {
               name: 'sites',
               builder: (context, state) => const SitesRouteWrapper(),
             ),
-            GoRoute(
-              path: '/sites/details/:siteId',
-              name: 'site-details',
-              builder: (context, state) {
-                final siteIdStr = state.pathParameters['siteId']!;
-                final siteId = int.tryParse(siteIdStr);
+            // GoRoute(
+            //   path: '/sites/details/:siteId',
+            //   name: 'site-details',
+            //   builder: (context, state) {
+            //     final siteIdStr = state.pathParameters['siteId']!;
+            //     final siteId = int.tryParse(siteIdStr);
 
-                if (siteId == null) {
-                  // Invalid site ID, redirect to sites list
-                  return const Scaffold(
-                    body: Center(child: Text('Invalid site ID')),
-                  );
-                }
+            //     if (siteId == null) {
+            //       // Invalid site ID, redirect to sites list
+            //       return const Scaffold(
+            //         body: Center(child: Text('Invalid site ID')),
+            //       );
+            //     }
 
-                return SiteDetailsRouteWrapper(
-                  siteId: siteId,
-                  site: state.extra as Site?,
-                );
-              },
-            ),
+            //     return SiteDetailsRouteWrapper(
+            //       siteId: siteId,
+            //       site: state.extra as Site?,
+            //     );
+            //   },
+            // ),
             GoRoute(
               path: '/my-profile',
               name: 'my-profile',
@@ -452,7 +453,7 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
     if (_isLoading) {
       return Scaffold(
         body: Center(
-         // child: Container(),
+          // child: Container(),
           child: AppLottieStateWidget.loading(
             // title: 'Loading Device Details',
             // message: 'Please wait while we load the device details.',
@@ -483,7 +484,7 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
               Icon(
                 Icons.error_outline,
                 size: AppSizes.iconLarge,
-                color: AppColors.error,
+                color: context.errorColor,
               ),
               SizedBox(height: 16),
               Text(_error ?? 'Device not found'),
@@ -661,7 +662,7 @@ class _DeviceBillingReadingsRouteWrapperState
               Icon(
                 Icons.error_outline,
                 size: AppSizes.spacing64,
-                color: AppColors.error,
+                color: context.errorColor,
               ),
               SizedBox(height: 16),
               Text('Error: $_error'),
@@ -832,114 +833,114 @@ class _DeviceGroupDetailsRouteWrapperState
   }
 }
 
-class SiteDetailsRouteWrapper extends StatefulWidget {
-  final int siteId;
-  final Site? site;
+// class SiteDetailsRouteWrapper extends StatefulWidget {
+//   final int siteId;
+//   final Site? site;
 
-  const SiteDetailsRouteWrapper({super.key, required this.siteId, this.site});
+//   const SiteDetailsRouteWrapper({super.key, required this.siteId, this.site});
 
-  @override
-  State<SiteDetailsRouteWrapper> createState() =>
-      _SiteDetailsRouteWrapperState();
-}
+//   @override
+//   State<SiteDetailsRouteWrapper> createState() =>
+//       _SiteDetailsRouteWrapperState();
+// }
 
-class _SiteDetailsRouteWrapperState extends State<SiteDetailsRouteWrapper> {
-  Site? _site;
-  bool _isLoading = true;
-  String? _errorMessage;
+// class _SiteDetailsRouteWrapperState extends State<SiteDetailsRouteWrapper> {
+//   Site? _site;
+//   bool _isLoading = true;
+//   String? _errorMessage;
 
-  @override
-  void initState() {
-    super.initState();
-    // Use provided site if available, otherwise load it
-    if (widget.site != null) {
-      _site = widget.site;
-      _isLoading = false;
-    } else {
-      _loadSite();
-    }
-  }
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Use provided site if available, otherwise load it
+//     if (widget.site != null) {
+//       _site = widget.site;
+//       _isLoading = false;
+//     } else {
+//       _loadSite();
+//     }
+//   }
 
-  Future<void> _loadSite() async {
-    try {
-      final siteService = Provider.of<SiteService>(context, listen: false);
-      final response = await siteService.getSiteById(widget.siteId);
+//   Future<void> _loadSite() async {
+//     try {
+//       final siteService = Provider.of<SiteService>(context, listen: false);
+//       final response = await siteService.getSiteById(widget.siteId);
 
-      if (mounted) {
-        if (response.success && response.data != null) {
-          setState(() {
-            _site = response.data!;
-            _isLoading = false;
-            _errorMessage = null;
-          });
-        } else {
-          setState(() {
-            _errorMessage = response.message ?? 'Failed to load site';
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Error loading site: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
+//       if (mounted) {
+//         if (response.success && response.data != null) {
+//           setState(() {
+//             _site = response.data!;
+//             _isLoading = false;
+//             _errorMessage = null;
+//           });
+//         } else {
+//           setState(() {
+//             _errorMessage = response.message ?? 'Failed to load site';
+//             _isLoading = false;
+//           });
+//         }
+//       }
+//     } catch (e) {
+//       if (mounted) {
+//         setState(() {
+//           _errorMessage = 'Error loading site: $e';
+//           _isLoading = false;
+//         });
+//       }
+//     }
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
-      );
-    }
+//   @override
+//   Widget build(BuildContext context) {
+//     if (_isLoading) {
+//       return const Scaffold(
+//         body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
+//       );
+//     }
 
-    if (_errorMessage != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error: $_errorMessage'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/sites'),
-                child: const Text('Back to Sites'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+//     if (_errorMessage != null) {
+//       return Scaffold(
+//         body: Center(
+//           child: Column(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               const Icon(Icons.error_outline, size: 64, color: Colors.red),
+//               const SizedBox(height: 16),
+//               Text('Error: $_errorMessage'),
+//               const SizedBox(height: 16),
+//               ElevatedButton(
+//                 onPressed: () => context.go('/sites'),
+//                 child: const Text('Back to Sites'),
+//               ),
+//             ],
+//           ),
+//         ),
+//       );
+//     }
 
-    if (_site == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.search_off, size: 64),
-              const SizedBox(height: 16),
-              const Text('Site not found'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/sites'),
-                child: const Text('Back to Sites'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+//     if (_site == null) {
+//       return Scaffold(
+//         body: Center(
+//           child: Column(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               const Icon(Icons.search_off, size: 64),
+//               const SizedBox(height: 16),
+//               const Text('Site not found'),
+//               const SizedBox(height: 16),
+//               ElevatedButton(
+//                 onPressed: () => context.go('/sites'),
+//                 child: const Text('Back to Sites'),
+//               ),
+//             ],
+//           ),
+//         ),
+//       );
+//     }
 
-    return SiteDetailsScreen(siteId: widget.siteId, site: _site);
-  }
-}
+//     return SiteDetailsScreen(siteId: widget.siteId, site: _site);
+//   }
+// }
 
 class TimeOfUseRouteWrapper extends StatelessWidget {
   const TimeOfUseRouteWrapper({super.key});
@@ -988,8 +989,8 @@ class TicketsRouteWrapper extends StatelessWidget {
           title: 'Coming Soon...',
           message: 'Please wait new features will comming soon...',
           lottieSize: 400,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.textSecondary,
+          titleColor: context.primaryColor,
+          messageColor: context.textSecondaryColor,
         ),
       ),
 
@@ -1010,7 +1011,7 @@ class TicketsRouteWrapper extends StatelessWidget {
 //           message: 'Please wait new features will comming soon...',
 //           lottieSize: 400,
 //           titleColor: AppColors.primary,
-//           messageColor: AppColors.textSecondary,
+//           messageColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
 //         ),
 //       ),
 
@@ -1058,8 +1059,8 @@ class SettingsRouteWrapper extends StatelessWidget {
           title: 'Coming Soon...',
           message: 'Please wait new features will comming soon...',
           lottieSize: 400,
-          titleColor: AppColors.primary,
-          messageColor: AppColors.textSecondary,
+          titleColor: context.primaryColor,
+          messageColor: context.textSecondaryColor,
         ),
       ),
 
@@ -1120,7 +1121,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Row(
         children: [
           _buildSidebar(selectedScreen),
@@ -1176,9 +1177,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     return Container(
       width: _sidebarCollapsed ? 72 : 240,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        border: Border(right: BorderSide(color: context.borderColor, width: 1)),
       ),
       child: Column(
         children: [
@@ -1411,16 +1412,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             height: 40,
             decoration: BoxDecoration(
               color: hasSelectedChild
-                  ? AppColors.primary.withOpacity(0.15)
-                  : AppColors.surface,
+                  ? context.primaryColor.withOpacity(0.15)
+                  : context.surfaceColor,
               borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               border: hasSelectedChild
-                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
-                  : Border.all(color: AppColors.border),
+                  ? Border.all(color: context.primaryColor.withOpacity(0.3))
+                  : Border.all(color: context.borderColor),
               boxShadow: [
                 BoxShadow(
                   color: hasSelectedChild
-                      ? AppColors.primary.withOpacity(0.1)
+                      ? context.primaryColor.withOpacity(0.1)
                       : Colors.black.withOpacity(0.04),
                   blurRadius: hasSelectedChild ? 8 : 4,
                   offset: const Offset(0, 2),
@@ -1433,8 +1434,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   child: Icon(
                     icon,
                     color: hasSelectedChild
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? context.primaryColor
+                        : context.textSecondaryColor,
                     size: AppSizes.iconMedium,
                   ),
                 ),
@@ -1446,8 +1447,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                     height: 16,
                     decoration: BoxDecoration(
                       color: hasSelectedChild
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
+                          ? context.primaryColor
+                          : context.textSecondaryColor,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -1481,16 +1482,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             height: 30,
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.15)
-                  : AppColors.background,
+                  ? context.primaryColor.withOpacity(0.15)
+                  : context.backgroundColor,
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
               border: isSelected
-                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
-                  : Border.all(color: AppColors.border.withOpacity(0.5)),
+                  ? Border.all(color: context.primaryColor.withOpacity(0.3))
+                  : Border.all(color: context.borderColor.withOpacity(0.5)),
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? AppColors.primary.withOpacity(0.1)
+                      ? context.primaryColor.withOpacity(0.1)
                       : Colors.black.withOpacity(0.02),
                   blurRadius: isSelected ? 6 : 2,
                   offset: const Offset(0, 1),
@@ -1500,7 +1501,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             child: Center(
               child: Icon(
                 icon,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected
+                    ? context.primaryColor
+                    : context.textSecondaryColor,
                 size: AppSizes.iconMedium,
               ),
             ),
@@ -1529,17 +1532,19 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             height: 40,
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.15)
-                  : Colors.white,
+                  ? context.primaryColor.withValues(alpha: 0.15)
+                  : context.surfaceColor,
               borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               border: isSelected
-                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
-                  : Border.all(color: AppColors.border),
+                  ? Border.all(
+                      color: context.primaryColor.withValues(alpha: 0.3),
+                    )
+                  : Border.all(color: context.borderColor),
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? AppColors.primary.withOpacity(0.1)
-                      : Colors.black.withOpacity(0.04),
+                      ? context.primaryColor.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.04),
                   blurRadius: isSelected ? 8 : 4,
                   offset: const Offset(0, 2),
                 ),
@@ -1551,8 +1556,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   child: Icon(
                     icon,
                     color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? context.primaryColor
+                        : context.textSecondaryColor,
                     size: AppSizes.iconMedium,
                   ),
                 ),
@@ -1562,8 +1567,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                     right: 8,
                     child: Container(
                       padding: const EdgeInsets.all(AppSizes.spacing4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.error,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.error,
                         shape: BoxShape.circle,
                       ),
                       constraints: const BoxConstraints(
@@ -1572,8 +1577,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                       ),
                       child: Text(
                         badge,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onError,
                           fontSize: AppSizes.fontSizeMedium,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1592,8 +1597,10 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
   Widget _buildSidebarHeader() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.borderColor, width: 1),
+        ),
       ),
       child: Row(
         children: [
@@ -1601,7 +1608,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: context.primaryColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -1612,13 +1619,13 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           ),
           if (!_sidebarCollapsed) ...[
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'MDMS',
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeXLarge,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
             ),
@@ -1911,7 +1918,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             });
           },
           borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-          hoverColor: AppColors.primary.withOpacity(0.05),
+          hoverColor: context.primaryColor.withValues(alpha: 0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSizes.spacing12,
@@ -1919,16 +1926,18 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             ),
             decoration: BoxDecoration(
               color: hasSelectedChild
-                  ? AppColors.primary.withOpacity(0.15)
+                  ? context.primaryColor.withValues(alpha: 0.15)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               border: hasSelectedChild
-                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.5))
+                  ? Border.all(
+                      color: context.primaryColor.withValues(alpha: 0.5),
+                    )
                   : null,
               boxShadow: hasSelectedChild
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF2563eb).withOpacity(0.1),
+                        color: context.primaryColor.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -1940,8 +1949,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                 Icon(
                   icon,
                   color: hasSelectedChild
-                      ? const Color(0xFF2563eb)
-                      : const Color(0xFF64748b),
+                      ? context.primaryColor
+                      : context.textSecondaryColor,
                   size: AppSizes.iconMedium,
                 ),
                 if (!_sidebarCollapsed) ...[
@@ -1951,8 +1960,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                       title,
                       style: TextStyle(
                         color: hasSelectedChild
-                            ? const Color(0xFF2563eb)
-                            : const Color(0xFF64748b),
+                            ? context.primaryColor
+                            : context.textSecondaryColor,
                         fontSize: AppSizes.fontSizeSmall,
                         fontWeight: hasSelectedChild
                             ? FontWeight.w600
@@ -1964,8 +1973,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: hasSelectedChild
-                        ? const Color(0xFF2563eb)
-                        : const Color(0xFF64748b),
+                        ? context.primaryColor
+                        : context.textSecondaryColor,
                     size: 16,
                   ),
                 ],
@@ -2169,8 +2178,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
   Widget _buildSidebarFooter() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing12),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.borderColor, width: 1)),
       ),
       child: Row(
         children: [
@@ -2188,7 +2197,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
           ),
           if (!_sidebarCollapsed) ...[
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2202,12 +2211,15 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   ),
                   Text(
                     'admin@mdms.com',
-                    style: TextStyle(color: Color(0xFF64748b), fontSize: 11),
+                    style: TextStyle(
+                      color: context.textSecondaryColor,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.more_vert, color: Color(0xFF64748b), size: 16),
+            Icon(Icons.more_vert, color: context.textSecondaryColor, size: 16),
           ],
         ],
       ),
@@ -2223,9 +2235,14 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         horizontal: AppSizes.spacing16,
         vertical: AppSizes.spacing8,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2242,7 +2259,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                 },
                 icon: Icon(
                   _sidebarCollapsed ? Icons.menu : Icons.menu_open,
-                  color: const Color(0xFF64748b),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 tooltip: _sidebarCollapsed
                     ? 'Expand Sidebar'
@@ -2251,13 +2268,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               const SizedBox(width: 8),
               Text(
                 _getPageTitle(currentLocation),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1e293b),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const Spacer(),
+              // Theme Switcher
+              const ThemeSwitch(isCompact: true, showLabel: false),
+              const SizedBox(width: 16),
               // URL Display
               // Container(
               //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -2291,7 +2311,9 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               IconButton(
                 onPressed: () {},
                 icon: const Icon(Icons.notifications_outlined),
-                color: const Color(0xFF64748b),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 8),
               // User Avatar with Dropdown១
@@ -2302,20 +2324,22 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: const Color(0xFF2563eb),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       child: Text(
                         'A',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(
+                    Icon(
                       Icons.keyboard_arrow_down,
-                      color: Color(0xFF64748b),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                       size: 16,
                     ),
                   ],

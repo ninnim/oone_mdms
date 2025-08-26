@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mdms_clone/core/constants/app_colors.dart';
+import 'package:mdms_clone/presentation/themes/app_theme.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -82,14 +82,10 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           ),
           decoration: BoxDecoration(
             color: theme.scaffoldBackgroundColor,
-            border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 2,
-                offset: const Offset(0, -1),
-              ),
-            ],
+            border: Border(
+              top: BorderSide(color: context.borderColor, width: 1),
+            ),
+            boxShadow: [AppSizes.shadowSmall],
           ),
           child: isSmallScreen
               ? _buildCompactLayout(theme)
@@ -148,10 +144,10 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                     vertical: AppSizes.spacing4,
                   ),
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withValues(alpha: 0.1),
+                    color: context.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                     border: Border.all(
-                      color: theme.primaryColor.withValues(alpha: 0.3),
+                      color: context.primaryColor.withOpacity(0.3),
                     ),
                   ),
                   child: Text(
@@ -159,7 +155,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
                     style: TextStyle(
                       fontSize: AppSizes.fontSizeSmall,
                       fontWeight: FontWeight.w600,
-                      color: theme.primaryColor,
+                      color: context.primaryColor,
                     ),
                   ),
                 ),
@@ -193,83 +189,6 @@ class _ResultsPaginationState extends State<ResultsPagination> {
         ),
 
         const SizedBox(height: AppSizes.spacing8),
-
-        // Navigation controls (always show, even for single page)
-        // Row(
-        //   mainAxisAlignment: MainAxisAlignment.center,
-        //   children: [
-        //     _buildNavigationButton(
-        //       icon: Icons.keyboard_double_arrow_left,
-        //       onPressed: widget.currentPage > 1
-        //           ? () => widget.onPageChanged(1)
-        //           : null,
-        //       isEnabled: widget.currentPage > 1,
-        //       theme: theme,
-        //       size: 28,
-        //     ),
-
-        //     const SizedBox(width: AppSizes.spacing4),
-
-        //     _buildNavigationButton(
-        //       icon: Icons.chevron_left,
-        //       onPressed: widget.currentPage > 1
-        //           ? () => widget.onPageChanged(widget.currentPage - 1)
-        //           : null,
-        //       isEnabled: widget.currentPage > 1,
-        //       theme: theme,
-        //       size: 28,
-        //     ),
-
-        //     const SizedBox(width: AppSizes.spacing8),
-
-        //     // Page indicator
-        //     Container(
-        //       padding: const EdgeInsets.symmetric(
-        //         horizontal: AppSizes.spacing8,
-        //         vertical: AppSizes.spacing4,
-        //       ),
-        //       decoration: BoxDecoration(
-        //         color: theme.primaryColor.withValues(alpha: 0.1),
-        //         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        //         border: Border.all(
-        //           color: theme.primaryColor.withValues(alpha: 0.3),
-        //         ),
-        //       ),
-        //       child: Text(
-        //         '${widget.currentPage} / ${widget.totalPages}',
-        //         style: TextStyle(
-        //           fontSize: AppSizes.fontSizeSmall,
-        //           fontWeight: FontWeight.w600,
-        //           color: theme.primaryColor,
-        //         ),
-        //       ),
-        //     ),
-
-        //     const SizedBox(width: AppSizes.spacing8),
-
-        //     _buildNavigationButton(
-        //       icon: Icons.chevron_right,
-        //       onPressed: widget.currentPage < widget.totalPages
-        //           ? () => widget.onPageChanged(widget.currentPage + 1)
-        //           : null,
-        //       isEnabled: widget.currentPage < widget.totalPages,
-        //       theme: theme,
-        //       size: 28,
-        //     ),
-
-        //     const SizedBox(width: AppSizes.spacing4),
-
-        //     _buildNavigationButton(
-        //       icon: Icons.keyboard_double_arrow_right,
-        //       onPressed: widget.currentPage < widget.totalPages
-        //           ? () => widget.onPageChanged(widget.totalPages)
-        //           : null,
-        //       isEnabled: widget.currentPage < widget.totalPages,
-        //       theme: theme,
-        //       size: 28,
-        //     ),
-        //   ],
-        // ),
       ],
     );
   }
@@ -423,7 +342,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             fontSize: isCompact
                 ? AppSizes.fontSizeSmall
                 : AppSizes.fontSizeSmall,
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+            color: context.textSecondaryColor,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -446,7 +365,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         color: theme.cardColor,
       ),
@@ -456,13 +375,13 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           isDense: true,
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: theme.textTheme.bodyMedium?.color,
+            color: context.textPrimaryColor,
             fontWeight: FontWeight.w400,
           ),
           icon: Icon(
             Icons.keyboard_arrow_down,
             size: AppSizes.iconSmall,
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: context.textSecondaryColor,
           ),
           items: safeOptions.map((int value) {
             return DropdownMenuItem<int>(
@@ -485,7 +404,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
       width: 40,
       height: 32,
       decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         color: theme.cardColor,
       ),
@@ -496,7 +415,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           keyboardType: TextInputType.number,
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: theme.textTheme.bodyMedium?.color,
+            color: context.textPrimaryColor,
             fontWeight: FontWeight.w600,
           ),
           decoration: const InputDecoration(
@@ -536,8 +455,8 @@ class _ResultsPaginationState extends State<ResultsPagination> {
           decoration: BoxDecoration(
             border: Border.all(
               color: isEnabled
-                  ? theme.dividerColor.withValues(alpha: 0.3)
-                  : theme.dividerColor.withValues(alpha: 0.1),
+                  ? context.borderColor
+                  : context.borderColor.withValues(alpha: 0.3),
             ),
             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             color: theme.cardColor,
@@ -546,8 +465,8 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             icon,
             size: size * 0.5,
             color: isEnabled
-                ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8)
-                : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
+                ? context.textPrimaryColor
+                : context.textSecondaryColor,
           ),
         ),
       ),
@@ -567,11 +486,9 @@ class _ResultsPaginationState extends State<ResultsPagination> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: isActive ? theme.primaryColor : theme.cardColor,
+          color: isActive ? context.primaryColor : theme.cardColor,
           border: Border.all(
-            color: isActive
-                ? theme.primaryColor
-                : theme.dividerColor.withValues(alpha: 0.3),
+            color: isActive ? context.primaryColor : context.borderColor,
           ),
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         ),
@@ -582,7 +499,7 @@ class _ResultsPaginationState extends State<ResultsPagination> {
             fontSize: AppSizes.fontSizeSmall,
             color: isActive
                 ? theme.colorScheme.onPrimary
-                : theme.textTheme.bodyMedium?.color,
+                : context.textPrimaryColor,
             fontWeight: FontWeight.w600,
           ),
         ),

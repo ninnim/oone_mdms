@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_of_use.dart';
@@ -19,6 +17,7 @@ import '../../widgets/time_of_use/time_of_use_form_dialog.dart';
 import '../../widgets/time_of_use/time_of_use_table_columns.dart';
 import '../../widgets/time_of_use/time_of_use_filters_and_actions_v2.dart';
 import '../../widgets/time_of_use/time_of_use_kanban_view.dart';
+import '../../themes/app_theme.dart';
 
 class TimeOfUseScreen extends StatefulWidget {
   const TimeOfUseScreen({super.key});
@@ -403,6 +402,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
 
   Future<void> _createTimeOfUse() async {
     final result = await showDialog<bool>(
+      barrierDismissible: false,
       context: context,
       builder: (context) => TimeOfUseFormDialog(
         onSaved: () {
@@ -419,6 +419,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
 
   Future<void> _editTimeOfUse(TimeOfUse timeOfUse) async {
     final result = await showDialog<bool>(
+      barrierDismissible: false,
       context: context,
       builder: (context) => TimeOfUseFormDialog(
         timeOfUse: timeOfUse,
@@ -507,7 +508,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
         final isMobile = screenWidth < 768;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.backgroundColor,
           body: SafeArea(
             child: Column(
               children: [
@@ -572,7 +573,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor, //AppColors.surface,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -593,7 +594,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
                     children: [
                       Icon(
                         Icons.schedule_outlined,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -605,7 +606,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -617,7 +618,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
                           _summaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -671,7 +672,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               );
             },
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -693,7 +694,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -728,7 +729,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -778,7 +779,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
                   Icons.view_kanban,
                   size: 18,
                   color: _currentView == TimeOfUseViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -786,7 +787,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
                   'Kanban View',
                   style: TextStyle(
                     color: _currentView == TimeOfUseViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -801,7 +802,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
                   Icons.table_chart,
                   size: 18,
                   color: _currentView == TimeOfUseViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -809,7 +810,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
                   'Table View',
                   style: TextStyle(
                     color: _currentView == TimeOfUseViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -840,9 +841,9 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -858,7 +859,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Total Time of Use',
               _totalItems.toString(),
               Icons.schedule_outlined,
-              AppColors.primary,
+              context.primaryColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -867,7 +868,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Active',
               activeTimeOfUse.toString(),
               Icons.check_circle_outline,
-              AppColors.success,
+              context.successColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -876,7 +877,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Inactive',
               inactiveTimeOfUse.toString(),
               Icons.pause_circle_outline,
-              AppColors.error,
+              context.errorColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -885,7 +886,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Total Channels',
               totalChannels.toString(),
               Icons.account_tree_outlined,
-              AppColors.info,
+              context.infoColor,
             ),
           ),
         ],
@@ -901,9 +902,9 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -919,7 +920,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Total',
               _totalItems.toString(),
               Icons.schedule_outlined,
-              AppColors.primary,
+              context.primaryColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing8),
@@ -928,7 +929,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Active',
               activeTimeOfUse.toString(),
               Icons.check_circle_outline,
-              AppColors.success,
+              context.successColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing8),
@@ -937,7 +938,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Inactive',
               inactiveTimeOfUse.toString(),
               Icons.pause_circle_outline,
-              AppColors.error,
+              context.errorColor,
             ),
           ),
           const SizedBox(width: AppSizes.spacing8),
@@ -946,7 +947,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
               'Channels',
               totalChannels.toString(),
               Icons.account_tree_outlined,
-              AppColors.info,
+              context.infoColor,
             ),
           ),
         ],
@@ -987,9 +988,9 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
           const SizedBox(height: AppSizes.spacing8),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1028,7 +1029,7 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
             title,
             style: TextStyle(
               fontSize: AppSizes.fontSizeExtraSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
@@ -1089,19 +1090,14 @@ class _TimeOfUseScreenState extends State<TimeOfUseScreen>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.backgroundColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [AppSizes.shadowSmall],
       ),
       child: BluNestDataTable<TimeOfUse>(
         data: _timeOfUseList,
         columns: TimeOfUseTableColumns.buildAllBluNestColumns(
+          context: context,
           sortBy: _sortBy,
           sortAscending: _sortAscending,
           onEdit: _editTimeOfUse,

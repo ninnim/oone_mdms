@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_of_use.dart';
 import '../common/blunest_data_table.dart';
@@ -12,6 +12,7 @@ class TimeOfUseTableColumns {
     Function(TimeOfUse)? onEdit,
     Function(TimeOfUse)? onDelete,
     Function(TimeOfUse)? onView,
+    required BuildContext context,
     int currentPage = 1,
     int itemsPerPage = 25,
     List<TimeOfUse>? data,
@@ -31,10 +32,10 @@ class TimeOfUseTableColumns {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               '$rowNumber',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -61,7 +62,7 @@ class TimeOfUseTableColumns {
         title: 'Name',
         sortable: true,
         flex: 2,
-        builder: (timeOfUse) => _buildNameColumn(timeOfUse),
+        builder: (timeOfUse) => _buildNameColumn(timeOfUse, context),
       ),
 
       // Time Bands column
@@ -69,7 +70,7 @@ class TimeOfUseTableColumns {
         key: 'timeBands',
         title: 'Time Bands',
         flex: 1,
-        builder: (timeOfUse) => _buildTimeBandsColumn(timeOfUse),
+        builder: (timeOfUse) => _buildTimeBandsColumn(timeOfUse, context),
       ),
 
       // Channels column
@@ -78,8 +79,7 @@ class TimeOfUseTableColumns {
         title: 'Channels',
         flex: 1,
         builder: (timeOfUse) =>
-        
-         _buildChannelsColumn(timeOfUse),
+            _buildChannelsColumn(timeOfUse, context),
       ),
 
       // Status column
@@ -88,7 +88,7 @@ class TimeOfUseTableColumns {
         title: 'Status',
         sortable: true,
         flex: 1,
-        builder: (timeOfUse) => _buildStatusColumn(timeOfUse),
+        builder: (timeOfUse) => _buildStatusColumn(timeOfUse, context),
       ),
       // Description column
       BluNestTableColumn<TimeOfUse>(
@@ -96,7 +96,7 @@ class TimeOfUseTableColumns {
         title: 'Description',
         sortable: true,
         flex: 2,
-        builder: (timeOfUse) => _buildDescriptionColumn(timeOfUse),
+        builder: (timeOfUse) => _buildDescriptionColumn(timeOfUse, context),
       ),
 
       // Actions column
@@ -106,7 +106,7 @@ class TimeOfUseTableColumns {
         flex: 1,
         isActions: true,
         builder: (timeOfUse) =>
-            _buildActionsColumn(timeOfUse, onEdit, onDelete, onView),
+            _buildActionsColumn(timeOfUse, onEdit, onDelete, onView,context),
       ),
     ];
   }
@@ -121,9 +121,11 @@ class TimeOfUseTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<TimeOfUse>? data,
+    required BuildContext context,
   }) {
     final allColumns = buildAllColumns(
       sortBy: sortBy,
+      context: context,
       sortAscending: sortAscending,
       onEdit: onEdit,
       onDelete: onDelete,
@@ -146,8 +148,10 @@ class TimeOfUseTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<TimeOfUse>? data,
+    required BuildContext context,
   }) {
     return buildAllColumns(
+      context: context,
       sortBy: sortBy,
       sortAscending: sortAscending,
       onEdit: onEdit,
@@ -159,7 +163,7 @@ class TimeOfUseTableColumns {
     );
   }
 
-  static Widget _buildNameColumn(TimeOfUse timeOfUse) {
+  static Widget _buildNameColumn(TimeOfUse timeOfUse, BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       alignment: Alignment.centerLeft,
@@ -169,10 +173,10 @@ class TimeOfUseTableColumns {
         children: [
           Text(
             timeOfUse.name,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -181,7 +185,7 @@ class TimeOfUseTableColumns {
           //   const SizedBox(height: 2),
           //   Text(
           //     'ID: ${timeOfUse.id}',
-          //     style: const TextStyle(
+          //     style: TextStyle(
           //       fontSize: AppSizes.fontSizeSmall,
           //       color: AppColors.textSecondary,
           //     ),
@@ -192,31 +196,7 @@ class TimeOfUseTableColumns {
     );
   }
 
-  static Widget _buildCodeColumn(TimeOfUse timeOfUse) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-        ),
-        child: Text(
-          timeOfUse.code,
-          style: const TextStyle(
-            fontSize: AppSizes.fontSizeSmall,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildDescriptionColumn(TimeOfUse timeOfUse) {
+  static Widget _buildDescriptionColumn(TimeOfUse timeOfUse, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(8),
       child: Text(
@@ -226,8 +206,8 @@ class TimeOfUseTableColumns {
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
           color: timeOfUse.description.isNotEmpty
-              ? AppColors.textPrimary
-              : AppColors.textSecondary,
+              ? context.textPrimaryColor
+              : context.textSecondaryColor,
           fontStyle: timeOfUse.description.isNotEmpty
               ? FontStyle.normal
               : FontStyle.italic,
@@ -238,7 +218,7 @@ class TimeOfUseTableColumns {
     );
   }
 
-  static Widget _buildTimeBandsColumn(TimeOfUse timeOfUse) {
+  static Widget _buildTimeBandsColumn(TimeOfUse timeOfUse, BuildContext context) {
     final uniqueTimeBands = timeOfUse.timeOfUseDetails
         .map((d) => d.timeBandId)
         .toSet()
@@ -249,9 +229,9 @@ class TimeOfUseTableColumns {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.info.withOpacity(0.1),
+          color: context.infoColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          border: Border.all(color: AppColors.info.withOpacity(0.3)),
+          border: Border.all(color: context.infoColor.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -259,15 +239,15 @@ class TimeOfUseTableColumns {
             Icon(
               Icons.schedule,
               size: AppSizes.iconSmall,
-              color: AppColors.info,
+              color: context.infoColor,
             ),
             const SizedBox(width: 4),
             Text(
               '$uniqueTimeBands',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w600,
-                color: AppColors.info,
+                color: context.infoColor,
               ),
             ),
           ],
@@ -276,7 +256,7 @@ class TimeOfUseTableColumns {
     );
   }
 
-  static Widget _buildChannelsColumn(TimeOfUse timeOfUse) {
+  static Widget _buildChannelsColumn(TimeOfUse timeOfUse, BuildContext context) {
     final uniqueChannels = timeOfUse.timeOfUseDetails
         .map((d) => d.channelId)
         .toSet()
@@ -287,9 +267,9 @@ class TimeOfUseTableColumns {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.1),
+          color: context.warningColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+          border: Border.all(color: context.warningColor.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -297,15 +277,15 @@ class TimeOfUseTableColumns {
             Icon(
               Icons.settings_input_component,
               size: AppSizes.iconSmall,
-              color: AppColors.warning,
+              color: context.warningColor,
             ),
             const SizedBox(width: 4),
             Text(
               '$uniqueChannels',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w600,
-                color: AppColors.warning,
+                color: context.warningColor,
               ),
             ),
           ],
@@ -314,20 +294,20 @@ class TimeOfUseTableColumns {
     );
   }
 
-  static Widget _buildStatusColumn(TimeOfUse timeOfUse) {
+  static Widget _buildStatusColumn(TimeOfUse timeOfUse, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: timeOfUse.active
-              ? AppColors.success.withOpacity(0.1)
-              : AppColors.error.withOpacity(0.1),
+              ? context.successColor.withOpacity(0.1)
+              : context.errorColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           border: Border.all(
             color: timeOfUse.active
-                ? AppColors.success.withOpacity(0.3)
-                : AppColors.error.withOpacity(0.3),
+                ? context.successColor.withOpacity(0.3)
+                : context.errorColor.withOpacity(0.3),
           ),
         ),
         child: Text(
@@ -335,7 +315,7 @@ class TimeOfUseTableColumns {
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w600,
-            color: timeOfUse.active ? AppColors.success : AppColors.error,
+            color: timeOfUse.active ? context.successColor : context.errorColor,
           ),
         ),
       ),
@@ -347,47 +327,48 @@ class TimeOfUseTableColumns {
     Function(TimeOfUse)? onEdit,
     Function(TimeOfUse)? onDelete,
     Function(TimeOfUse)? onView,
+     BuildContext context,
   ) {
     return Container(
       alignment: Alignment.centerRight,
       height: AppSizes.spacing40,
       child: PopupMenuButton<String>(
-        icon: const Icon(
+        icon:  Icon(
           Icons.more_vert,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           size: 16,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         ),
         itemBuilder: (context) => [
-          const PopupMenuItem<String>(
+           PopupMenuItem<String>(
             value: 'view',
             child: Row(
               children: [
-                Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                Icon(Icons.visibility, size: 16, color: context.primaryColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('View Details'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'edit',
             child: Row(
               children: [
-                Icon(Icons.edit, size: 16, color: AppColors.warning),
+                Icon(Icons.edit, size: 16, color: context.warningColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('Edit'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'delete',
             child: Row(
               children: [
-                Icon(Icons.delete, size: 16, color: AppColors.error),
+                Icon(Icons.delete, size: 16, color: context.errorColor),
                 SizedBox(width: AppSizes.spacing8),
-                Text('Delete', style: TextStyle(color: AppColors.error)),
+                Text('Delete', style: TextStyle(color: context.errorColor)),
               ],
             ),
           ),
@@ -478,3 +459,8 @@ class TimeOfUseTableColumns {
   // Default hidden columns
   static List<String> get defaultHiddenColumns => [];
 }
+
+
+
+
+

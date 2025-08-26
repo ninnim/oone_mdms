@@ -4,7 +4,7 @@ import 'package:mdms_clone/presentation/widgets/device_groups/device_group_filte
 import '../../widgets/device_groups/device_group_kanban_view.dart';
 import 'dart:async';
 import '../../../core/models/device_group.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/app_enums.dart';
@@ -22,6 +22,7 @@ import '../../widgets/common/app_confirm_dialog.dart';
 import '../../widgets/device_groups/device_group_summary_card.dart';
 import 'create_edit_device_group_dialog.dart';
 import 'device_group_manage_devices_dialog.dart';
+import '../../themes/app_theme.dart';
 
 class DeviceGroupsScreen extends StatefulWidget {
   const DeviceGroupsScreen({super.key});
@@ -359,10 +360,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
   }
 
   void _viewDeviceGroup(DeviceGroup deviceGroup) {
-    context.push(
-      '/device-groups/details/${deviceGroup.id}',
-      extra: deviceGroup,
-    );
+    context.go('/device-groups/details/${deviceGroup.id}', extra: deviceGroup);
   }
 
   Future<void> _deleteDeviceGroup(DeviceGroup deviceGroup) async {
@@ -458,7 +456,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
         final isMobile = screenWidth < 768;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.backgroundColor,
           body: SafeArea(
             child: Column(
               children: [
@@ -505,7 +503,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
             currentViewMode: _currentViewMode,
             selectedStatus: null, // We can add status filtering later
           ),
-          const SizedBox(height: AppSizes.spacing24),
+          const SizedBox(height: AppSizes.spacing8),
         ],
       ),
     );
@@ -548,7 +546,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -569,7 +567,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
                     children: [
                       Icon(
                         Icons.group_work,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -581,7 +579,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -602,7 +600,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
                           _summaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -653,7 +651,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -687,7 +685,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -737,7 +735,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
                   Icons.view_kanban,
                   size: 18,
                   color: _currentViewMode == DeviceGroupViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -745,7 +743,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
                   'Kanban View',
                   style: TextStyle(
                     color: _currentViewMode == DeviceGroupViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -760,7 +758,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
                   Icons.table_chart,
                   size: 18,
                   color: _currentViewMode == DeviceGroupViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -768,7 +766,7 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
                   'Table View',
                   style: TextStyle(
                     color: _currentViewMode == DeviceGroupViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -783,11 +781,11 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
   Widget _buildContent() {
     // Show full-screen loading only if no data exists yet
     if (_isLoading && _deviceGroups.isEmpty) {
-      return const Center(
+      return Center(
         child: AppLottieStateWidget.loading(
           title: 'Loading Device Groups',
-          titleColor: AppColors.primary,
-          messageColor: AppColors.textSecondary,
+          titleColor: context.primaryColor,
+          messageColor: context.textSecondaryColor,
           message: 'Please wait while we fetch your device groups...',
           lottieSize: 80,
         ),
@@ -872,10 +870,10 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
             alignment: Alignment.centerLeft,
             child: Text(
               '$rowNumber',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -892,10 +890,10 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
           alignment: Alignment.centerLeft,
           child: Text(
             group.name ?? 'None',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
         ),
@@ -912,9 +910,9 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
             group.description?.isNotEmpty == true
                 ? group.description!
                 : 'No description',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -962,52 +960,56 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
           alignment: Alignment.center,
           height: AppSizes.spacing40,
           child: PopupMenuButton<String>(
-            icon: const Icon(
+            icon: Icon(
               Icons.more_vert,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               size: 16,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
             ),
             itemBuilder: (context) => [
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'view',
                 child: Row(
                   children: [
-                    Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                    Icon(
+                      Icons.visibility,
+                      size: 16,
+                      color: context.primaryColor,
+                    ),
                     SizedBox(width: AppSizes.spacing8),
                     Text('View Details'),
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit, size: 16, color: AppColors.warning),
+                    Icon(Icons.edit, size: 16, color: context.warningColor),
                     SizedBox(width: AppSizes.spacing8),
                     Text('Edit'),
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'manage_devices',
                 child: Row(
                   children: [
-                    Icon(Icons.device_hub, size: 16, color: AppColors.info),
+                    Icon(Icons.device_hub, size: 16, color: context.infoColor),
                     SizedBox(width: AppSizes.spacing8),
                     Text('Manage Devices'),
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 16, color: AppColors.error),
+                    Icon(Icons.delete, size: 16, color: context.errorColor),
                     SizedBox(width: AppSizes.spacing8),
-                    Text('Delete', style: TextStyle(color: AppColors.error)),
+                    Text('Delete', style: TextStyle(color: context.errorColor)),
                   ],
                 ),
               ),

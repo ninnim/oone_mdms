@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_of_use.dart';
 import '../../../core/models/time_band.dart';
@@ -96,9 +96,9 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.borderColor),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -130,8 +130,8 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Column(
         children: [
@@ -140,22 +140,22 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
               Container(
                 padding: const EdgeInsets.all(AppSizes.spacing6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: context.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.grid_view_rounded,
-                  color: AppColors.primary,
+                  color: context.primaryColor,
                   size: 16,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing8),
-              const Text(
+              Text(
                 'TOU Validation Grid',
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeMedium,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
               const Spacer(),
@@ -169,10 +169,10 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                       vertical: AppSizes.spacing4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.1),
+                      color: context.warningColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                       border: Border.all(
-                        color: AppColors.warning.withValues(alpha: 0.3),
+                        color: context.warningColor.withOpacity(0.3),
                       ),
                     ),
                     child: Row(
@@ -181,7 +181,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                         Icon(
                           Icons.filter_alt,
                           size: 12,
-                          color: AppColors.warning,
+                          color: context.warningColor,
                         ),
                         const SizedBox(width: AppSizes.spacing4),
                         Expanded(
@@ -190,7 +190,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                             style: TextStyle(
                               fontSize: AppSizes.fontSizeSmall,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.warning,
+                              color: context.warningColor,
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -208,7 +208,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                   vertical: AppSizes.spacing4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.info.withValues(alpha: 0.1),
+                  color: context.infoColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 ),
                 child: Text(
@@ -216,7 +216,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.info,
+                    color: context.infoColor,
                   ),
                 ),
               ),
@@ -233,9 +233,9 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
         horizontal: AppSizes.spacing12,
         vertical: AppSizes.spacing8,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.backgroundColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +314,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
           style: TextStyle(
             fontSize: titleFontSize,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         SizedBox(height: isCompact ? 4 : 6),
@@ -342,9 +342,9 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                 vertical: isCompact ? 2 : 3,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.borderColor),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -355,7 +355,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                       style: TextStyle(
                         fontSize: itemFontSize,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimaryColor,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -379,7 +379,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                             color: color,
                             borderRadius: BorderRadius.circular(2),
                             border: Border.all(
-                              color: AppColors.border,
+                              color: context.borderColor,
                               width: 1,
                             ),
                           ),
@@ -400,11 +400,11 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
   Color _getChannelTimeBandColor(int channelId, int timeBandIndex) {
     // Create a list of distinct colors for time bands
     final colors = [
-      AppColors.primary, // Blue
-      AppColors.success, // Green
-      AppColors.warning, // Orange
-      AppColors.error, // Red
-      AppColors.info, // Cyan
+      context.primaryColor, // Blue
+      context.successColor, // Green
+      context.warningColor, // Orange
+      context.errorColor, // Red
+      context.infoColor, // Cyan
       const Color(0xFF9C27B0), // Purple
       const Color(0xFF795548), // Brown
       const Color(0xFF607D8B), // Blue Grey
@@ -477,7 +477,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -507,7 +507,7 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
               '${hour.toString().padLeft(2, '0')}',
               style: TextStyle(
                 fontSize: fontSize,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
                 fontFamily: 'monospace',
                 fontWeight: FontWeight.w500,
               ),
@@ -539,9 +539,9 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
         color: color,
         borderRadius: BorderRadius.circular(2),
         border: validation.hasConflict
-            ? Border.all(color: AppColors.error, width: 1.5)
+            ? Border.all(color: context.errorColor, width: 1.5)
             : validation.timeBands.length > 1
-            ? Border.all(color: AppColors.warning, width: 1)
+            ? Border.all(color: context.warningColor, width: 1)
             : null,
       ),
       child: _buildCellContent(validation),
@@ -560,14 +560,14 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
       return Container(
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.8),
+          color: color.withOpacity(0.8),
           borderRadius: BorderRadius.circular(2),
         ),
       );
     } else if (validation.timeBands.length > 1) {
       // Multiple time bands - striped pattern
       final colors = validation.timeBands
-          .map((id) => _getTimeBandColorForGrid(id).withValues(alpha: 0.8))
+          .map((id) => _getTimeBandColorForGrid(id).withOpacity(0.8))
           .toList();
 
       return CustomPaint(painter: _MiniStripePainter(colors: colors));
@@ -730,20 +730,20 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
 
   Color _getCellColor(TimeSlotValidation validation) {
     if (validation.hasConflict) {
-      return AppColors.error.withValues(alpha: 0.4);
+      return context.errorColor.withOpacity(0.4);
     }
     if (validation.isEmpty) {
-      return AppColors.surface; // Use surface color for empty slots
+      return context.surfaceColor; // Use surface color for empty slots
     }
     if (validation.timeBands.length > 1) {
       // Multiple time bands (overlap but no conflict)
-      return AppColors.warning.withValues(alpha: 0.3);
+      return context.warningColor.withOpacity(0.3);
     }
     if (validation.timeBands.isNotEmpty) {
       // Single time band coverage
-      return AppColors.success.withValues(alpha: 0.2);
+      return context.successColor.withOpacity(0.2);
     }
-    return AppColors.surface;
+    return context.surfaceColor;
   }
 
   Color _getTimeBandColor(int timeBandId) {
@@ -753,14 +753,14 @@ class _TOUFormValidationGridState extends State<TOUFormValidationGrid> {
       orElse: () => null,
     );
 
-    if (timeBand == null) return AppColors.textTertiary;
+    if (timeBand == null) return context.textSecondaryColor;
 
     // Generate consistent color based on time band ID
     final colors = [
-      AppColors.primary,
-      AppColors.success,
-      AppColors.warning,
-      AppColors.info,
+      context.primaryColor,
+      context.successColor,
+      context.warningColor,
+      context.infoColor,
       const Color(0xFF9C27B0), // Purple
       const Color(0xFF795548), // Brown
       const Color(0xFF607D8B), // Blue Grey
@@ -815,3 +815,9 @@ class _MiniStripePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+
+
+
+
+
+

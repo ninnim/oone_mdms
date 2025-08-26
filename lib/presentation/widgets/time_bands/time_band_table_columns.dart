@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/time_band.dart';
 import '../../../core/models/season.dart';
@@ -21,8 +22,10 @@ class TimeBandTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<TimeBand>? data,
+    required BuildContext context,
   }) {
     final allColumns = _buildAllColumnDefinitions(
+      context: context,
       sortBy: sortBy,
       sortAscending: sortAscending,
       onEdit: onEdit,
@@ -49,8 +52,10 @@ class TimeBandTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<TimeBand>? data,
+   required BuildContext context,
   }) {
     return _buildAllColumnDefinitions(
+      context:context,
       sortBy: sortBy,
       sortAscending: sortAscending,
       onEdit: onEdit,
@@ -75,6 +80,7 @@ class TimeBandTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<TimeBand>? data,
+    required BuildContext context,
   }) {
     return [
       // No. (Row Number)
@@ -91,10 +97,10 @@ class TimeBandTableColumns {
             padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
             child: Text(
               '$rowNumber',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,//AppColors.textSecondary,
               ),
             ),
           );
@@ -133,7 +139,7 @@ class TimeBandTableColumns {
         title: 'Days of Week',
         sortable: false,
         flex: 2,
-        builder: (timeBand) => _buildDaysOfWeekColumn(timeBand),
+        builder: (timeBand) => _buildDaysOfWeekColumn(timeBand, context),
       ),
 
       // Months column
@@ -142,7 +148,7 @@ class TimeBandTableColumns {
         title: 'Months',
         sortable: false,
         flex: 2,
-        builder: (timeBand) => _buildMonthsColumn(timeBand),
+        builder: (timeBand) => _buildMonthsColumn(timeBand, context),
       ),
 
       // Seasons column
@@ -151,7 +157,7 @@ class TimeBandTableColumns {
         title: 'Seasons',
         sortable: false,
         flex: 2,
-        builder: (timeBand) => _buildSeasonsColumn(timeBand, availableSeasons),
+        builder: (timeBand) => _buildSeasonsColumn(timeBand, availableSeasons, context),
       ),
 
       // Special Days column
@@ -161,7 +167,7 @@ class TimeBandTableColumns {
         sortable: false,
         flex: 2,
         builder: (timeBand) =>
-            _buildSpecialDaysColumn(timeBand, availableSpecialDays),
+            _buildSpecialDaysColumn(timeBand, availableSpecialDays, context),
       ),
 
       // Status column
@@ -179,7 +185,7 @@ class TimeBandTableColumns {
         title: 'Attributes',
         sortable: false,
         flex: 1,
-        builder: (timeBand) => _buildAttributesColumn(timeBand),
+        builder: (timeBand) => _buildAttributesColumn(timeBand, context),
       ),
 
       // Description column (moved near actions)
@@ -198,7 +204,7 @@ class TimeBandTableColumns {
         flex: 1,
         isActions: true,
         builder: (timeBand) =>
-            _buildActionsColumn(timeBand, onEdit, onDelete, onView),
+            _buildActionsColumn(timeBand, onEdit, onDelete, onView, context),
       ),
     ];
   }
@@ -210,7 +216,7 @@ class TimeBandTableColumns {
       children: [
         Text(
           timeBand.name,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: AppSizes.fontSizeSmall,
           ),
@@ -226,22 +232,22 @@ class TimeBandTableColumns {
     );
   }
 
-  static Widget _buildTimeRangeColumn(TimeBand timeBand) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing8,
-        vertical: AppSizes.spacing4,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-      ),
-      child: Text(
-        timeBand.timeRangeDisplay,
-        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-      ),
-    );
-  }
+  // static Widget _buildTimeRangeColumn(TimeBand timeBand) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: AppSizes.spacing8,
+  //       vertical: AppSizes.spacing4,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.primary.withOpacity(0.1),
+  //       borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+  //     ),
+  //     child: Text(
+  //       timeBand.timeRangeDisplay,
+  //       style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+  //     ),
+  //   );
+  // }
 
   static Widget _buildDescriptionColumn(TimeBand timeBand) {
     return Text(
@@ -258,7 +264,7 @@ class TimeBandTableColumns {
     );
   }
 
-  static Widget _buildDaysOfWeekColumn(TimeBand timeBand) {
+  static Widget _buildDaysOfWeekColumn(TimeBand timeBand, BuildContext context) {
     final daysOfWeek = timeBand.daysOfWeek;
     if (daysOfWeek.isEmpty) {
       return Text(
@@ -271,10 +277,10 @@ class TimeBandTableColumns {
       );
     }
 
-    return TimeBandSmartChips.buildDayOfWeekChips(daysOfWeek);
+    return TimeBandSmartChips.buildDayOfWeekChips(daysOfWeek, context);
   }
 
-  static Widget _buildMonthsColumn(TimeBand timeBand) {
+  static Widget _buildMonthsColumn(TimeBand timeBand, BuildContext context) {
     final monthsOfYear = timeBand.monthsOfYear;
     if (monthsOfYear.isEmpty) {
       return Text(
@@ -287,26 +293,30 @@ class TimeBandTableColumns {
       );
     }
 
-    return TimeBandSmartChips.buildMonthOfYearChips(monthsOfYear);
+    return TimeBandSmartChips.buildMonthOfYearChips(monthsOfYear, context);
   }
 
   static Widget _buildSeasonsColumn(
     TimeBand timeBand,
     List<Season> availableSeasons,
+    BuildContext context,
   ) {
     return TimeBandSmartChips.buildSeasonChips(
       timeBand.seasonIds,
       availableSeasons,
+      context,
     );
   }
 
   static Widget _buildSpecialDaysColumn(
     TimeBand timeBand,
     List<SpecialDay> availableSpecialDays,
+    BuildContext context,
   ) {
     return TimeBandSmartChips.buildSpecialDayChips(
       timeBand.specialDayIds,
       availableSpecialDays,
+      context,
     );
   }
 
@@ -317,14 +327,14 @@ class TimeBandTableColumns {
     );
   }
 
-  static Widget _buildAttributesColumn(TimeBand timeBand) {
+  static Widget _buildAttributesColumn(TimeBand timeBand, BuildContext context) {
     final attributeCount = timeBand.timeBandAttributes.length;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: attributeCount > 0
-            ? AppColors.warning.withOpacity(0.1)
-            : Colors.grey.withOpacity(0.1),
+            ? context.warningColor.withOpacity(0.1)
+            : context.borderColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
       ),
       child: Text(
@@ -332,7 +342,7 @@ class TimeBandTableColumns {
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
           fontWeight: FontWeight.w600,
-          color: attributeCount > 0 ? AppColors.warning : Colors.grey[600],
+          color: attributeCount > 0 ? context.warningColor : Colors.grey[600],
         ),
       ),
     );
@@ -343,47 +353,48 @@ class TimeBandTableColumns {
     Function(TimeBand)? onEdit,
     Function(TimeBand)? onDelete,
     Function(TimeBand)? onView,
+     BuildContext context,
   ) {
     return Container(
       alignment: Alignment.centerRight,
       height: AppSizes.spacing40,
       child: PopupMenuButton<String>(
-        icon: const Icon(
+        icon:  Icon(
           Icons.more_vert,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           size: 16,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         ),
         itemBuilder: (context) => [
-          const PopupMenuItem<String>(
+           PopupMenuItem<String>(
             value: 'view',
             child: Row(
               children: [
-                Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                Icon(Icons.visibility, size: 16, color: context.primaryColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('View Details'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+           PopupMenuItem<String>(
             value: 'edit',
             child: Row(
               children: [
-                Icon(Icons.edit, size: 16, color: AppColors.warning),
+                Icon(Icons.edit, size: 16, color: context.warningColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('Edit'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'delete',
             child: Row(
               children: [
-                Icon(Icons.delete, size: 16, color: AppColors.error),
+                Icon(Icons.delete, size: 16, color: context.errorColor),
                 SizedBox(width: AppSizes.spacing8),
-                Text('Delete', style: TextStyle(color: AppColors.error)),
+                Text('Delete', style: TextStyle(color: context.errorColor )),
               ],
             ),
           ),
@@ -446,3 +457,8 @@ class TimeBandTableColumns {
     'actions': 'Actions',
   };
 }
+
+
+
+
+

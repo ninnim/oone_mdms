@@ -1,28 +1,29 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/season.dart';
 import '../../../core/models/special_day.dart';
 
 class TimeBandSmartChips {
+
   /// Build smart day-of-week chips for display
-  static Widget buildDayOfWeekChips(List<int> daysOfWeek) {
-    return _buildDayChips(daysOfWeek);
+  static Widget buildDayOfWeekChips(List<int> daysOfWeek, BuildContext context) {
+    return _buildDayChips(daysOfWeek, context);
   }
 
   /// Build smart month-of-year chips for display
-  static Widget buildMonthOfYearChips(List<int> monthsOfYear) {
-    return _buildMonthChips(monthsOfYear);
+  static Widget buildMonthOfYearChips(List<int> monthsOfYear, BuildContext context) {
+    return _buildMonthChips(monthsOfYear, context);
   }
 
   /// Build colored day chips for display with smart "More..." functionality
-  static Widget _buildDayChips(List<int> daysOfWeek) {
+  static Widget _buildDayChips(List<int> daysOfWeek, BuildContext context) {
     if (daysOfWeek.isEmpty) {
-      return const Text(
+      return Text(
         'No days selected',
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           fontStyle: FontStyle.italic,
         ),
       );
@@ -39,7 +40,7 @@ class TimeBandSmartChips {
     ];
 
     // Use only primary color for easier theming
-    const primaryColor = AppColors.primary;
+    // const primaryColor = AppColors.primary;
 
     // Sort days for consistent display (0=Sunday to 6=Saturday)
     final sortedDays = List.from(daysOfWeek)..sort();
@@ -68,10 +69,10 @@ class TimeBandSmartChips {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.1),
+                  color: context.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.3),
+                    color: context.primaryColor.withOpacity(0.3),
                     width: 1,
                   ),
                 ),
@@ -80,7 +81,7 @@ class TimeBandSmartChips {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeExtraSmall,
                     fontWeight: FontWeight.w600,
-                    color: primaryColor,
+                    color: context.primaryColor,
                   ),
                 ),
               );
@@ -105,10 +106,10 @@ class TimeBandSmartChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.1),
+                      color: context.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: primaryColor.withValues(alpha: 0.3),
+                        color: context.primaryColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -117,7 +118,7 @@ class TimeBandSmartChips {
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeExtraSmall,
                         fontWeight: FontWeight.w600,
-                        color: primaryColor,
+                        color: context.primaryColor,
                       ),
                     ),
                   );
@@ -132,10 +133,10 @@ class TimeBandSmartChips {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.1),
+                        color: context.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: primaryColor.withOpacity(0.3),
+                          color: context.primaryColor.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -144,17 +145,17 @@ class TimeBandSmartChips {
                         children: [
                           Text(
                             '+${sortedDays.length - calculatedMaxVisible} more',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeExtraSmall,
                               fontWeight: FontWeight.w600,
-                              color: primaryColor,
+                              color: context.primaryColor,
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Icon(
+                           Icon(
                             Icons.keyboard_arrow_down,
                             size: 12,
-                            color: primaryColor,
+                            color: context.primaryColor,
                           ),
                         ],
                       ),
@@ -167,7 +168,7 @@ class TimeBandSmartChips {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'All selected days:',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
@@ -187,12 +188,12 @@ class TimeBandSmartChips {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: primaryColor.withValues(
+                                      color: context.primaryColor.withValues(
                                         alpha: 0.1,
                                       ),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: primaryColor.withValues(
+                                        color: context.primaryColor.withValues(
                                           alpha: 0.3,
                                         ),
                                         width: 1,
@@ -203,7 +204,7 @@ class TimeBandSmartChips {
                                       style: TextStyle(
                                         fontSize: AppSizes.fontSizeExtraSmall,
                                         fontWeight: FontWeight.w600,
-                                        color: primaryColor,
+                                        color: context.primaryColor,
                                       ),
                                     ),
                                   );
@@ -224,13 +225,13 @@ class TimeBandSmartChips {
   }
 
   /// Build colored month chips for display with smart "More..." functionality
-  static Widget _buildMonthChips(List<int> monthsOfYear) {
+  static Widget _buildMonthChips(List<int> monthsOfYear, BuildContext context) {
     if (monthsOfYear.isEmpty) {
-      return const Text(
+      return Text(
         'No months selected',
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           fontStyle: FontStyle.italic,
         ),
       );
@@ -252,7 +253,7 @@ class TimeBandSmartChips {
     ];
 
     // Use only primary color for easier theming (same as seasons)
-    const primaryColor = AppColors.primary;
+   final primaryColor = context.primaryColor;
 
     // Sort months for consistent display
     final sortedMonths = List.from(monthsOfYear)..sort();
@@ -284,10 +285,10 @@ class TimeBandSmartChips {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.1),
+                  color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.3),
+                    color: primaryColor.withOpacity(0.3),
                     width: 1,
                   ),
                 ),
@@ -321,10 +322,10 @@ class TimeBandSmartChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.1),
+                      color: primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: primaryColor.withValues(alpha: 0.3),
+                        color: primaryColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -348,10 +349,10 @@ class TimeBandSmartChips {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: primaryColor.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -360,17 +361,17 @@ class TimeBandSmartChips {
                         children: [
                           Text(
                             '+${sortedMonths.length - calculatedMaxVisible} more',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeExtraSmall,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                              color: primaryColor,
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Icon(
+                           Icon(
                             Icons.keyboard_arrow_down,
                             size: 12,
-                            color: AppColors.primary,
+                            color: primaryColor,
                           ),
                         ],
                       ),
@@ -383,7 +384,7 @@ class TimeBandSmartChips {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'All selected months:',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
@@ -440,13 +441,14 @@ class TimeBandSmartChips {
   static Widget buildSeasonChips(
     List<int> seasonIds,
     List<Season> availableSeasons,
+    BuildContext context,
   ) {
     if (seasonIds.isEmpty) {
-      return const Text(
+      return Text(
         '',
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           fontStyle: FontStyle.italic,
         ),
       );
@@ -480,19 +482,19 @@ class TimeBandSmartChips {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: context.warningColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.warning.withOpacity(0.3),
+                    color: context.warningColor.withOpacity(0.3),
                     width: 1,
                   ),
                 ),
                 child: Text(
                   displayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeExtraSmall,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.warning,
+                    color: context.warningColor,
                   ),
                 ),
               );
@@ -518,19 +520,19 @@ class TimeBandSmartChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.1),
+                      color: context.warningColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.warning.withOpacity(0.3),
+                        color: context.warningColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
                     child: Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppSizes.fontSizeExtraSmall,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.warning,
+                        color: context.warningColor,
                       ),
                     ),
                   );
@@ -545,10 +547,10 @@ class TimeBandSmartChips {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.warning.withOpacity(0.1),
+                        color: context.warningColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.warning.withOpacity(0.3),
+                          color: context.warningColor.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -557,17 +559,17 @@ class TimeBandSmartChips {
                         children: [
                           Text(
                             '+${seasonIds.length - calculatedMaxVisible} more',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeExtraSmall,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.warning,
+                              color: context.warningColor,
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Icon(
+                           Icon(
                             Icons.keyboard_arrow_down,
                             size: 12,
-                            color: AppColors.warning,
+                            color: context.warningColor,
                           ),
                         ],
                       ),
@@ -580,7 +582,7 @@ class TimeBandSmartChips {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'All selected seasons:',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
@@ -602,10 +604,10 @@ class TimeBandSmartChips {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.warning.withOpacity(0.1),
+                                      color: context.warningColor.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: AppColors.warning.withOpacity(
+                                        color: context.warningColor.withOpacity(
                                           0.3,
                                         ),
                                         width: 1,
@@ -613,10 +615,10 @@ class TimeBandSmartChips {
                                     ),
                                     child: Text(
                                       displayName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: AppSizes.fontSizeExtraSmall,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.warning,
+                                        color: context.warningColor,
                                       ),
                                     ),
                                   );
@@ -640,13 +642,14 @@ class TimeBandSmartChips {
   static Widget buildSpecialDayChips(
     List<int> specialDayIds,
     List<SpecialDay> availableSpecialDays,
+    BuildContext context,
   ) {
     if (specialDayIds.isEmpty) {
-      return const Text(
+      return Text(
         '',
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,//AppColors.textSecondary,
           fontStyle: FontStyle.italic,
         ),
       );
@@ -686,19 +689,19 @@ class TimeBandSmartChips {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
+                  color: context.secondaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.secondary.withOpacity(0.3),
+                    color: context.secondaryColor.withOpacity(0.3),
                     width: 1,
                   ),
                 ),
                 child: Text(
                   displayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeExtraSmall,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.secondary,
+                    color: context.secondaryColor,
                   ),
                 ),
               );
@@ -725,19 +728,19 @@ class TimeBandSmartChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.1),
+                      color: context.secondaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.secondary.withOpacity(0.3),
+                        color: context.secondaryColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
                     child: Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppSizes.fontSizeExtraSmall,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.secondary,
+                        color: context.secondaryColor,
                       ),
                     ),
                   );
@@ -752,10 +755,10 @@ class TimeBandSmartChips {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.secondary.withOpacity(0.1),
+                        color: context.secondaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.secondary.withOpacity(0.3),
+                          color: context.secondaryColor.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -764,17 +767,17 @@ class TimeBandSmartChips {
                         children: [
                           Text(
                             '+${specialDayIds.length - calculatedMaxVisible} more',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeExtraSmall,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.secondary,
+                              color: context.secondaryColor,
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Icon(
+                           Icon(
                             Icons.keyboard_arrow_down,
                             size: 12,
-                            color: AppColors.secondary,
+                            color: context.secondaryColor,
                           ),
                         ],
                       ),
@@ -787,7 +790,7 @@ class TimeBandSmartChips {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'All selected special days:',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
@@ -811,12 +814,12 @@ class TimeBandSmartChips {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.secondary.withOpacity(
+                                      color: context.secondaryColor.withOpacity(
                                         0.1,
                                       ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: AppColors.secondary.withOpacity(
+                                        color: context.secondaryColor.withOpacity(
                                           0.3,
                                         ),
                                         width: 1,
@@ -824,10 +827,10 @@ class TimeBandSmartChips {
                                     ),
                                     child: Text(
                                       displayName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: AppSizes.fontSizeExtraSmall,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.secondary,
+                                        color: context.secondaryColor,
                                       ),
                                     ),
                                   );
@@ -847,3 +850,8 @@ class TimeBandSmartChips {
     );
   }
 }
+
+
+
+
+

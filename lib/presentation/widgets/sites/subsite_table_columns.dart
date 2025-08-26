@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/models/site.dart';
 import '../common/blunest_data_table.dart';
 
@@ -28,7 +28,7 @@ class SubSiteTableColumns {
               index.toString(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -45,7 +45,7 @@ class SubSiteTableColumns {
             site.name,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -62,7 +62,7 @@ class SubSiteTableColumns {
             site.description.isEmpty ? '-' : site.description,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -80,32 +80,23 @@ class SubSiteTableColumns {
           child: PopupMenuButton<String>(
             tooltip: 'More actions',
             onSelected: (value) {
-              print(
-                '🔄 Subsite action selected: $value for site: ${site.name} (ID: ${site.id})',
-              );
               switch (value) {
                 case 'edit':
-                  print('🔄 Calling onEdit for subsite: ${site.name}');
                   onEdit(site);
                   break;
                 case 'delete':
                   if (site.id != null) {
-                    print('🔄 Calling onDelete for subsite: ${site.name}');
                     onDelete(site);
-                  } else {
-                    print(
-                      '❌ Cannot delete subsite: ID is null for ${site.name}',
-                    );
-                  }
+                  } else {}
                   break;
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit, size: 16, color: Colors.blue),
+                    Icon(Icons.edit, size: 16, color: context.primaryColor),
                     SizedBox(width: 8),
                     Text('Edit'),
                   ],
@@ -119,13 +110,17 @@ class SubSiteTableColumns {
                     Icon(
                       Icons.delete,
                       size: 16,
-                      color: site.id != null ? Colors.red : Colors.grey,
+                      color: site.id != null
+                          ? context.errorColor
+                          : context.borderColor,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Delete',
                       style: TextStyle(
-                        color: site.id != null ? Colors.red : Colors.grey,
+                        color: site.id != null
+                            ? context.errorColor
+                            : context.borderColor,
                       ),
                     ),
                   ],
@@ -218,7 +213,7 @@ class SubSiteTableColumns {
             rowNumber.toString(),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
           ),
         ),
@@ -235,8 +230,8 @@ class SubSiteTableColumns {
             site.description.isEmpty ? '-' : site.description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: site.description.isEmpty
-                  ? AppColors.textSecondary
-                  : AppColors.textPrimary,
+                  ? context.textSecondaryColor
+                  : context.textPrimaryColor,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -246,7 +241,7 @@ class SubSiteTableColumns {
           PopupMenuButton<String>(
             icon: Icon(
               Icons.more_vert,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               size: 20,
             ),
             padding: EdgeInsets.zero,
@@ -272,13 +267,13 @@ class SubSiteTableColumns {
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 16, color: Colors.red),
+                    Icon(Icons.delete, size: 16, color: context.errorColor),
                     SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: Colors.red)),
+                    Text('Delete', style: TextStyle(color: context.errorColor)),
                   ],
                 ),
               ),

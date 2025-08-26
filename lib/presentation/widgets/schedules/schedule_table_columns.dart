@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/schedule.dart';
 import '../common/blunest_data_table.dart';
@@ -25,6 +26,7 @@ class ScheduleTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<Schedule>? schedules,
+    required BuildContext context, 
   }) {
     return [
       // No. (Row Number)
@@ -40,10 +42,10 @@ class ScheduleTableColumns {
             alignment: Alignment.centerLeft,
             child: Text(
               '$rowNumber',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -60,10 +62,10 @@ class ScheduleTableColumns {
           alignment: Alignment.centerLeft,
           child: Text(
             schedule.displayCode,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -84,10 +86,10 @@ class ScheduleTableColumns {
             children: [
               Text(
                 schedule.displayName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.fontSizeMedium,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -95,7 +97,7 @@ class ScheduleTableColumns {
               //   const SizedBox(height: 2),
               //   Text(
               //     'Cron: ${schedule.cronExpression}',
-              //     style: const TextStyle(
+              //     style: TextStyle(
               //       fontSize: AppSizes.fontSizeSmall,
               //       color: AppColors.textSecondary,
               //     ),
@@ -135,10 +137,10 @@ class ScheduleTableColumns {
           alignment: Alignment.centerLeft,
           child: Text(
             schedule.displayInterval,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
         ),
@@ -159,8 +161,8 @@ class ScheduleTableColumns {
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               color: schedule.nextBillingDate != null
-                  ? AppColors.textPrimary
-                  : AppColors.textSecondary,
+                  ? context.textPrimaryColor
+                  : context.textSecondaryColor,
             ),
           ),
         ),
@@ -181,8 +183,8 @@ class ScheduleTableColumns {
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               color: schedule.lastExecutionTime != null
-                  ? AppColors.textPrimary
-                  : AppColors.textSecondary,
+                  ? context.textPrimaryColor
+                  : context.textSecondaryColor,
             ),
           ),
         ),
@@ -216,6 +218,7 @@ class ScheduleTableColumns {
           onEdit: onEdit,
           onDelete: onDelete,
           onView: onView,
+          context: context,
         ),
       ),
     ];
@@ -226,47 +229,48 @@ class ScheduleTableColumns {
     Function(Schedule)? onEdit,
     Function(Schedule)? onDelete,
     Function(Schedule)? onView,
+    required BuildContext context,
   }) {
     return Container(
       alignment: Alignment.centerRight,
       height: AppSizes.spacing40,
       child: PopupMenuButton<String>(
-        icon: const Icon(
+        icon:  Icon(
           Icons.more_vert,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           size: 16,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         ),
         itemBuilder: (context) => [
-          const PopupMenuItem<String>(
+           PopupMenuItem<String>(
             value: 'view',
             child: Row(
               children: [
-                Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                Icon(Icons.visibility, size: 16, color: context.primaryColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('View Details'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'edit',
             child: Row(
               children: [
-                Icon(Icons.edit, size: 16, color: AppColors.warning),
+                Icon(Icons.edit, size: 16, color: context.warningColor),
                 SizedBox(width: AppSizes.spacing8),
                 Text('Edit'),
               ],
             ),
           ),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'delete',
             child: Row(
               children: [
-                Icon(Icons.delete, size: 16, color: AppColors.error),
+                Icon(Icons.delete, size: 16, color: context.errorColor),
                 SizedBox(width: AppSizes.spacing8),
-                Text('Delete', style: TextStyle(color: AppColors.error)),
+                Text('Delete', style: TextStyle(color: context.errorColor)),
               ],
             ),
           ),
@@ -311,3 +315,8 @@ class ScheduleTableColumns {
     return '${_formatDate(dateTime)} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }
+
+
+
+
+

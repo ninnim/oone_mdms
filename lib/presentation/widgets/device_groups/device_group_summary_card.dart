@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/models/device_group.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class DeviceGroupSummaryCard extends StatelessWidget {
@@ -16,9 +17,9 @@ class DeviceGroupSummaryCard extends StatelessWidget {
       // margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -56,7 +57,8 @@ class DeviceGroupSummaryCard extends StatelessWidget {
                   'Total Groups',
                   stats.totalGroups.toString(),
                   Icons.groups,
-                  AppColors.primary,
+                  context.primaryColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -65,7 +67,8 @@ class DeviceGroupSummaryCard extends StatelessWidget {
                   'Active Groups',
                   stats.activeGroups.toString(),
                   Icons.check_circle_outline,
-                  AppColors.success,
+                  context.successColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -74,7 +77,8 @@ class DeviceGroupSummaryCard extends StatelessWidget {
                   'Empty Groups',
                   stats.emptyGroups.toString(),
                   Icons.remove_circle_outline,
-                  AppColors.warning,
+                  context.warningColor,
+                  context,
                 ),
               ),
               const SizedBox(width: AppSizes.spacing12),
@@ -83,7 +87,8 @@ class DeviceGroupSummaryCard extends StatelessWidget {
                   'Total Devices',
                   stats.totalDevices.toString(),
                   Icons.devices,
-                  AppColors.info,
+                  context.infoColor,
+                  context,
                 ),
               ),
             ],
@@ -98,6 +103,7 @@ class DeviceGroupSummaryCard extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
+    BuildContext context,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing8),
@@ -128,7 +134,7 @@ class DeviceGroupSummaryCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),

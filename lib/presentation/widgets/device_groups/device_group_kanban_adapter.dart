@@ -1,5 +1,6 @@
-import '../../../core/models/device_group.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import '../../../core/models/device_group.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../common/kanban_view.dart';
 import 'package:flutter/material.dart';
 
@@ -96,6 +97,7 @@ class DeviceGroupKanbanConfig {
     Function(DeviceGroup)? onEdit,
     Function(DeviceGroup)? onDelete,
     Function(DeviceGroup)? onManageDevices,
+    required BuildContext context,
   }) {
     final actions = <KanbanAction>[];
 
@@ -105,7 +107,7 @@ class DeviceGroupKanbanConfig {
           key: 'view',
           label: 'View Details',
           icon: Icons.visibility,
-          color: AppColors.primary,
+          color: context.primaryColor,
           onTap: (item) => onView((item as DeviceGroupKanbanItem).deviceGroup),
         ),
       );
@@ -117,7 +119,7 @@ class DeviceGroupKanbanConfig {
           key: 'edit',
           label: 'Edit',
           icon: Icons.edit,
-          color: AppColors.warning,
+          color: context.warningColor,
           onTap: (item) => onEdit((item as DeviceGroupKanbanItem).deviceGroup),
         ),
       );
@@ -129,7 +131,7 @@ class DeviceGroupKanbanConfig {
           key: 'devices',
           label: 'Manage Devices',
           icon: Icons.devices,
-          color: AppColors.info,
+          color: context.infoColor,
           onTap: (item) =>
               onManageDevices((item as DeviceGroupKanbanItem).deviceGroup),
         ),
@@ -142,7 +144,7 @@ class DeviceGroupKanbanConfig {
           key: 'delete',
           label: 'Delete',
           icon: Icons.delete,
-          color: AppColors.error,
+          color: context.errorColor,
           onTap: (item) =>
               onDelete((item as DeviceGroupKanbanItem).deviceGroup),
         ),
@@ -152,3 +154,6 @@ class DeviceGroupKanbanConfig {
     return actions;
   }
 }
+
+
+

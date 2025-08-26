@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'app_button.dart';
 import 'app_input_field.dart';
@@ -85,8 +86,8 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
+        color: context.surfaceColor,
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       ),
       child: Column(
@@ -111,8 +112,8 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                 Icon(
                   Icons.filter_list,
                   color: activeFiltersCount > 0
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                      ? context.primaryColor
+                      : context.textSecondaryColor,
                   size: AppSizes.iconMedium,
                 ),
             const SizedBox(width: AppSizes.spacing8),
@@ -121,7 +122,7 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
             if (activeFiltersCount > 0) ...[
@@ -132,13 +133,13 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                   vertical: AppSizes.spacing2,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: context.primaryColor,
                   borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                 ),
                 child: Text(
                   '$activeFiltersCount',
-                  style: const TextStyle(
-                    color: AppColors.textInverse,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: AppSizes.fontSizeSmall,
                     fontWeight: FontWeight.w600,
                   ),
@@ -153,16 +154,16 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                   vertical: AppSizes.spacing4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: context.successColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                   border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.3),
+                    color: context.successColor.withOpacity(0.3),
                   ),
                 ),
                 child: Text(
                   widget.savedFilterName!,
-                  style: const TextStyle(
-                    color: AppColors.success,
+                  style: TextStyle(
+                    color: context.successColor,
                     fontSize: AppSizes.fontSizeSmall,
                     fontWeight: FontWeight.w500,
                   ),
@@ -172,7 +173,7 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
             ],
             Icon(
               _isExpanded ? Icons.expand_less : Icons.expand_more,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               size: AppSizes.iconSmall,
             ),
           ],
@@ -184,8 +185,8 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
   Widget _buildFiltersContent() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.borderColor)),
       ),
       child: Row(
         children: [
@@ -336,16 +337,16 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
         RichText(
           text: TextSpan(
             text: config.label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
             children: [
               if (config.required)
-                const TextSpan(
+                TextSpan(
                   text: ' *',
-                  style: TextStyle(color: AppColors.error),
+                  style: TextStyle(color: context.errorColor),
                 ),
             ],
           ),
@@ -353,7 +354,7 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
         const SizedBox(height: AppSizes.spacing4),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.borderColor),
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           ),
           child: Column(
@@ -364,7 +365,7 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                 value: isSelected,
                 title: Text(
                   option,
-                  style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+                  style: TextStyle(fontSize: AppSizes.fontSizeSmall),
                 ),
                 enabled: config.enabled,
                 onChanged: config.enabled
@@ -400,16 +401,16 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
           RichText(
             text: TextSpan(
               text: config.label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
               children: [
                 if (config.required)
-                  const TextSpan(
+                  TextSpan(
                     text: ' *',
-                    style: TextStyle(color: AppColors.error),
+                    style: TextStyle(color: context.errorColor),
                   ),
               ],
             ),
@@ -445,16 +446,16 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
         RichText(
           text: TextSpan(
             text: config.label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
             children: [
               if (config.required)
-                const TextSpan(
+                TextSpan(
                   text: ' *',
-                  style: TextStyle(color: AppColors.error),
+                  style: TextStyle(color: context.errorColor),
                 ),
             ],
           ),
@@ -477,11 +478,11 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
           child: Container(
             padding: const EdgeInsets.all(AppSizes.spacing12),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.borderColor),
               borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
               color: config.enabled
-                  ? AppColors.surface
-                  : AppColors.surface.withValues(alpha: 0.5),
+                  ? context.surfaceColor
+                  : context.surfaceColor.withOpacity(0.5),
             ),
             child: Row(
               children: [
@@ -489,8 +490,8 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                   config.icon ?? Icons.calendar_today,
                   size: AppSizes.iconSmall,
                   color: config.enabled
-                      ? AppColors.textSecondary
-                      : AppColors.textTertiary,
+                      ? context.textSecondaryColor
+                      : context.textSecondaryColor,
                 ),
                 const SizedBox(width: AppSizes.spacing8),
                 Expanded(
@@ -502,11 +503,11 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                       fontSize: AppSizes.fontSizeSmall,
                       color: selectedDate != null
                           ? (config.enabled
-                                ? AppColors.textPrimary
-                                : AppColors.textTertiary)
+                                ? context.textPrimaryColor
+                                : context.textSecondaryColor)
                           : (config.enabled
-                                ? AppColors.textSecondary
-                                : AppColors.textTertiary),
+                                ? context.textSecondaryColor
+                                : context.textSecondaryColor),
                     ),
                   ),
                 ),
@@ -528,7 +529,7 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
           onChanged: config.enabled
               ? (value) => _updateFilter(config.key, value, config)
               : null,
-          activeColor: AppColors.primary,
+          activeColor: context.primaryColor,
         ),
         const SizedBox(width: AppSizes.spacing8),
         Expanded(
@@ -542,14 +543,14 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                     fontSize: AppSizes.fontSizeSmall,
                     fontWeight: FontWeight.w500,
                     color: config.enabled
-                        ? AppColors.textPrimary
-                        : AppColors.textTertiary,
+                        ? context.textPrimaryColor
+                        : context.textSecondaryColor,
                   ),
                   children: [
                     if (config.required)
-                      const TextSpan(
+                      TextSpan(
                         text: ' *',
-                        style: TextStyle(color: AppColors.error),
+                        style: TextStyle(color: context.errorColor),
                       ),
                   ],
                 ),
@@ -560,8 +561,8 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall - 1,
                     color: config.enabled
-                        ? AppColors.textSecondary
-                        : AppColors.textTertiary,
+                        ? context.textSecondaryColor
+                        : context.textSecondaryColor,
                   ),
                 ),
             ],
@@ -583,16 +584,16 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
         RichText(
           text: TextSpan(
             text: config.label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
             children: [
               if (config.required)
-                const TextSpan(
+                TextSpan(
                   text: ' *',
-                  style: TextStyle(color: AppColors.error),
+                  style: TextStyle(color: context.errorColor),
                 ),
             ],
           ),
@@ -602,9 +603,9 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
           children: [
             Text(
               min.toStringAsFixed(0),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
             Expanded(
@@ -619,14 +620,14 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
                 onChanged: config.enabled
                     ? (newValue) => _updateFilter(config.key, newValue, config)
                     : null,
-                activeColor: AppColors.primary,
+                activeColor: context.primaryColor,
               ),
             ),
             Text(
               max.toStringAsFixed(0),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           ],
@@ -634,9 +635,9 @@ class _AdvancedFiltersState extends State<AdvancedFilters> {
         Center(
           child: Text(
             'Current: ${value.toStringAsFixed(config.sliderDivisions != null ? 0 : 1)}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),

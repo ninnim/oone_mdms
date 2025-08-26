@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 enum QuickDateRange {
@@ -100,9 +101,11 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
             child: Container(
               constraints: const BoxConstraints(maxHeight: 400),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -132,12 +135,12 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Time Range',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSizes.spacing12),
@@ -156,11 +159,13 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.primary
-                        : AppColors.surfaceVariant,
+                        ? context.primaryColor
+                        : Theme.of(context).colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.border,
+                      color: isSelected
+                          ? context.primaryColor
+                          : Theme.of(context).colorScheme.outline,
                     ),
                   ),
                   child: Text(
@@ -169,8 +174,8 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: isSelected
-                          ? AppColors.textInverse
-                          : AppColors.textPrimary,
+                          ? Theme.of(context).colorScheme.onInverseSurface
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -188,12 +193,12 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Custom Range',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSizes.spacing12),
@@ -246,9 +251,9 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: AppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -265,7 +270,7 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
                   data: Theme.of(context).copyWith(
                     colorScheme: Theme.of(
                       context,
-                    ).colorScheme.copyWith(primary: AppColors.primary),
+                    ).colorScheme.copyWith(primary: context.primaryColor),
                   ),
                   child: child!,
                 );
@@ -281,7 +286,7 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
               vertical: AppSizes.spacing8,
             ),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             ),
             child: Row(
@@ -289,14 +294,16 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
                 Icon(
                   Icons.calendar_today,
                   size: 16,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.7),
                 ),
                 const SizedBox(width: AppSizes.spacing8),
                 Text(
                   '${date.day}/${date.month}/${date.year}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -374,10 +381,12 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
           ),
           decoration: BoxDecoration(
             color: widget.enabled
-                ? AppColors.surface
-                : AppColors.surfaceVariant,
+                ? Theme.of(context).colorScheme.surface
+                : Theme.of(context).colorScheme.surfaceVariant,
             border: Border.all(
-              color: _isDropdownOpen ? AppColors.primary : AppColors.border,
+              color: _isDropdownOpen
+                  ? context.primaryColor
+                  : Theme.of(context).colorScheme.outline,
             ),
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           ),
@@ -388,8 +397,8 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
                 Icons.calendar_today,
                 size: 18,
                 color: widget.enabled
-                    ? AppColors.textSecondary
-                    : AppColors.textTertiary,
+                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.7)
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
               const SizedBox(width: AppSizes.spacing8),
               Text(
@@ -397,8 +406,10 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
                 style: TextStyle(
                   fontSize: 14,
                   color: widget.enabled
-                      ? AppColors.textPrimary
-                      : AppColors.textTertiary,
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.5),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -409,8 +420,8 @@ class _EnhancedDateRangePickerState extends State<EnhancedDateRangePicker> {
                     : Icons.keyboard_arrow_down,
                 size: 18,
                 color: widget.enabled
-                    ? AppColors.textSecondary
-                    : AppColors.textTertiary,
+                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.7)
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
             ],
           ),

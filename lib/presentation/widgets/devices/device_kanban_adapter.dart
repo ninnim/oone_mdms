@@ -1,4 +1,5 @@
-import '../../../core/models/device.dart';
+﻿import '../../../core/models/device.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_colors.dart';
 import '../common/kanban_view.dart';
 import '../common/status_chip.dart';
@@ -50,9 +51,9 @@ class DeviceKanbanItem extends KanbanItem {
   Color? get itemColor {
     switch (device.status.toLowerCase()) {
       case 'commissioned':
-        return const Color(0xFF059669); // Green
+        return AppColors.success; // Green
       case 'decommissioned':
-        return const Color(0xFFDC2626); // Red
+        return AppColors.error; // Red
       default:
         return AppColors.textSecondary; // Gray
     }
@@ -110,21 +111,21 @@ class DeviceKanbanConfig {
       key: 'commissioned',
       title: 'Commissioned',
       icon: Icons.check_circle_outline,
-      color: Color(0xFF059669), // Green
+      color: AppColors.success, // Green
       emptyMessage: 'No commissioned devices',
     ),
     const KanbanColumn(
       key: 'decommissioned',
       title: 'Decommissioned',
       icon: Icons.cancel_outlined,
-      color: Color(0xFFDC2626), // Red
+      color: AppColors.error, // Red
       emptyMessage: 'No decommissioned devices',
     ),
     const KanbanColumn(
       key: 'none',
       title: 'None',
       icon: Icons.help_outline,
-      color: Color(0xFF6B7280), // Gray
+      color: AppColors.textSecondary, // Gray
       emptyMessage: 'No devices without status',
     ),
   ];

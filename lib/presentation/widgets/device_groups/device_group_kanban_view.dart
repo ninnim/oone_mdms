@@ -37,6 +37,7 @@ class DeviceGroupKanbanView extends StatelessWidget {
     // Configure actions
     final actions = DeviceGroupKanbanConfig.getActions(
       onView: onDeviceGroupView,
+      context: context,
       onEdit: onDeviceGroupEdit,
       onDelete: onDeviceGroupDelete,
       onManageDevices: onManageDevices,

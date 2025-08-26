@@ -29,7 +29,7 @@ class SeasonsKanbanView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Convert seasons to kanban items
     List<KanbanItem> items = seasons
-        .map((season) => SeasonKanbanItem(season))
+        .map((season) => SeasonKanbanItem(season, context))
         .toList();
 
     // Apply search filter if provided
@@ -50,6 +50,7 @@ class SeasonsKanbanView extends StatelessWidget {
         }
       },
       actions: SeasonKanbanConfig.getActions(
+        context:context,
         onView: onItemTap,
         onEdit: onItemEdit,
         onDelete: onItemDelete,

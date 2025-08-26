@@ -1,5 +1,5 @@
-import '../../../core/models/special_day.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import '../../../core/models/special_day.dart';
+import '../../themes/app_theme.dart';
 import '../common/kanban_view.dart';
 import '../common/status_chip.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +7,9 @@ import 'package:flutter/material.dart';
 /// Adapter class to make SpecialDay compatible with KanbanItem
 class SpecialDayKanbanItem extends KanbanItem {
   final SpecialDay specialDay;
+  final BuildContext context;
 
-  SpecialDayKanbanItem(this.specialDay);
+  SpecialDayKanbanItem(this.specialDay, this.context);
 
   @override
   String get id => specialDay.id.toString();
@@ -74,7 +75,7 @@ class SpecialDayKanbanItem extends KanbanItem {
         icon: Icons.list,
         label: 'Total Details',
         value: '${specialDay.detailsCount}',
-        valueColor: AppColors.info,
+        valueColor: context.infoColor,
       ),
     );
 
@@ -156,18 +157,18 @@ class SpecialDayKanbanItem extends KanbanItem {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
+                color: context.primaryColor.withOpacity(0.3),
               ),
             ),
             child: Text(
               dateText,
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                color: context.primaryColor,
               ),
             ),
           ),
@@ -180,16 +181,16 @@ class SpecialDayKanbanItem extends KanbanItem {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.1),
+              color: context.infoColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+              border: Border.all(color: context.infoColor.withOpacity(0.3)),
             ),
             child: Text(
               '+${activeDetails.length - 3} more',
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color: AppColors.info,
+                color: context.infoColor,
               ),
             ),
           ),
@@ -242,6 +243,7 @@ class SpecialDayKanbanConfig {
     Function(SpecialDay)? onEdit,
     Function(SpecialDay)? onDelete,
     Function(SpecialDay)? onManageDetails,
+    required BuildContext context,
   }) {
     final actions = <KanbanAction>[];
 
@@ -251,7 +253,7 @@ class SpecialDayKanbanConfig {
           key: 'view',
           label: 'View Details',
           icon: Icons.visibility,
-          color: AppColors.primary,
+          color: context.primaryColor,
           onTap: (item) => onView((item as SpecialDayKanbanItem).specialDay),
         ),
       );
@@ -263,7 +265,7 @@ class SpecialDayKanbanConfig {
           key: 'edit',
           label: 'Edit',
           icon: Icons.edit,
-          color: AppColors.warning,
+          color: context.warningColor,
           onTap: (item) => onEdit((item as SpecialDayKanbanItem).specialDay),
         ),
       );
@@ -288,7 +290,7 @@ class SpecialDayKanbanConfig {
           key: 'delete',
           label: 'Delete',
           icon: Icons.delete,
-          color: AppColors.error,
+          color: context.errorColor,
           onTap: (item) => onDelete((item as SpecialDayKanbanItem).specialDay),
         ),
       );
@@ -297,3 +299,6 @@ class SpecialDayKanbanConfig {
     return actions;
   }
 }
+
+
+

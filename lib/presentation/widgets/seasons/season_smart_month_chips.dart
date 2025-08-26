@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class SeasonSmartMonthChips {
@@ -13,18 +13,18 @@ class SeasonSmartMonthChips {
   // ];
 
   /// Reusable smart month chip widget that can be used in both table and kanban views
-  static Widget buildSmartMonthChips(List<int> monthRange) {
-    return _buildMonthChips(monthRange);
+  static Widget buildSmartMonthChips(List<int> monthRange, BuildContext context) {
+    return _buildMonthChips(monthRange, context);
   }
 
   /// Build colored month chips for display with smart "More..." functionality
-  static Widget _buildMonthChips(List<int> monthRange) {
+  static Widget _buildMonthChips(List<int> monthRange, BuildContext context) {
     if (monthRange.isEmpty) {
-      return const Text(
+      return Text(
         'No months selected',
         style: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
-          color: AppColors.textSecondary,
+          color: context.textSecondaryColor,
           fontStyle: FontStyle.italic,
         ),
       );
@@ -46,7 +46,7 @@ class SeasonSmartMonthChips {
     ];
 
     // Use only primary color for easier theming
-    const primaryColor = AppColors.primary;
+    final primaryColor = context.primaryColor;
 
     // Use LayoutBuilder to determine available space and show "More..." automatically
     return LayoutBuilder(
@@ -73,10 +73,10 @@ class SeasonSmartMonthChips {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.1),
+                  color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.3),
+                    color: primaryColor.withOpacity(0.3),
                     width: 1,
                   ),
                 ),
@@ -110,10 +110,10 @@ class SeasonSmartMonthChips {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.1),
+                      color: primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: primaryColor.withValues(alpha: 0.3),
+                        color: primaryColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -137,10 +137,10 @@ class SeasonSmartMonthChips {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
+                          color: primaryColor.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -149,17 +149,17 @@ class SeasonSmartMonthChips {
                         children: [
                           Text(
                             '+${monthRange.length - calculatedMaxVisible} more',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeExtraSmall,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                              color: primaryColor,
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Icon(
+                           Icon(
                             Icons.keyboard_arrow_down,
                             size: 12,
-                            color: AppColors.primary,
+                            color: primaryColor,
                           ),
                         ],
                       ),
@@ -172,7 +172,7 @@ class SeasonSmartMonthChips {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'All months:',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,

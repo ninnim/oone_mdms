@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 import 'app_button.dart';
 
 class UnifiedPagination extends StatefulWidget {
@@ -82,7 +82,12 @@ class _UnifiedPaginationState extends State<UnifiedPagination> {
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -91,9 +96,9 @@ class _UnifiedPaginationState extends State<UnifiedPagination> {
               widget.onItemsPerPageChanged != null) ...[
             Text(
               'Show:',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.textSecondaryColor,
+              ),
             ),
             const SizedBox(width: AppSizes.spacing8),
             Container(
@@ -101,8 +106,9 @@ class _UnifiedPaginationState extends State<UnifiedPagination> {
                 horizontal: AppSizes.spacing8,
               ),
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.borderColor),
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                color: Theme.of(context).cardColor,
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int>(
@@ -129,9 +135,9 @@ class _UnifiedPaginationState extends State<UnifiedPagination> {
             const SizedBox(width: AppSizes.spacing8),
             Text(
               'per page',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.textSecondaryColor,
+              ),
             ),
             const SizedBox(width: AppSizes.spacing24),
           ],
@@ -140,9 +146,9 @@ class _UnifiedPaginationState extends State<UnifiedPagination> {
           Expanded(
             child: Text(
               'Showing $startItem-$endItem of ${widget.totalItems} ${widget.itemLabel}',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.textSecondaryColor,
+              ),
             ),
           ),
 
@@ -183,16 +189,24 @@ class _UnifiedPaginationState extends State<UnifiedPagination> {
                       width: 60,
                       height: 32,
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withOpacity(0.5),
+                        ),
                         borderRadius: BorderRadius.circular(
                           AppSizes.radiusSmall,
                         ),
+                        color: Theme.of(context).cardColor,
                       ),
                       child: TextFormField(
                         controller: _pageController,
                         textAlign: TextAlign.center,
                         keyboardType: TextInputType.number,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: context.textPrimaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
@@ -219,12 +233,15 @@ class _UnifiedPaginationState extends State<UnifiedPagination> {
                     vertical: AppSizes.spacing8,
                   ),
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.borderColor),
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    color: Theme.of(context).cardColor,
                   ),
                   child: Text(
                     'Page ${widget.currentPage} of ${widget.totalPages}',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: context.textPrimaryColor,
+                    ),
                   ),
                 ),
               ],

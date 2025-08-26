@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
 import '../common/app_button.dart';
@@ -165,17 +165,17 @@ class _SpecialDayDetailFormDialogState
             // Header
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Row(
                 children: [
                   Text(
                     _dialogTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppSizes.fontSizeLarge,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimaryColor,
                     ),
                   ),
                   const Spacer(),
@@ -183,8 +183,8 @@ class _SpecialDayDetailFormDialogState
                     onPressed: _handleCancel,
                     icon: const Icon(Icons.close),
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      foregroundColor: AppColors.textSecondary,
+                      backgroundColor: context.surfaceColor,
+                      foregroundColor: context.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -246,7 +246,7 @@ class _SpecialDayDetailFormDialogState
                             child: AppInputField(
                               controller: _descriptionController,
                               label: 'Description',
-                              hintText: 'Enter description (optional)',
+                              hintText: 'Enter description',
                               validator: (value) {
                                 return null; // No validation required for description
                               },
@@ -264,9 +264,9 @@ class _SpecialDayDetailFormDialogState
                             _isEditMode
                                 ? 'Editing detail. Current parent special day is pre-selected.'
                                 : 'Creating detail under the current special day.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeSmall,
-                              color: AppColors.textSecondary,
+                              color: context.textSecondaryColor,
                             ),
                           ),
                         )
@@ -275,9 +275,9 @@ class _SpecialDayDetailFormDialogState
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
                             'Creating detail under: ${widget.availableParentSpecialDays.first.name}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppSizes.fontSizeSmall,
-                              color: AppColors.textSecondary,
+                              color: context.textSecondaryColor,
                             ),
                           ),
                         ),
@@ -338,8 +338,8 @@ class _SpecialDayDetailFormDialogState
             // Footer
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: context.borderColor)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -365,3 +365,8 @@ class _SpecialDayDetailFormDialogState
     );
   }
 }
+
+
+
+
+

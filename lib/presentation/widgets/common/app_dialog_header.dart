@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/utils/responsive_helper.dart';
+import '../../themes/app_theme.dart';
 
 enum DialogType { create, edit, view, delete, confirm }
 
@@ -36,15 +36,12 @@ class AppDialogHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withValues(alpha: 0.08),
-            AppColors.primary.withValues(alpha: 0.02),
+            context.primaryColor.withValues(alpha: 0.08),
+            context.primaryColor.withValues(alpha: 0.02),
           ],
         ),
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
+          bottom: BorderSide(color: context.borderColor, width: 1.5),
         ),
       ),
       child: Padding(
@@ -59,18 +56,18 @@ class AppDialogHeader extends StatelessWidget {
                     : AppSizes.spacing6,
               ),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(
                   ResponsiveHelper.getCardBorderRadius(context),
                 ),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: context.primaryColor.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
               child: Icon(
                 config.icon,
-                color: AppColors.primary,
+                color: context.primaryColor,
                 size: isMobile ? AppSizes.iconSmall : AppSizes.iconMedium,
               ),
             ),
@@ -91,7 +88,7 @@ class AppDialogHeader extends StatelessWidget {
                           ? AppSizes.fontSizeMedium
                           : AppSizes.fontSizeLarge,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimaryColor,
                       letterSpacing: -0.3,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -109,7 +106,7 @@ class AppDialogHeader extends StatelessWidget {
                             ? AppSizes.fontSizeExtraSmall
                             : AppSizes.fontSizeSmall,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                         height: 1.3,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -204,21 +201,23 @@ class _HoverableCloseButtonState extends State<_HoverableCloseButton> {
         ),
         decoration: BoxDecoration(
           color: _isHovered
-              ? AppColors.error.withValues(alpha: 0.1)
-              : AppColors.surface,
+              ? Theme.of(context).colorScheme.error.withValues(alpha: 0.1)
+              : context.surfaceColor,
           borderRadius: BorderRadius.circular(
             ResponsiveHelper.getCardBorderRadius(context),
           ),
           border: Border.all(
             color: _isHovered
-                ? AppColors.error.withValues(alpha: 0.3)
-                : AppColors.border,
+                ? Theme.of(context).colorScheme.error.withValues(alpha: 0.3)
+                : context.borderColor,
             width: 1,
           ),
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: AppColors.error.withValues(alpha: 0.15),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.error.withValues(alpha: 0.15),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -230,11 +229,17 @@ class _HoverableCloseButtonState extends State<_HoverableCloseButton> {
           borderRadius: BorderRadius.circular(
             ResponsiveHelper.getCardBorderRadius(context),
           ),
-          splashColor: AppColors.error.withValues(alpha: 0.2),
-          highlightColor: AppColors.error.withValues(alpha: 0.15),
+          splashColor: Theme.of(
+            context,
+          ).colorScheme.error.withValues(alpha: 0.2),
+          highlightColor: Theme.of(
+            context,
+          ).colorScheme.error.withValues(alpha: 0.15),
           child: Icon(
             Icons.close,
-            color: _isHovered ? AppColors.error : AppColors.textSecondary,
+            color: _isHovered
+                ? Theme.of(context).colorScheme.error
+                : context.textSecondaryColor,
             size: widget.isMobile ? AppSizes.iconSmall : AppSizes.iconMedium,
           ),
         ),

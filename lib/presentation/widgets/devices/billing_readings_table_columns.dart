@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../common/blunest_data_table.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/models/billing.dart';
 
 class BillingReadingsTableColumns {
@@ -21,12 +22,16 @@ class BillingReadingsTableColumns {
           final index = readings?.indexOf(reading) ?? 0;
           final rowNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
           return Container(
-            child: Text(
-              '$rowNumber',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF6B7280),
+            child: Builder(
+              builder: (context) => Text(
+                '$rowNumber',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.7),
+                ),
               ),
             ),
           );
@@ -41,12 +46,14 @@ class BillingReadingsTableColumns {
         sortable: true,
         builder: (reading) => Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            DateFormat('MMM d, y HH:mm').format(reading.billingDate),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1e293b),
+          child: Builder(
+            builder: (context) => Text(
+              DateFormat('MMM d, y HH:mm').format(reading.billingDate),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ),
@@ -64,12 +71,14 @@ class BillingReadingsTableColumns {
 
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              '${value.toStringAsFixed(2)} $units',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+            child: Builder(
+              builder: (context) => Text(
+                '${value.toStringAsFixed(2)} $units',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.primaryColor,
+                ),
               ),
             ),
           );
@@ -89,7 +98,7 @@ class BillingReadingsTableColumns {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1e293b),
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -172,8 +181,7 @@ class BillingReadingsTableColumns {
         sortable: true,
         builder: (reading) => Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child:
-           Container(
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),

@@ -29,7 +29,7 @@ class TimeBandKanbanView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Convert time bands to kanban items
     List<KanbanItem> items = timeBands
-        .map((timeBand) => TimeBandKanbanItem(timeBand))
+        .map((timeBand) => TimeBandKanbanItem(timeBand, context))
         .toList();
 
     // Apply search filter if provided
@@ -50,6 +50,7 @@ class TimeBandKanbanView extends StatelessWidget {
         }
       },
       actions: TimeBandKanbanConfig.getActions(
+        context: context,
         onView: onItemTap,
         onEdit: onItemEdit,
         onDelete: onItemDelete,

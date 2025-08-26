@@ -14,7 +14,7 @@ import '../../widgets/special_days/special_day_form_dialog.dart';
 import '../../widgets/special_days/special_day_table_columns.dart';
 import '../../widgets/special_days/special_day_summary_card.dart';
 import '../../widgets/special_days/special_day_kanban_adapter.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/models/special_day.dart';
@@ -555,7 +555,13 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
 
   Widget _buildViewContent() {
     return (_currentViewMode == SpecialDayViewMode.table && !_isKanbanView)
-        ? _buildTableView()
+        ? Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing16,
+              vertical: AppSizes.spacing8,
+            ),
+            child: _buildTableView(),
+          )
         : _buildKanbanView();
   }
 
@@ -593,6 +599,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
 
   List<BluNestTableColumn<SpecialDay>> _buildTableColumns() {
     return SpecialDayTableColumns.buildBluNestColumns(
+      context: context,
       visibleColumns: _availableColumns
           .where((col) => !_hiddenColumns.contains(col))
           .toList(),
@@ -620,13 +627,14 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
     }
 
     final kanbanItems = _specialDays
-        .map((specialDay) => SpecialDayKanbanItem(specialDay))
+        .map((specialDay) => SpecialDayKanbanItem(specialDay, context))
         .toList();
 
     return KanbanView<SpecialDayKanbanItem>(
       items: kanbanItems,
       columns: SpecialDayKanbanConfig.columns,
       actions: SpecialDayKanbanConfig.getActions(
+        context: context,
         onView: _onSpecialDaySelected,
         onEdit: _editSpecialDay,
         onDelete: _deleteSpecialDay,
@@ -643,7 +651,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
     final isMobile = screenWidth < 768;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -720,7 +728,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
           height: AppSizes.cardMobile,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor, //AppColors.surface,
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [AppSizes.shadowSmall],
           ),
@@ -742,7 +750,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
                     children: [
                       Icon(
                         Icons.event_note,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -754,7 +762,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimaryColor,
                                 fontSize: headerFontSize,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -770,7 +778,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
                           _summaryCardCollapsed
                               ? Icons.expand_more
                               : Icons.expand_less,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondaryColor,
                           size: AppSizes.iconSmall,
                         ),
                         padding: EdgeInsets.zero,
@@ -823,7 +831,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppSizes.spacing8),
-          color: AppColors.surface,
+          color: context.surfaceColor,
           boxShadow: [AppSizes.shadowSmall],
         ),
         child: Row(
@@ -861,7 +869,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -911,7 +919,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
                   Icons.view_kanban,
                   size: 18,
                   color: _currentViewMode == SpecialDayViewMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -919,7 +927,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
                   'Kanban View',
                   style: TextStyle(
                     color: _currentViewMode == SpecialDayViewMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -934,7 +942,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
                   Icons.table_chart,
                   size: 18,
                   color: _currentViewMode == SpecialDayViewMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -942,7 +950,7 @@ class _SpecialDaysScreenState extends State<SpecialDaysScreen>
                   'Table View',
                   style: TextStyle(
                     color: _currentViewMode == SpecialDayViewMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),

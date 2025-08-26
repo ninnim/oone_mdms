@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_button.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_input_field.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 
 class CustomDateRangePicker extends StatefulWidget {
   final DateTime? initialStartDate;
@@ -79,14 +80,17 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             border: Border.all(
-              color: widget.enabled
-                  ? (isDark ? const Color(0xFF4a5568) : AppColors.border)
-                  : (isDark ? const Color(0xFF2d3748) : AppColors.borderLight),
+              color: context.borderColor,
+              // (isDark ? const Color(0xFF2d3748) : AppColors.borderLight),
             ),
             borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
             color: widget.enabled
-                ? (isDark ? const Color(0xFF2d3748) : AppColors.surface)
-                : (isDark ? const Color(0xFF1e293b) : AppColors.surfaceVariant),
+                ? (isDark
+                      ? const Color(0xFF2d3748)
+                      : Theme.of(context).colorScheme.surface)
+                : (isDark
+                      ? const Color(0xFF1e293b)
+                      : Theme.of(context).colorScheme.surfaceVariant),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -95,8 +99,16 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                 Icons.calendar_today,
                 size: AppSizes.iconSmall,
                 color: widget.enabled
-                    ? (isDark ? Colors.white70 : AppColors.textSecondary)
-                    : (isDark ? Colors.white30 : AppColors.textTertiary),
+                    ? (isDark
+                          ? Colors.white70
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7))
+                    : (isDark
+                          ? Colors.white30
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.5)),
               ),
               const SizedBox(width: 8),
               Text(
@@ -104,8 +116,14 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   color: widget.enabled
-                      ? (isDark ? Colors.white : AppColors.textPrimary)
-                      : (isDark ? Colors.white54 : AppColors.textTertiary),
+                      ? (isDark
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface)
+                      : (isDark
+                            ? Colors.white54
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -115,8 +133,16 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                     : Icons.keyboard_arrow_down,
                 size: AppSizes.iconSmall,
                 color: widget.enabled
-                    ? (isDark ? Colors.white70 : AppColors.textSecondary)
-                    : (isDark ? Colors.white30 : AppColors.textTertiary),
+                    ? (isDark
+                          ? Colors.white70
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7))
+                    : (isDark
+                          ? Colors.white30
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.5)),
               ),
             ],
           ),
@@ -193,7 +219,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -239,7 +265,9 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                     Container(
                       height: 200, // Fixed height for scrollable area
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                         borderRadius: BorderRadius.circular(
                           AppSizes.radiusLarge,
                         ),
@@ -340,11 +368,11 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? context.primaryColor.withOpacity(0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
               border: isSelected
-                  ? Border.all(color: AppColors.primary, width: 1)
+                  ? Border.all(color: context.primaryColor, width: 1)
                   : null,
             ),
             child: Text(
@@ -353,8 +381,10 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                 color: isSelected
-                    ? AppColors.primary
-                    : (isDark ? Colors.white : AppColors.textPrimary),
+                    ? context.primaryColor
+                    : (isDark
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface),
               ),
             ),
           ),
@@ -440,7 +470,9 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
           },
           icon: Icon(
             Icons.chevron_left,
-            color: isDark ? Colors.white70 : AppColors.textSecondary,
+            color: isDark
+                ? Colors.white70
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
         Text(
@@ -448,7 +480,9 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : AppColors.textPrimary,
+            color: isDark
+                ? Colors.white
+                : Theme.of(context).colorScheme.onSurface,
           ),
         ),
         IconButton(
@@ -462,7 +496,9 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
           },
           icon: Icon(
             Icons.chevron_right,
-            color: isDark ? Colors.white70 : AppColors.textSecondary,
+            color: isDark
+                ? Colors.white70
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
       ],
@@ -485,7 +521,9 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                         fontWeight: FontWeight.w600,
                         color: isDark
                             ? Colors.white70
-                            : AppColors.textSecondary,
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -536,9 +574,9 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : (isInRange
-                            ? AppColors.primary.withOpacity(0.1)
+                            ? context.primaryColor.withOpacity(0.1)
                             : Colors.transparent),
                   borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
                 ),
@@ -557,10 +595,15 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                               : (isCurrentMonth
                                     ? (isDark
                                           ? Colors.white
-                                          : AppColors.textPrimary)
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface)
                                     : (isDark
                                           ? Colors.white30
-                                          : AppColors.textTertiary)),
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.5))),
                         ),
                       ),
                     ),
@@ -574,7 +617,7 @@ class _CustomDateRangePickerState extends State<CustomDateRangePicker> {
                             width: 4,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              color: context.primaryColor,
                               shape: BoxShape.circle,
                             ),
                           ),

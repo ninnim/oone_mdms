@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
 import '../common/status_chip.dart';
@@ -31,6 +31,7 @@ class SpecialDayTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<SpecialDay>? specialDays,
+    required BuildContext context,
   }) {
     return [
       // No. (Row Number)
@@ -46,10 +47,10 @@ class SpecialDayTableColumns {
             alignment: Alignment.centerLeft,
             child: Text(
               '$rowNumber',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -66,10 +67,10 @@ class SpecialDayTableColumns {
           alignment: Alignment.centerLeft,
           child: Text(
             specialDay.name.isNotEmpty ? specialDay.name : 'N/A',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
         ),
@@ -85,9 +86,9 @@ class SpecialDayTableColumns {
           alignment: Alignment.centerLeft,
           child: Text(
             specialDay.description.isNotEmpty ? specialDay.description : 'N/A',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -140,42 +141,42 @@ class SpecialDayTableColumns {
           alignment: Alignment.centerRight,
           height: AppSizes.spacing40,
           child: PopupMenuButton<String>(
-            icon: const Icon(
+            icon: Icon(
               Icons.more_vert,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               size: 16,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
             ),
             itemBuilder: (context) => [
-              const PopupMenuItem<String>(
+               PopupMenuItem<String>(
                 value: 'view',
                 child: Row(
                   children: [
-                    Icon(Icons.visibility, size: 16, color: AppColors.primary),
+                    Icon(Icons.visibility, size: 16, color: context.primaryColor),
                     SizedBox(width: AppSizes.spacing8),
                     Text('View Details'),
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+               PopupMenuItem<String>(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit, size: 16, color: AppColors.warning),
+                    Icon(Icons.edit, size: 16, color: context.warningColor),
                     SizedBox(width: AppSizes.spacing8),
                     Text('Edit'),
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+               PopupMenuItem<String>(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 16, color: AppColors.error),
+                    Icon(Icons.delete, size: 16, color: context.errorColor),
                     SizedBox(width: AppSizes.spacing8),
-                    Text('Delete', style: TextStyle(color: AppColors.error)),
+                    Text('Delete', style: TextStyle(color: context.errorColor)),
                   ],
                 ),
               ),
@@ -210,8 +211,10 @@ class SpecialDayTableColumns {
     int currentPage = 1,
     int itemsPerPage = 25,
     List<SpecialDay>? specialDays,
+    required BuildContext context,
   }) {
     final allColumns = getBluNestColumns(
+      context: context,
       onView: onView,
       onEdit: onEdit,
       onDelete: onDelete,
@@ -237,3 +240,8 @@ class SpecialDayTableColumns {
     }).toList();
   }
 }
+
+
+
+
+

@@ -3,7 +3,6 @@ import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
 import 'dart:async';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/device.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/device_group_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -15,6 +14,7 @@ import '../../widgets/common/app_tabs.dart';
 import '../../widgets/common/results_pagination.dart';
 import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_dialog_header.dart';
+import '../../themes/app_theme.dart';
 
 class DeviceGroupManageDevicesDialog extends StatefulWidget {
   final DeviceGroup deviceGroup;
@@ -598,10 +598,10 @@ class _DeviceGroupManageDevicesDialogState
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.border.withValues(alpha: 0.1),
+                    color: context.borderColor.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -616,7 +616,7 @@ class _DeviceGroupManageDevicesDialogState
                           ? null
                           : _addDevicesToGroup,
                       type: AppButtonType.primary,
-                     // size: AppButtonSize.small,
+                      // size: AppButtonSize.small,
                       isLoading: _isProcessing,
                       text: 'Add to Group',
                       icon: const Icon(Icons.add),
@@ -663,18 +663,22 @@ class _DeviceGroupManageDevicesDialogState
     }
 
     if (_availableDevices.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.devices_other, size: 48, color: AppColors.textSecondary),
+            Icon(
+              Icons.devices_other,
+              size: 48,
+              color: context.textSecondaryColor,
+            ),
             SizedBox(height: AppSizes.spacing16),
             Text(
               'No Available Devices',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeMedium,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
             SizedBox(height: AppSizes.spacing8),
@@ -682,7 +686,7 @@ class _DeviceGroupManageDevicesDialogState
               'All devices are already assigned to groups.',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           ],
@@ -728,12 +732,12 @@ class _DeviceGroupManageDevicesDialogState
         // Pagination - show if we have devices, matching device_groups_screen behavior
         if (_totalAvailableDevices > 0)
           Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
+            //  padding: const EdgeInsets.all(AppSizes.spacing16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               border: Border(
                 top: BorderSide(
-                  color: AppColors.border.withOpacity(0.1),
+                  color: context.borderColor.withOpacity(0.1),
                   width: 1,
                 ),
               ),
@@ -785,18 +789,22 @@ class _DeviceGroupManageDevicesDialogState
     }
 
     if (_currentDevices.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.devices_other, size: 48, color: AppColors.textSecondary),
+            Icon(
+              Icons.devices_other,
+              size: 48,
+              color: context.textSecondaryColor,
+            ),
             SizedBox(height: AppSizes.spacing16),
             Text(
               'No Devices in Group',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeMedium,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
             SizedBox(height: AppSizes.spacing8),
@@ -804,7 +812,7 @@ class _DeviceGroupManageDevicesDialogState
               'Add devices from the "Available Devices" tab.',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
           ],
@@ -850,12 +858,12 @@ class _DeviceGroupManageDevicesDialogState
         // Pagination - show if we have devices, matching device_groups_screen behavior
         if (_totalCurrentDevices > 0)
           Container(
-            padding: const EdgeInsets.all(AppSizes.spacing16),
+            // padding: const EdgeInsets.all(AppSizes.spacing16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               border: Border(
                 top: BorderSide(
-                  color: AppColors.border.withOpacity(0.1),
+                  color: context.borderColor.withOpacity(0.1),
                   width: 1,
                 ),
               ),
@@ -897,9 +905,9 @@ class _DeviceGroupManageDevicesDialogState
         sortable: true,
         builder: (device) => Text(
           device.serialNumber,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: AppColors.primary,
+            color: context.primaryColor,
           ),
         ),
       ),

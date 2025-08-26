@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/presentation/themes/app_theme.dart';
 import '../../../core/models/address.dart';
 
 class InteractiveLocationMap extends StatefulWidget {
@@ -121,7 +122,7 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
       height: _mapHeight,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE1E5E9)),
+        border: Border.all(color: context.borderColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -136,8 +137,8 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF87CEEB), // Sky blue
-                    const Color(0xFF98FB98), // Pale green
+                    context.primaryColor,
+                    context.secondaryColor,
                   ],
                 ),
               ),
@@ -148,7 +149,7 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
               scale: _zoom,
               child: CustomPaint(
                 size: Size(_mapWidth, _mapHeight),
-                painter: MapGridPainter(),
+                painter: MapGridPainter(context),
               ),
             ),
 
@@ -172,20 +173,20 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563eb),
+                    color: context.primaryColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: context.borderColor, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: context.shadowColor.withOpacity(0.2),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.my_location,
-                    color: Colors.white,
+                    color: context.backgroundColor,
                     size: 16,
                   ),
                 ),
@@ -214,21 +215,20 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: context.backgroundColor.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: const Color(0xFFE1E5E9)),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Text(
                   'Lat: ${_currentLat.toStringAsFixed(6)}, Lng: ${_currentLng.toStringAsFixed(6)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1e293b),
+                    color: context.textPrimaryColor,
                   ),
                 ),
               ),
             ),
-
             // Instructions overlay (only when not readonly)
             if (!widget.readOnly)
               Positioned(
@@ -240,13 +240,13 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: context.backgroundColor.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: const Color(0xFFE1E5E9)),
+                    border: Border.all(color: context.borderColor),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Click or drag marker to set location',
-                    style: TextStyle(fontSize: 10, color: Color(0xFF64748b)),
+                    style: TextStyle(fontSize: 10, color: context.textSecondaryColor),
                   ),
                 ),
               ),
@@ -261,12 +261,12 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: context.backgroundColor.withOpacity(0.9),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFE1E5E9)),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: context.shadowColor.withOpacity(0.1),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -277,7 +277,7 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(4),
-          child: Icon(icon, size: 16, color: const Color(0xFF1e293b)),
+          child: Icon(icon, size: 16, color: context.textPrimaryColor),
         ),
       ),
     );
@@ -285,10 +285,13 @@ class _InteractiveLocationMapState extends State<InteractiveLocationMap> {
 }
 
 class MapGridPainter extends CustomPainter {
+  MapGridPainter(this.context);
+  final BuildContext context;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = context.borderColor.withOpacity(0.3)
       ..strokeWidth = 1;
 
     // Draw vertical grid lines

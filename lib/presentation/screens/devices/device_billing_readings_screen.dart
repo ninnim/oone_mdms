@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:mdms_clone/core/constants/app_colors.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -112,16 +113,16 @@ class _DeviceBillingReadingsScreenState
         final isMobile = screenWidth < 768;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC),
+          backgroundColor: context.backgroundColor,
           body: Column(
             children: [
               // Header section
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
                   border: Border(
-                    bottom: BorderSide(color: Color(0xFFE1E5E9), width: 1),
+                    bottom: BorderSide(color: context.borderColor, width: 1),
                   ),
                 ),
                 child: Column(
@@ -137,15 +138,14 @@ class _DeviceBillingReadingsScreenState
                                 style: TextStyle(
                                   fontSize: AppSizes.fontSizeLarge,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1e293b),
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Device: ${widget.device.serialNumber}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: AppSizes.fontSizeSmall,
-                                  color: Color(0xFF64748b),
+                                  color: context.textSecondaryColor,
                                 ),
                               ),
                             ],
@@ -186,14 +186,14 @@ class _DeviceBillingReadingsScreenState
                             const Icon(
                               Icons.error_outline,
                               size: 64,
-                              color: Color(0xFFef4444),
+                              color: AppColors.error,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               _error!,
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFFef4444),
+                                color: AppColors.error,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -237,7 +237,7 @@ class _DeviceBillingReadingsScreenState
       height: 36, // Smaller for mobile
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
-        color: const Color(0xFFF1F5F9),
+        color: context.surfaceVariantColor,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -273,7 +273,7 @@ class _DeviceBillingReadingsScreenState
       children: [
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF2563eb),
+            color: context.primaryColor,
             borderRadius: BorderRadius.circular(6),
           ),
           child: IconButton(
@@ -287,7 +287,7 @@ class _DeviceBillingReadingsScreenState
         const SizedBox(width: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF64748b),
+            color: context.textSecondaryColor,
             borderRadius: BorderRadius.circular(6),
           ),
           child: IconButton(
@@ -309,7 +309,7 @@ class _DeviceBillingReadingsScreenState
         borderRadius: BorderRadius.circular(
           8,
         ), // AppSizes.radiusMedium equivalent
-        color: const Color(0xFFF1F5F9),
+        color: context.surfaceVariantColor,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -359,7 +359,7 @@ class _DeviceBillingReadingsScreenState
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(isCompact ? 6 : 8),
-          color: isActive ? const Color(0xFF2563eb) : Colors.transparent,
+          color: isActive ? context.primaryColor : Colors.transparent,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -367,7 +367,7 @@ class _DeviceBillingReadingsScreenState
             Icon(
               icon,
               size: isCompact ? 14 : 16,
-              color: isActive ? Colors.white : const Color(0xFF64748b),
+              color: isActive ? Colors.white : context.textSecondaryColor,
             ),
             if (!isCompact) ...[
               const SizedBox(width: 8),
@@ -376,7 +376,7 @@ class _DeviceBillingReadingsScreenState
                 style: TextStyle(
                   fontSize: isCompact ? 12 : 14,
                   fontWeight: FontWeight.w500,
-                  color: isActive ? Colors.white : const Color(0xFF64748b),
+                  color: isActive ? Colors.white : context.textSecondaryColor,
                 ),
               ),
             ],
@@ -394,7 +394,7 @@ class _DeviceBillingReadingsScreenState
         child: Center(
           child: Text(
             'No billing readings data available for this period',
-            style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
+            style: TextStyle(fontSize: 16, color: AppColors.lightTextSecondary),
           ),
         ),
       );
@@ -443,7 +443,6 @@ class _DeviceBillingReadingsScreenState
           style: TextStyle(
             fontSize: AppSizes.fontSizeLarge,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1e293b),
           ),
         ),
         const SizedBox(height: 16),
@@ -471,21 +470,31 @@ class _DeviceBillingReadingsScreenState
     if (_billingReadings == null ||
         _billingReadings!['DeviceReadings'] == null ||
         (_billingReadings!['DeviceReadings'] as List).isEmpty) {
-      return const AppCard(
+      return AppCard(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.bar_chart, size: 64, color: Color(0xFF64748b)),
+              Icon(
+                Icons.bar_chart,
+                size: 64,
+                color: context.textSecondaryColor,
+              ),
               SizedBox(height: 16),
               Text(
                 'No billing readings data available for graphing',
-                style: TextStyle(fontSize: 16, color: Color(0xFF64748b)),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: context.textSecondaryColor,
+                ),
               ),
               SizedBox(height: 8),
               Text(
                 'Try refreshing the data or check billing records',
-                style: TextStyle(fontSize: 14, color: Color(0xFF64748b)),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.textSecondaryColor,
+                ),
               ),
             ],
           ),
@@ -503,13 +512,12 @@ class _DeviceBillingReadingsScreenState
           style: TextStyle(
             fontSize: AppSizes.fontSizeLarge,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1e293b),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Interactive analysis of accumulative values and consumption patterns',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 14, color: AppColors.lightTextSecondary),
         ),
         const SizedBox(height: 24),
 
@@ -555,7 +563,7 @@ class _DeviceBillingReadingsScreenState
             'Total Consumption',
             '${totalConsumption.toStringAsFixed(2)} kWh',
             Icons.bolt,
-            const Color(0xFF2563eb),
+            context.primaryColor,
             '${((totalConsumption / 1000) * 0.12).toStringAsFixed(2)} USD',
           ),
         ),
@@ -565,7 +573,7 @@ class _DeviceBillingReadingsScreenState
             'Avg Daily',
             '${avgDailyConsumption.toStringAsFixed(2)} kWh',
             Icons.trending_up,
-            const Color(0xFF10b981),
+            context.successColor,
             '${readings.length} days',
           ),
         ),
@@ -575,7 +583,7 @@ class _DeviceBillingReadingsScreenState
             'Peak Reading',
             '${peakConsumption.toStringAsFixed(2)} kWh',
             Icons.flash_on,
-            const Color(0xFFf59e0b),
+            context.warningColor,
             'Highest value',
           ),
         ),
@@ -585,7 +593,7 @@ class _DeviceBillingReadingsScreenState
             'Growth Rate',
             '${growthRate.toStringAsFixed(1)}%',
             growthRate >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-            growthRate >= 0 ? const Color(0xFF10b981) : const Color(0xFFef4444),
+            growthRate >= 0 ? context.successColor : context.errorColor,
             'Period trend',
           ),
         ),
@@ -623,9 +631,9 @@ class _DeviceBillingReadingsScreenState
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF64748b),
+                          color: context.textSecondaryColor,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -646,7 +654,7 @@ class _DeviceBillingReadingsScreenState
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF94a3b8)),
+              style: TextStyle(fontSize: 11, color: context.textTertiaryColor),
             ),
           ],
         ),
@@ -665,7 +673,7 @@ class _DeviceBillingReadingsScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -673,13 +681,16 @@ class _DeviceBillingReadingsScreenState
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1e293b),
+                        color: context.textPrimaryColor,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'Daily consumption accumulation over time',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF64748b)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.textSecondaryColor,
+                      ),
                     ),
                   ],
                 ),
@@ -689,10 +700,10 @@ class _DeviceBillingReadingsScreenState
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563eb).withOpacity(0.1),
+                    color: context.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF2563eb).withOpacity(0.2),
+                      color: context.primaryColor.withOpacity(0.2),
                     ),
                   ),
                   child: Row(
@@ -701,18 +712,18 @@ class _DeviceBillingReadingsScreenState
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF2563eb),
+                        decoration: BoxDecoration(
+                          color: context.primaryColor,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         'kWh',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF2563eb),
+                          color: context.primaryColor,
                         ),
                       ),
                     ],
@@ -730,14 +741,14 @@ class _DeviceBillingReadingsScreenState
                     horizontalInterval: null,
                     verticalInterval: null,
                     getDrawingHorizontalLine: (value) {
-                      return const FlLine(
-                        color: Color(0xFFf1f5f9),
+                      return FlLine(
+                        color: context.borderColor.withOpacity(0.3),
                         strokeWidth: 1,
                       );
                     },
                     getDrawingVerticalLine: (value) {
-                      return const FlLine(
-                        color: Color(0xFFf1f5f9),
+                      return FlLine(
+                        color: context.borderColor.withOpacity(0.3),
                         strokeWidth: 1,
                       );
                     },
@@ -769,8 +780,8 @@ class _DeviceBillingReadingsScreenState
                                 padding: const EdgeInsets.only(top: 8),
                                 child: Text(
                                   DateFormat('MMM d').format(date),
-                                  style: const TextStyle(
-                                    color: Color(0xFF64748b),
+                                  style: TextStyle(
+                                    color: context.textSecondaryColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -789,8 +800,8 @@ class _DeviceBillingReadingsScreenState
                         getTitlesWidget: (double value, TitleMeta meta) {
                           return Text(
                             '${(value / 1000).toStringAsFixed(1)}k',
-                            style: const TextStyle(
-                              color: Color(0xFF64748b),
+                            style: TextStyle(
+                              color: context.textSecondaryColor,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
@@ -802,10 +813,7 @@ class _DeviceBillingReadingsScreenState
                   ),
                   borderData: FlBorderData(
                     show: true,
-                    border: Border.all(
-                      color: const Color(0xFFe2e8f0),
-                      width: 1,
-                    ),
+                    border: Border.all(color: context.borderColor, width: 1),
                   ),
                   minX: 0,
                   maxX: (readings.length - 1).toDouble(),
@@ -835,8 +843,11 @@ class _DeviceBillingReadingsScreenState
                       }).toList(),
                       isCurved: true,
                       curveSmoothness: 0.3,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2563eb), Color(0xFF3b82f6)],
+                      gradient: LinearGradient(
+                        colors: [
+                          context.primaryColor,
+                          context.primaryColor.withOpacity(0.8),
+                        ],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
@@ -849,7 +860,7 @@ class _DeviceBillingReadingsScreenState
                             radius: 4,
                             color: Colors.white,
                             strokeWidth: 2,
-                            strokeColor: const Color(0xFF2563eb),
+                            strokeColor: context.primaryColor,
                           );
                         },
                       ),
@@ -857,9 +868,9 @@ class _DeviceBillingReadingsScreenState
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            const Color(0xFF2563eb).withOpacity(0.3),
-                            const Color(0xFF2563eb).withOpacity(0.1),
-                            const Color(0xFF2563eb).withOpacity(0.05),
+                            context.primaryColor.withOpacity(0.3),
+                            context.primaryColor.withOpacity(0.1),
+                            context.primaryColor.withOpacity(0.05),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -943,18 +954,18 @@ class _DeviceBillingReadingsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Daily Consumption Pattern',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1e293b),
+                color: context.textPrimaryColor,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Daily usage variations and patterns',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12, color: context.textSecondaryColor),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -995,8 +1006,8 @@ class _DeviceBillingReadingsScreenState
                           if (index >= 0 && index < dailyConsumption.length) {
                             return Text(
                               'D${index + 1}',
-                              style: const TextStyle(
-                                color: Color(0xFF64748b),
+                              style: TextStyle(
+                                color: context.textSecondaryColor,
                                 fontSize: 10,
                               ),
                             );
@@ -1012,8 +1023,8 @@ class _DeviceBillingReadingsScreenState
                         getTitlesWidget: (double value, TitleMeta meta) {
                           return Text(
                             value.toStringAsFixed(0),
-                            style: const TextStyle(
-                              color: Color(0xFF64748b),
+                            style: TextStyle(
+                              color: context.textSecondaryColor,
                               fontSize: 10,
                             ),
                           );
@@ -1032,8 +1043,8 @@ class _DeviceBillingReadingsScreenState
                           toY: value,
                           gradient: LinearGradient(
                             colors: [
-                              const Color(0xFF10b981).withOpacity(0.8),
-                              const Color(0xFF10b981),
+                              context.successColor.withOpacity(0.8),
+                              context.successColor,
                             ],
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
@@ -1050,8 +1061,8 @@ class _DeviceBillingReadingsScreenState
                     show: true,
                     horizontalInterval: null,
                     getDrawingHorizontalLine: (value) {
-                      return const FlLine(
-                        color: Color(0xFFf1f5f9),
+                      return FlLine(
+                        color: context.borderColor.withOpacity(0.3),
                         strokeWidth: 1,
                       );
                     },
@@ -1091,12 +1102,12 @@ class _DeviceBillingReadingsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Consumption Insights',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1e293b),
+                color: context.textPrimaryColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -1106,7 +1117,7 @@ class _DeviceBillingReadingsScreenState
               peakDay['date'] ?? 'N/A',
               '${peakDay['value']} kWh',
               Icons.trending_up,
-              const Color(0xFFf59e0b),
+              context.warningColor,
             ),
             const SizedBox(height: 16),
 
@@ -1120,10 +1131,10 @@ class _DeviceBillingReadingsScreenState
                   : 'Needs Improvement',
               Icons.eco,
               efficiency >= 75
-                  ? const Color(0xFF10b981)
+                  ? context.successColor
                   : efficiency >= 50
-                  ? const Color(0xFFf59e0b)
-                  : const Color(0xFFef4444),
+                  ? context.warningColor
+                  : context.errorColor,
             ),
             const SizedBox(height: 16),
 
@@ -1132,7 +1143,7 @@ class _DeviceBillingReadingsScreenState
               _getConsumptionPattern(readings),
               'Based on trend analysis',
               Icons.analytics,
-              const Color(0xFF2563eb),
+              context.primaryColor,
             ),
             const SizedBox(height: 16),
 
@@ -1141,7 +1152,7 @@ class _DeviceBillingReadingsScreenState
               '${(avgDailyConsumption * 7).toStringAsFixed(1)} kWh',
               'Estimated usage',
               Icons.schedule,
-              const Color(0xFF8b5cf6),
+              context.secondaryColor,
             ),
           ],
         ),
@@ -1173,10 +1184,10 @@ class _DeviceBillingReadingsScreenState
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748b),
+                    color: context.textSecondaryColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1190,9 +1201,9 @@ class _DeviceBillingReadingsScreenState
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: Color(0xFF94a3b8),
+                    color: context.textTertiaryColor,
                   ),
                 ),
               ],
@@ -1302,10 +1313,10 @@ class _DeviceBillingReadingsScreenState
           return Container(
             child: Text(
               '${(_currentPage - 1) * _itemsPerPage + 1}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF6B7280),
+                color: context.textSecondaryColor,
               ),
             ),
           );
@@ -1322,10 +1333,10 @@ class _DeviceBillingReadingsScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             _formatTimestamp(reading['BillingDate']),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1e293b),
+              color: context.textPrimaryColor,
             ),
           ),
         ),
@@ -1341,10 +1352,10 @@ class _DeviceBillingReadingsScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             reading['AccumulativeValue']?.toString() ?? 'N/A',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1e293b),
+              color: context.textPrimaryColor,
             ),
           ),
         ),
@@ -1360,7 +1371,7 @@ class _DeviceBillingReadingsScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             _formatTimestamp(reading['StartTime']),
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+            style: TextStyle(fontSize: 13, color: context.textSecondaryColor),
           ),
         ),
       ),
@@ -1375,7 +1386,7 @@ class _DeviceBillingReadingsScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             _formatTimestamp(reading['EndTime']),
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+            style: TextStyle(fontSize: 13, color: context.textSecondaryColor),
           ),
         ),
       ),
@@ -1417,7 +1428,7 @@ class _DeviceBillingReadingsScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             reading['MetricLabels']?['Units'] ?? 'N/A',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+            style: TextStyle(fontSize: 13, color: context.textSecondaryColor),
           ),
         ),
       ),
@@ -1432,7 +1443,7 @@ class _DeviceBillingReadingsScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             reading['MetricLabels']?['Phase'] ?? 'N/A',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+            style: TextStyle(fontSize: 13, color: context.textSecondaryColor),
           ),
         ),
       ),
@@ -1447,7 +1458,7 @@ class _DeviceBillingReadingsScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             reading['MetricLabels']?['FlowDirection'] ?? 'N/A',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+            style: TextStyle(fontSize: 13, color: context.textSecondaryColor),
           ),
         ),
       ),

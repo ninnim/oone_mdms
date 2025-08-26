@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/site.dart';
 import '../../../core/utils/responsive_helper.dart';
@@ -8,6 +8,7 @@ import '../common/app_input_field.dart';
 import '../common/app_toast.dart';
 import '../common/app_dropdown_field.dart';
 import '../common/app_dialog_header.dart';
+import '../../themes/app_theme.dart';
 
 class SiteFormDialog extends StatefulWidget {
   final Site? site; // null for create, non-null for edit
@@ -277,18 +278,18 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Site Information',
             style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           const SizedBox(height: AppSizes.spacing16),
@@ -365,9 +366,9 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
                 _isEditMode
                     ? 'Editing subsite. Current main site is pre-selected.'
                     : 'Creating subsite under the current main site.',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
             )
@@ -376,9 +377,9 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
                 'Creating subsite under: ${widget.availableParentSites.first.name}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
             ),
@@ -391,18 +392,18 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Description',
             style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           const SizedBox(height: AppSizes.spacing16),
@@ -420,8 +421,8 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
   Widget _buildFooter(bool isDesktop) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.borderColor)),
       ),
       child: isDesktop
           ? Row(

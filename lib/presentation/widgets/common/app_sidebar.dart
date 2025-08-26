@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 
 class AppSidebar extends StatefulWidget {
   final List<SidebarItem> items;
@@ -61,9 +62,9 @@ class _AppSidebarState extends State<AppSidebar> {
           ? AppSizes.sidebarCollapsedWidth
           : AppSizes.sidebarWidth,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.sidebarBg,
-        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        color: context.sidebarBgColor,
+        border: Border(right: BorderSide(color: context.borderColor, width: 1)),
       ),
       child: Column(
         children: [
@@ -84,22 +85,22 @@ class _AppSidebarState extends State<AppSidebar> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: context.primaryColor,
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.dashboard,
-              color: AppColors.textInverse,
+              color: Theme.of(context).colorScheme.onPrimary,
               size: AppSizes.iconMedium,
             ),
           ),
           if (!widget.collapsed) ...[
             const SizedBox(width: AppSizes.spacing12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'MDMS Clone',
                 style: TextStyle(
-                  color: AppColors.sidebarTextActive,
+                  color: context.sidebarTextColor,
                   fontSize: AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                 ),
@@ -111,7 +112,7 @@ class _AppSidebarState extends State<AppSidebar> {
               onPressed: widget.onToggleCollapse,
               icon: Icon(
                 widget.collapsed ? Icons.menu : Icons.menu_open,
-                color: AppColors.sidebarText,
+                color: context.sidebarTextColor,
                 size: AppSizes.iconMedium,
               ),
             ),
@@ -236,18 +237,20 @@ class _AppSidebarState extends State<AppSidebar> {
           ),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.1)
+                ? context.primaryColor.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             border: isSelected
-                ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+                ? Border.all(color: context.primaryColor.withValues(alpha: 0.3))
                 : null,
           ),
           child: Row(
             children: [
               Icon(
                 item.icon,
-                color: isSelected ? AppColors.primary : AppColors.sidebarText,
+                color: isSelected
+                    ? context.primaryColor
+                    : context.sidebarTextColor,
                 size: AppSizes.iconMedium,
               ),
               if (!widget.collapsed) ...[
@@ -257,8 +260,8 @@ class _AppSidebarState extends State<AppSidebar> {
                     item.title,
                     style: TextStyle(
                       color: isSelected
-                          ? AppColors.primary
-                          : AppColors.sidebarText,
+                          ? context.primaryColor
+                          : context.sidebarTextColor,
                       fontSize: AppSizes.fontSizeMedium,
                       fontWeight: isSelected
                           ? FontWeight.w600
@@ -275,13 +278,13 @@ class _AppSidebarState extends State<AppSidebar> {
                     vertical: AppSizes.spacing4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.error,
+                    color: Theme.of(context).colorScheme.error,
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                   ),
                   child: Text(
                     item.badge!,
-                    style: const TextStyle(
-                      color: AppColors.textInverse,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onError,
                       fontSize: AppSizes.fontSizeSmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -322,11 +325,13 @@ class _AppSidebarState extends State<AppSidebar> {
             ),
             decoration: BoxDecoration(
               color: hasSelectedChild
-                  ? AppColors.primary.withValues(alpha: 0.1)
+                  ? context.primaryColor.withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               border: hasSelectedChild
-                  ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+                  ? Border.all(
+                      color: context.primaryColor.withValues(alpha: 0.3),
+                    )
                   : null,
             ),
             child: Row(
@@ -334,8 +339,8 @@ class _AppSidebarState extends State<AppSidebar> {
                 Icon(
                   icon,
                   color: hasSelectedChild
-                      ? AppColors.primary
-                      : AppColors.sidebarText,
+                      ? context.primaryColor
+                      : context.sidebarTextColor,
                   size: AppSizes.iconMedium,
                 ),
                 if (!widget.collapsed) ...[
@@ -345,8 +350,8 @@ class _AppSidebarState extends State<AppSidebar> {
                       title,
                       style: TextStyle(
                         color: hasSelectedChild
-                            ? AppColors.primary
-                            : AppColors.sidebarText,
+                            ? context.primaryColor
+                            : context.sidebarTextColor,
                         fontSize: AppSizes.fontSizeMedium,
                         fontWeight: hasSelectedChild
                             ? FontWeight.w600
@@ -358,8 +363,8 @@ class _AppSidebarState extends State<AppSidebar> {
                   Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: hasSelectedChild
-                        ? AppColors.primary
-                        : AppColors.sidebarText,
+                        ? context.primaryColor
+                        : context.sidebarTextColor,
                     size: AppSizes.iconSmall,
                   ),
                 ],
@@ -389,18 +394,22 @@ class _AppSidebarState extends State<AppSidebar> {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? context.primaryColor.withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               border: isSelected
-                  ? Border.all(color: AppColors.primary.withOpacity(0.3))
+                  ? Border.all(
+                      color: context.primaryColor.withValues(alpha: 0.3),
+                    )
                   : null,
             ),
             child: Row(
               children: [
                 Icon(
                   item.icon,
-                  color: isSelected ? AppColors.primary : AppColors.sidebarText,
+                  color: isSelected
+                      ? context.primaryColor
+                      : context.sidebarTextColor,
                   size: AppSizes.iconSmall,
                 ),
                 if (!widget.collapsed) ...[
@@ -410,8 +419,8 @@ class _AppSidebarState extends State<AppSidebar> {
                       item.title,
                       style: TextStyle(
                         color: isSelected
-                            ? AppColors.primary
-                            : AppColors.sidebarText,
+                            ? context.primaryColor
+                            : context.sidebarTextColor,
                         fontSize: AppSizes.fontSizeSmall,
                         fontWeight: isSelected
                             ? FontWeight.w600
@@ -428,13 +437,13 @@ class _AppSidebarState extends State<AppSidebar> {
                       vertical: AppSizes.spacing4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.error,
+                      color: Theme.of(context).colorScheme.error,
                       borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                     ),
                     child: Text(
                       item.badge!,
-                      style: const TextStyle(
-                        color: AppColors.textInverse,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onError,
                         fontSize: AppSizes.fontSizeSmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -452,18 +461,18 @@ class _AppSidebarState extends State<AppSidebar> {
   Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.borderColor, width: 1)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 16,
-            backgroundColor: AppColors.primary,
+            backgroundColor: context.primaryColor,
             child: Text(
               'A',
-              style: const TextStyle(
-                color: AppColors.textInverse,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.bold,
               ),
@@ -471,14 +480,14 @@ class _AppSidebarState extends State<AppSidebar> {
           ),
           if (!widget.collapsed) ...[
             const SizedBox(width: AppSizes.spacing12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Admin User',
                     style: TextStyle(
-                      color: AppColors.sidebarTextActive,
+                      color: context.sidebarTextColor,
                       fontSize: AppSizes.fontSizeSmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -486,16 +495,16 @@ class _AppSidebarState extends State<AppSidebar> {
                   Text(
                     'admin@mdms.com',
                     style: TextStyle(
-                      color: AppColors.sidebarText,
+                      color: context.sidebarTextColor,
                       fontSize: AppSizes.fontSizeSmall,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.more_vert,
-              color: AppColors.sidebarText,
+              color: context.sidebarTextColor,
               size: AppSizes.iconSmall,
             ),
           ],

@@ -1,5 +1,5 @@
-import '../../../core/models/time_band.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import '../../../core/models/time_band.dart';
+import '../../themes/app_theme.dart';
 import '../common/kanban_view.dart';
 import 'time_band_smart_chips.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +7,9 @@ import 'package:flutter/material.dart';
 /// Adapter class to make TimeBand compatible with KanbanItem
 class TimeBandKanbanItem extends KanbanItem {
   final TimeBand timeBand;
+  final BuildContext context;
 
-  TimeBandKanbanItem(this.timeBand);
+  TimeBandKanbanItem(this.timeBand, this.context);
 
   @override
   String get id => timeBand.id.toString();
@@ -41,13 +42,13 @@ class TimeBandKanbanItem extends KanbanItem {
 
     // Add Days of Week chips
     if (timeBand.daysOfWeek.isNotEmpty) {
-      chips.add(TimeBandSmartChips.buildDayOfWeekChips(timeBand.daysOfWeek));
+      chips.add(TimeBandSmartChips.buildDayOfWeekChips(timeBand.daysOfWeek, context));
     }
 
     // Add Months of Year chips
     if (timeBand.monthsOfYear.isNotEmpty) {
       chips.add(
-        TimeBandSmartChips.buildMonthOfYearChips(timeBand.monthsOfYear),
+        TimeBandSmartChips.buildMonthOfYearChips(timeBand.monthsOfYear, context),
       );
     }
 
@@ -81,7 +82,7 @@ class TimeBandKanbanItem extends KanbanItem {
           icon: Icons.date_range,
           label: 'Months',
           value: '${timeBand.monthsOfYear.length} months',
-          valueColor: AppColors.primary,
+          valueColor: context.primaryColor,
         ),
       );
     }
@@ -92,7 +93,7 @@ class TimeBandKanbanItem extends KanbanItem {
           icon: Icons.eco,
           label: 'Seasons',
           value: '${timeBand.seasonIds.length} seasons',
-          valueColor: AppColors.secondary,
+          valueColor: context.secondaryColor,
         ),
       );
     }
@@ -103,7 +104,7 @@ class TimeBandKanbanItem extends KanbanItem {
           icon: Icons.star,
           label: 'Special Days',
           value: '${timeBand.specialDayIds.length} days',
-          valueColor: AppColors.warning,
+          valueColor: context.warningColor,
         ),
       );
     }
@@ -139,6 +140,7 @@ class TimeBandKanbanConfig {
     Function(TimeBand)? onEdit,
     Function(TimeBand)? onDelete,
     Function(TimeBand)? onDuplicate,
+    required BuildContext context,
   }) {
     final actions = <KanbanAction>[];
 
@@ -148,7 +150,7 @@ class TimeBandKanbanConfig {
           key: 'view',
           label: 'View Details',
           icon: Icons.visibility,
-          color: AppColors.primary,
+          color: context.primaryColor,
           onTap: (item) => onView((item as TimeBandKanbanItem).timeBand),
         ),
       );
@@ -160,7 +162,7 @@ class TimeBandKanbanConfig {
           key: 'edit',
           label: 'Edit',
           icon: Icons.edit,
-          color: AppColors.warning,
+          color: context.warningColor,
           onTap: (item) => onEdit((item as TimeBandKanbanItem).timeBand),
         ),
       );
@@ -172,7 +174,7 @@ class TimeBandKanbanConfig {
           key: 'duplicate',
           label: 'Duplicate',
           icon: Icons.copy,
-          color: AppColors.info,
+          color: context.infoColor,
           onTap: (item) => onDuplicate((item as TimeBandKanbanItem).timeBand),
         ),
       );
@@ -184,7 +186,7 @@ class TimeBandKanbanConfig {
           key: 'delete',
           label: 'Delete',
           icon: Icons.delete,
-          color: AppColors.error,
+          color: context.errorColor,
           onTap: (item) => onDelete((item as TimeBandKanbanItem).timeBand),
         ),
       );
@@ -193,3 +195,6 @@ class TimeBandKanbanConfig {
     return actions;
   }
 }
+
+
+

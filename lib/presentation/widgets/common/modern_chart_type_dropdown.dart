@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/chart_type.dart';
 
@@ -107,7 +108,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.primary.withOpacity(0.1)
+                              ? context.primaryColor.withOpacity(0.1)
                               : Colors.transparent,
                           border: index < ChartType.values.length - 1
                               ? Border(
@@ -126,7 +127,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                               chartType.icon,
                               size: 16,
                               color: isSelected
-                                  ? AppColors.primary
+                                  ? context.primaryColor
                                   : Theme.of(
                                       context,
                                     ).textTheme.bodyMedium?.color,
@@ -138,7 +139,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       color: isSelected
-                                          ? AppColors.primary
+                                          ? context.primaryColor
                                           : Theme.of(
                                               context,
                                             ).textTheme.bodyMedium?.color,
@@ -152,7 +153,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                               Icon(
                                 Icons.check,
                                 size: 16,
-                                color: AppColors.primary,
+                                color: context.primaryColor,
                               ),
                           ],
                         ),
@@ -184,7 +185,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
           decoration: BoxDecoration(
             border: Border.all(
               color: _isOpen
-                  ? AppColors.primary
+                  ? context.primaryColor
                   : Theme.of(context).dividerColor.withOpacity(0.3),
               width: 1.5,
             ),
@@ -219,3 +220,6 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
     );
   }
 }
+
+
+

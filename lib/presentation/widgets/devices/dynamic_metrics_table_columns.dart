@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../common/blunest_data_table.dart';
 
 class DynamicMetricsTableColumns {
@@ -10,16 +11,19 @@ class DynamicMetricsTableColumns {
     required List<Map<String, dynamic>> metrics,
     int currentPage = 1,
     int itemsPerPage = 25,
+    required BuildContext context,
     List<String> hiddenColumns = const [],
   }) {
     final List<BluNestTableColumn<Map<String, dynamic>>> columns = [];
 
     // Always add row number column first
-    columns.add(_buildRowNumberColumn(currentPage, itemsPerPage, metrics));
+    columns.add(
+      _buildRowNumberColumn(currentPage, itemsPerPage, metrics, context),
+    );
 
     // Add date column after row number if we have timestamp data
     if (metrics.isNotEmpty && metrics.first.containsKey('Timestamp')) {
-      columns.add(_buildDateColumn());
+      columns.add(_buildDateColumn(context));
     }
 
     if (metrics.isEmpty) {
@@ -38,7 +42,7 @@ class DynamicMetricsTableColumns {
     // Generate columns for each field
     for (final fieldName in sortedFields) {
       if (!hiddenColumns.contains(fieldName)) {
-        columns.add(_buildDynamicColumn(fieldName, metrics));
+        columns.add(_buildDynamicColumn(fieldName, metrics, context));
       }
     }
 
@@ -50,6 +54,7 @@ class DynamicMetricsTableColumns {
     int currentPage,
     int itemsPerPage,
     List<Map<String, dynamic>> metrics,
+    BuildContext context,
   ) {
     return BluNestTableColumn<Map<String, dynamic>>(
       key: 'row_number',
@@ -65,16 +70,16 @@ class DynamicMetricsTableColumns {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           decoration: BoxDecoration(
             border: Border(
-              right: BorderSide(color: Colors.grey.shade300, width: 0.5),
-              bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+              right: BorderSide(color: context.borderColor, width: 0.5),
+              bottom: BorderSide(color: context.borderColor, width: 0.5),
             ),
           ),
           child: Text(
             '$rowNumber',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontFamily: 'monospace',
             ),
           ),
@@ -84,7 +89,9 @@ class DynamicMetricsTableColumns {
   }
 
   /// Builds the date column showing formatted timestamp
-  static BluNestTableColumn<Map<String, dynamic>> _buildDateColumn() {
+  static BluNestTableColumn<Map<String, dynamic>> _buildDateColumn(
+    BuildContext context,
+  ) {
     return BluNestTableColumn<Map<String, dynamic>>(
       key: 'date',
       title: 'Time Stamp',
@@ -99,15 +106,15 @@ class DynamicMetricsTableColumns {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
             decoration: BoxDecoration(
               border: Border(
-                right: BorderSide(color: Colors.grey.shade300, width: 0.5),
-                bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+                right: BorderSide(color: context.borderColor, width: 0.5),
+                bottom: BorderSide(color: context.borderColor, width: 0.5),
               ),
             ),
             child: Text(
               'N/A',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary.withOpacity(0.6),
+                color: context.textSecondaryColor.withOpacity(0.6),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -125,16 +132,16 @@ class DynamicMetricsTableColumns {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
             decoration: BoxDecoration(
               border: Border(
-                right: BorderSide(color: Colors.grey.shade300, width: 0.5),
-                bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+                right: BorderSide(color: context.borderColor, width: 0.5),
+                bottom: BorderSide(color: context.borderColor, width: 0.5),
               ),
             ),
             child: Text(
               formattedDate,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
                 fontFamily: 'monospace',
               ),
             ),
@@ -145,15 +152,15 @@ class DynamicMetricsTableColumns {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
             decoration: BoxDecoration(
               border: Border(
-                right: BorderSide(color: Colors.grey.shade300, width: 0.5),
-                bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+                right: BorderSide(color: context.borderColor, width: 0.5),
+                bottom: BorderSide(color: context.borderColor, width: 0.5),
               ),
             ),
             child: Text(
               timestamp.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
           );
@@ -166,6 +173,7 @@ class DynamicMetricsTableColumns {
   static BluNestTableColumn<Map<String, dynamic>> _buildDynamicColumn(
     String fieldName,
     List<Map<String, dynamic>> metrics,
+    BuildContext context,
   ) {
     return BluNestTableColumn<Map<String, dynamic>>(
       key: fieldName,
@@ -180,11 +188,11 @@ class DynamicMetricsTableColumns {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
           border: Border(
-            right: BorderSide(color: Colors.grey.shade300, width: 0.5),
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            right: BorderSide(color: context.borderColor, width: 0.5),
+            bottom: BorderSide(color: context.borderColor, width: 0.5),
           ),
         ),
-        child: _buildCellContent(metric[fieldName], fieldName),
+        child: _buildCellContent(metric[fieldName], fieldName, context),
       ),
     );
   }
@@ -285,31 +293,35 @@ class DynamicMetricsTableColumns {
   }
 
   /// Builds the cell content with appropriate formatting
-  static Widget _buildCellContent(dynamic value, String fieldName) {
+  static Widget _buildCellContent(
+    dynamic value,
+    String fieldName,
+    BuildContext context,
+  ) {
     if (value == null) {
       return Text(
         'N/A',
         style: TextStyle(
           fontSize: 13,
-          color: AppColors.textSecondary.withOpacity(0.6),
+          color: context.textSecondaryColor.withOpacity(0.6),
           fontStyle: FontStyle.italic,
         ),
       );
     }
 
     if (fieldName.toLowerCase() == 'timestamp') {
-      return _buildTimestampCell(value);
+      return _buildTimestampCell(value, context);
     }
 
     if (_isNumericField(fieldName) && value is num) {
-      return _buildNumericCell(value, fieldName);
+      return _buildNumericCell(value, fieldName, context);
     }
 
-    return _buildTextCell(value.toString());
+    return _buildTextCell(value.toString(), context);
   }
 
   /// Builds a timestamp cell with proper formatting
-  static Widget _buildTimestampCell(dynamic value) {
+  static Widget _buildTimestampCell(dynamic value, BuildContext context) {
     try {
       final DateTime dateTime = DateTime.parse(value.toString());
       final String formattedDate = DateFormat('MMM dd, yyyy').format(dateTime);
@@ -321,30 +333,34 @@ class DynamicMetricsTableColumns {
         children: [
           Text(
             formattedDate,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           Text(
             formattedTime,
             style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondary.withOpacity(0.8),
+              color: context.textSecondaryColor.withOpacity(0.8),
             ),
           ),
         ],
       );
     } catch (e) {
-      return _buildTextCell(value.toString());
+      return _buildTextCell(value.toString(), context);
     }
   }
 
   /// Builds a numeric cell with proper formatting
-  static Widget _buildNumericCell(num value, String fieldName) {
+  static Widget _buildNumericCell(
+    num value,
+    String fieldName,
+    BuildContext context,
+  ) {
     String formattedValue;
-    Color textColor = AppColors.textPrimary;
+    Color textColor = context.textPrimaryColor;
 
     // Format based on field type
     if (fieldName.toLowerCase().contains('total') ||
@@ -366,7 +382,7 @@ class DynamicMetricsTableColumns {
     } else if (fieldName.toLowerCase().contains('factor')) {
       // Power factor values
       formattedValue = _formatNumber(value, 3);
-      if (value < 0) textColor = AppColors.error;
+      if (value < 0) textColor = context.errorColor;
     } else {
       // Default numeric formatting
       formattedValue = _formatNumber(value, 2);
@@ -385,13 +401,13 @@ class DynamicMetricsTableColumns {
   }
 
   /// Builds a text cell
-  static Widget _buildTextCell(String value) {
+  static Widget _buildTextCell(String value, BuildContext context) {
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w400,
-        color: AppColors.textPrimary,
+        color: context.textPrimaryColor,
       ),
       overflow: TextOverflow.ellipsis,
       maxLines: 2,

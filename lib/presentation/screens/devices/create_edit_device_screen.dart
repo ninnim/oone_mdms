@@ -5,7 +5,6 @@ import '../../../core/models/device.dart';
 import '../../../core/models/device_group.dart';
 import '../../../core/models/address.dart';
 import '../../../core/models/schedule.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/services/schedule_service.dart';
@@ -15,6 +14,7 @@ import '../../widgets/common/app_input_field.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/app_dropdown_field.dart';
 import '../../widgets/common/app_dialog_header.dart';
+import '../../themes/app_theme.dart';
 
 import '../../widgets/devices/interactive_map_dialog.dart';
 
@@ -592,10 +592,10 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             Container(
               padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.border.withOpacity(0.1),
+                    color: context.borderColor.withOpacity(0.1),
                     width: 1,
                   ),
                 ),
@@ -615,7 +615,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
   // Responsive body with form content
   Widget _buildBody() {
     return Container(
-      color: AppColors.background,
+      color: context.backgroundColor,
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Form(
         key: _formKey,
@@ -683,9 +683,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: context.borderColor.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -700,25 +700,25 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                       ? AppSizes.fontSizeMedium
                       : AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
               const SizedBox(width: 8),
               Tooltip(
                 message: 'Serial number is required for device identification.',
-                textStyle: const TextStyle(
+                textStyle: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   color: Colors.white,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.textPrimary.withOpacity(0.9),
+                  color: context.textPrimaryColor.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 ),
                 preferBelow: false,
                 child: Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
             ],
@@ -807,7 +807,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                       ? AppSizes.fontSizeSmall
                       : AppSizes.fontSizeMedium,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
               const SizedBox(width: 8),
@@ -815,19 +815,19 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                 message: _isCreateMode
                     ? 'When the device is created. Status and link status will be managed by the HES system.'
                     : 'This device is integrated with HES.',
-                textStyle: const TextStyle(
+                textStyle: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   color: Colors.white,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.textPrimary.withOpacity(0.9),
+                  color: context.textPrimaryColor.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 ),
                 preferBelow: false,
                 child: Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
               if (_isLoadingStatusOptions && !_isCreateMode) ...[
@@ -837,7 +837,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                   ),
                 ),
               ],
@@ -871,9 +871,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: context.borderColor.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -888,26 +888,26 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                       ? AppSizes.fontSizeMedium
                       : AppSizes.fontSizeLarge,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimaryColor,
                 ),
               ),
               const SizedBox(width: 8),
               Tooltip(
                 message:
                     'Enter coordinates manually or interactive map to select a location.',
-                textStyle: const TextStyle(
+                textStyle: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   color: Colors.white,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.textPrimary.withOpacity(0.9),
+                  color: context.textPrimaryColor.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 ),
                 preferBelow: false,
                 child: Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondaryColor,
                 ),
               ),
             ],
@@ -986,17 +986,17 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             onTap: _openMapDialog,
             suffixIcon: Tooltip(
               message: 'Open interactive map to select device location',
-              textStyle: const TextStyle(
+              textStyle: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
                 color: Colors.white,
               ),
               decoration: BoxDecoration(
-                color: AppColors.textPrimary.withOpacity(0.9),
+                color: context.textPrimaryColor.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               ),
               child: IconButton(
                 onPressed: _openMapDialog,
-                icon: Icon(Icons.map, color: AppColors.primary),
+                icon: Icon(Icons.map, color: context.primaryColor),
                 tooltip: '', // Empty to prevent default tooltip
               ),
             ),
@@ -1010,15 +1010,15 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             Container(
               padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: context.backgroundColor,
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                border: Border.all(color: AppColors.border.withOpacity(0.3)),
+                border: Border.all(color: context.borderColor.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.pin_drop,
-                    color: AppColors.textSecondary,
+                    color: context.textSecondaryColor,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -1027,7 +1027,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                       'Coordinates: ${_selectedAddress!.latitude!.toStringAsFixed(6)}, ${_selectedAddress!.longitude!.toStringAsFixed(6)}',
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeSmall,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimaryColor,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1059,7 +1059,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             value: group.id,
             child: Text(
               group.name ?? 'None',
-              style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+              style: TextStyle(fontSize: AppSizes.fontSizeSmall),
               overflow: TextOverflow.ellipsis,
             ),
           );
@@ -1107,7 +1107,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
             value: schedule.id,
             child: Text(
               schedule.name ?? 'Unnamed Schedule',
-              style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
+              style: TextStyle(fontSize: AppSizes.fontSizeSmall),
               overflow: TextOverflow.ellipsis,
             ),
           );
@@ -1145,10 +1145,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
       items: _deviceTypes.map((type) {
         return DropdownMenuItem<String>(
           value: type,
-          child: Text(
-            type,
-            style: const TextStyle(fontSize: AppSizes.fontSizeSmall),
-          ),
+          child: Text(type, style: TextStyle(fontSize: AppSizes.fontSizeSmall)),
         );
       }).toList(),
       onChanged: (value) {
@@ -1177,9 +1174,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                     value: status,
                     child: Text(
                       status,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppSizes.fontSizeSmall,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     ),
                   );
@@ -1211,9 +1208,9 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
                     value: status,
                     child: Text(
                       status,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppSizes.fontSizeSmall,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     ),
                   );
@@ -1253,6 +1250,7 @@ class _CreateEditDeviceDialogState extends State<CreateEditDeviceDialog> {
       context: context,
       barrierDismissible: false,
       builder: (context) => InteractiveMapDialog(
+        context: context,
         initialAddress: _selectedAddress,
         onLocationSelected: (address) {
           setState(() {

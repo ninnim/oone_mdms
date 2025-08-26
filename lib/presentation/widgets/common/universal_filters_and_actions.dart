@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'app_button.dart';
 import 'app_input_field.dart';
@@ -110,9 +110,9 @@ class _UniversalFiltersAndActionsState<T extends Enum>
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: widget.backgroundColor ?? AppColors.surface,
+        color: widget.backgroundColor ?? context.surfaceColor,
         border: widget.showBorder
-            ? const Border(bottom: BorderSide(color: AppColors.border))
+            ? Border(bottom: BorderSide(color: context.borderColor))
             : null,
       ),
       child: Column(
@@ -145,10 +145,12 @@ class _UniversalFiltersAndActionsState<T extends Enum>
           if (widget.title != null) ...[
             Text(
               widget.title!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeLarge,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
+
+                //AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: AppSizes.spacing16),
@@ -204,8 +206,8 @@ class _UniversalFiltersAndActionsState<T extends Enum>
               _showQuickFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
               size: AppSizes.iconMedium,
               color: _showQuickFilters
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
+                  ? context.primaryColor
+                  : context.textSecondaryColor,
             ),
             tooltip: 'Quick Filters',
           ),
@@ -226,8 +228,8 @@ class _UniversalFiltersAndActionsState<T extends Enum>
               _showAdvancedFilters ? Icons.tune : Icons.tune_outlined,
               size: AppSizes.iconMedium,
               color: _showAdvancedFilters
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
+                  ? context.primaryColor
+                  : context.textSecondaryColor,
             ),
             tooltip: 'Advanced Filters',
           ),
@@ -252,8 +254,8 @@ class _UniversalFiltersAndActionsState<T extends Enum>
                   : Icons.view_column_outlined,
               size: AppSizes.iconMedium,
               color: _showColumnSettings
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
+                  ? context.primaryColor
+                  : context.textSecondaryColor,
             ),
             tooltip: 'Column Settings',
           ),
@@ -265,7 +267,7 @@ class _UniversalFiltersAndActionsState<T extends Enum>
     return Container(
       height: AppSizes.buttonHeightSmall,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
       ),
       child: Row(
@@ -277,14 +279,16 @@ class _UniversalFiltersAndActionsState<T extends Enum>
             height: AppSizes.buttonHeightSmall,
             width: AppSizes.buttonHeightSmall,
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : Colors.transparent,
+              color: isSelected ? context.primaryColor : Colors.transparent,
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
             ),
             child: IconButton(
               onPressed: () => widget.onViewModeChanged(mode),
               icon: Icon(
                 config.icon,
-                color: isSelected ? AppColors.surface : AppColors.textSecondary,
+                color: isSelected
+                    ? context.surfaceColor
+                    : context.textSecondaryColor,
                 size: AppSizes.iconMedium,
               ),
               tooltip: config.tooltip,
@@ -306,7 +310,7 @@ class _UniversalFiltersAndActionsState<T extends Enum>
               child: IconButton(
                 onPressed: button.onPressed,
                 icon: Icon(button.icon, size: AppSizes.iconMedium),
-                color: AppColors.textSecondary,
+                color: context.textSecondaryColor,
                 tooltip: button.tooltip,
               ),
             ),
@@ -327,10 +331,10 @@ class _UniversalFiltersAndActionsState<T extends Enum>
                 break;
             }
           },
-          icon: const Icon(
+          icon: Icon(
             Icons.more_vert,
             size: AppSizes.iconMedium,
-            color: AppColors.textSecondary,
+            color: context.textSecondaryColor,
           ),
           tooltip: 'More actions',
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -387,9 +391,9 @@ class _UniversalFiltersAndActionsState<T extends Enum>
   Widget _buildQuickFiltersPanel() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -414,9 +418,9 @@ class _UniversalFiltersAndActionsState<T extends Enum>
               }
             },
             icon: const Icon(Icons.clear, size: AppSizes.iconSmall),
-            label: const Text('Clear Filters'),
+            label: Text('Clear Filters'),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
+              foregroundColor: context.textSecondaryColor,
             ),
           ),
         ],
@@ -430,10 +434,10 @@ class _UniversalFiltersAndActionsState<T extends Enum>
       children: [
         Text(
           filter.label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
             fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
+            color: context.textSecondaryColor,
           ),
         ),
         const SizedBox(height: AppSizes.spacing4),
@@ -475,19 +479,19 @@ class _UniversalFiltersAndActionsState<T extends Enum>
   Widget _buildColumnSettings() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Show/Hide Columns',
             style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           const SizedBox(height: AppSizes.spacing12),
@@ -510,8 +514,8 @@ class _UniversalFiltersAndActionsState<T extends Enum>
                   }
                   widget.onColumnVisibilityChanged!(newHiddenColumns);
                 },
-                selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                checkmarkColor: AppColors.primary,
+                selectedColor: context.primaryColor.withOpacity(0.2),
+                checkmarkColor: context.primaryColor,
               );
             }).toList(),
           ),

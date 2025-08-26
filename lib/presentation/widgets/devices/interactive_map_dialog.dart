@@ -1,9 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mdms_clone/core/constants/app_sizes.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/models/address.dart';
 import '../../../core/services/google_maps_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -16,11 +17,13 @@ import '../common/app_toast.dart';
 class InteractiveMapDialog extends StatefulWidget {
   final Address? initialAddress;
   final Function(Address address) onLocationSelected;
+  final BuildContext context;
 
   const InteractiveMapDialog({
     super.key,
     this.initialAddress,
     required this.onLocationSelected,
+    required this.context,
   });
 
   @override
@@ -43,6 +46,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
   bool _showSuggestions = false;
   bool _isSaving = false;
   String _currentAddress = '';
+  bool _hasInitialized = false;
 
   @override
   void initState() {
@@ -63,14 +67,25 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
       _searchController.text = _currentAddress;
     }
 
-    _updateMarker(_currentLocation);
+    // Don't call _updateMarker here - will be called in didChangeDependencies
+  }
 
-    // Load initial address if not provided
-    if (_currentAddress.isEmpty) {
-      _loadAddressFromCoordinates(
-        _currentLocation.latitude,
-        _currentLocation.longitude,
-      );
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Initialize marker and address only once after context is available
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      _updateMarker(_currentLocation);
+
+      // Load initial address if not provided
+      if (_currentAddress.isEmpty) {
+        _loadAddressFromCoordinates(
+          _currentLocation.latitude,
+          _currentLocation.longitude,
+        );
+      }
     }
   }
 
@@ -91,18 +106,30 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
           height: 40,
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: context.primaryColor,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.surface, width: 3),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onPrimary,
+                width: 3,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: context.shadowColor.withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
+                BoxShadow(
+                  color: context.primaryColor.withOpacity(0.4),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
               ],
             ),
-            child: Icon(Icons.location_pin, color: AppColors.surface, size: 24),
+            child: Icon(
+              Icons.location_pin,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 24,
+            ),
           ),
         ),
       ];
@@ -294,13 +321,13 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
         width: dialogWidth,
         height: dialogHeight,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(
             ResponsiveHelper.getCardBorderRadius(context),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: context.shadowColor,
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -358,7 +385,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
             prefixIcon: Icon(
               Icons.search,
               size: AppSizes.iconSmall,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
             ),
             enabled: true,
           ),
@@ -370,7 +397,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: AppColors.primary,
+              color: context.primaryColor,
             ),
           ),
         ],
@@ -384,12 +411,18 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
     return Container(
       margin: EdgeInsets.only(top: ResponsiveHelper.getSpacing(context)),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(
           ResponsiveHelper.getCardBorderRadius(context),
         ),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [AppSizes.shadowMedium],
+        border: Border.all(color: context.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: context.shadowColor.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       constraints: BoxConstraints(maxHeight: isMobile ? 150 : 200),
       child: ListView.builder(
@@ -401,7 +434,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
             dense: isMobile,
             leading: Icon(
               Icons.location_on,
-              color: AppColors.textSecondary,
+              color: context.primaryColor,
               size: isMobile ? 18 : 20,
             ),
             title: Text(
@@ -409,7 +442,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
               style: TextStyle(
                 fontSize: isMobile ? 13 : 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
             subtitle: suggestion.secondaryText.isNotEmpty
@@ -417,7 +450,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
                     suggestion.secondaryText,
                     style: TextStyle(
                       fontSize: isMobile ? 11 : 12,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondaryColor.withOpacity(0.7),
                     ),
                   )
                 : null,
@@ -435,8 +468,14 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
         borderRadius: BorderRadius.circular(
           ResponsiveHelper.getCardBorderRadius(context),
         ),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [AppSizes.shadowSmall],
+        border: Border.all(color: context.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: context.shadowColor.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(
@@ -451,8 +490,17 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
           ),
           children: [
             TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              urlTemplate: Theme.of(context).brightness == Brightness.dark
+                  ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                  : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              subdomains: const ['a', 'b', 'c'],
               userAgentPackageName: 'com.example.mdms_clone',
+              additionalOptions: Theme.of(context).brightness == Brightness.dark
+                  ? {
+                      'attribution':
+                          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    }
+                  : {},
             ),
             MarkerLayer(markers: _markers),
           ],
@@ -468,17 +516,17 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
       margin: ResponsiveHelper.getPadding(context),
       padding: EdgeInsets.all(isMobile ? 10 : 12),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
+        color: context.primaryColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(
           ResponsiveHelper.getCardBorderRadius(context),
         ),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: context.primaryColor.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Icon(
             Icons.pin_drop,
-            color: AppColors.primary,
+            color: context.primaryColor,
             size: isMobile ? 18 : 20,
           ),
           SizedBox(width: ResponsiveHelper.getSpacing(context)),
@@ -487,7 +535,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
               _currentAddress,
               style: TextStyle(
                 fontSize: isMobile ? 13 : 14,
-                color: AppColors.textPrimary,
+                color: context.textPrimaryColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -503,7 +551,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
     return Container(
       padding: ResponsiveHelper.getPadding(context),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(
             ResponsiveHelper.getCardBorderRadius(context),
@@ -512,7 +560,7 @@ class _InteractiveMapDialogState extends State<InteractiveMapDialog> {
             ResponsiveHelper.getCardBorderRadius(context),
           ),
         ),
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+        border: Border(top: BorderSide(color: context.borderColor, width: 1)),
       ),
       child: isMobile
           ? Column(

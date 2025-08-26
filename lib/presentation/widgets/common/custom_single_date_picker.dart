@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'app_input_field.dart';
 import 'app_button.dart';
@@ -85,14 +85,13 @@ class _CustomSingleDatePickerState extends State<CustomSingleDatePicker> {
               text: widget.label!,
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                fontWeight: FontWeight.w500,
                 color: colorScheme.onSurface,
               ),
               children: [
                 if (widget.isRequired)
                   TextSpan(
                     text: ' *',
-                    style: TextStyle(color: colorScheme.error),
+                    style: TextStyle(color: context.errorColor),
                   ),
               ],
             ),
@@ -110,14 +109,13 @@ class _CustomSingleDatePickerState extends State<CustomSingleDatePicker> {
             decoration: BoxDecoration(
               border: Border.all(
                 color: widget.hasError
-                    ? colorScheme.error
-                    : AppColors.border, // Use consistent border color
+                    ? context.errorColor
+                    : context.borderColor, // Use consistent border color
                 width: 1, // Correct error border width
               ),
               borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-              color: widget.enabled
-                  ? colorScheme.surface
-                  : colorScheme.surfaceContainerHighest,
+              color: context.surfaceColor,
+              // : context.disabledColor,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,10 +129,8 @@ class _CustomSingleDatePickerState extends State<CustomSingleDatePicker> {
                         Icons.calendar_today,
                         size: AppSizes.iconSmall,
                         color: widget.enabled
-                            ? colorScheme.onSurfaceVariant
-                            : colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.5,
-                              ),
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -148,7 +144,7 @@ class _CustomSingleDatePickerState extends State<CustomSingleDatePicker> {
                             height: 1.4, // Match AppInputField line height
                             color: _selectedDate != null
                                 ? colorScheme.onSurface
-                                : colorScheme.onSurfaceVariant,
+                                : colorScheme.onSurface.withOpacity(0.5),
                           ),
                         ),
                       ),
@@ -159,8 +155,8 @@ class _CustomSingleDatePickerState extends State<CustomSingleDatePicker> {
                   Icons.arrow_drop_down,
                   size: AppSizes.iconSmall,
                   color: widget.enabled
-                      ? colorScheme.onSurfaceVariant
-                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      ? context.surfaceVariantColor
+                      : context.surfaceVariantColor.withOpacity(0.5),
                 ),
               ],
             ),
@@ -171,7 +167,7 @@ class _CustomSingleDatePickerState extends State<CustomSingleDatePicker> {
           Text(
             widget.errorText!,
             style: TextStyle(
-              color: colorScheme.error,
+              color: context.errorColor,
               fontSize: AppSizes.fontSizeSmall,
             ),
           ),
@@ -276,7 +272,7 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
               year.toString(),
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? AppColors.primary : null,
+                color: isSelected ? context.primaryColor : null,
               ),
             ),
             selected: isSelected,
@@ -293,7 +289,7 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
       child: Column(
@@ -302,7 +298,7 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF374151) : const Color(0xFFF9FAFB),
+              color: context.backgroundColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppSizes.radiusLarge),
                 topRight: Radius.circular(AppSizes.radiusLarge),
@@ -407,7 +403,7 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondaryColor,
                       ),
                     ),
                   ),
@@ -468,9 +464,9 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
                     margin: const EdgeInsets.all(1),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.primary
+                          ? context.primaryColor
                           : isToday
-                          ? AppColors.primary.withValues(alpha: 0.1)
+                          ? context.primaryColor.withOpacity(0.1)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                     ),
@@ -479,12 +475,12 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
                         dayNumber.toString(),
                         style: TextStyle(
                           color: !isEnabled
-                              ? AppColors.textTertiary
+                              ? context.textSecondaryColor
                               : isSelected
                               ? Colors.white
                               : isToday
-                              ? AppColors.primary
-                              : AppColors.textPrimary,
+                              ? context.primaryColor
+                              : context.textPrimaryColor,
                           fontWeight: isSelected || isToday
                               ? FontWeight.w600
                               : FontWeight.normal,
@@ -527,8 +523,8 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
             // Header
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: context.borderColor)),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(AppSizes.radiusLarge),
                   topRight: Radius.circular(AppSizes.radiusLarge),
@@ -548,7 +544,7 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
                     icon: const Icon(Icons.close),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.transparent,
-                      foregroundColor: AppColors.textSecondary,
+                      foregroundColor: context.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -578,8 +574,8 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
             // Footer
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: context.borderColor)),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(AppSizes.radiusLarge),
                   bottomRight: Radius.circular(AppSizes.radiusLarge),

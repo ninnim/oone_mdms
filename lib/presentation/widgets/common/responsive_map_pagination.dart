@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 
 class ResponsiveMapPagination extends StatefulWidget {
@@ -82,16 +82,16 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
             vertical: isSmallScreen ? AppSizes.spacing8 : AppSizes.spacing12,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).scaffoldBackgroundColor,
             border: Border(
               top: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                 width: 1,
               ),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withOpacity(0.05),
                 blurRadius: 4,
                 offset: const Offset(0, -2),
               ),
@@ -157,18 +157,18 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
                 vertical: AppSizes.spacing4,
               ),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: context.primaryColor.withOpacity(0.3),
                 ),
               ),
               child: Text(
                 '${widget.currentPage} / ${widget.totalPages}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: context.primaryColor,
                 ),
               ),
             ),
@@ -333,7 +333,7 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
     return Row(
       mainAxisSize: isCompact ? MainAxisSize.min : MainAxisSize.max,
       children: [
-        Icon(Icons.location_on, size: 16, color: AppColors.primary),
+        Icon(Icons.location_on, size: 16, color: context.primaryColor),
         const SizedBox(width: AppSizes.spacing4),
 
         Text(
@@ -344,7 +344,7 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
             fontSize: isCompact
                 ? AppSizes.fontSizeSmall
                 : AppSizes.fontSizeSmall,
-            color: AppColors.textSecondary,
+            color: context.textSecondaryColor,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -365,23 +365,23 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: widget.itemsPerPage,
           isDense: true,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
             fontWeight: FontWeight.w500,
           ),
           icon: Icon(
             Icons.keyboard_arrow_down,
             size: AppSizes.iconSmall,
-            color: AppColors.textSecondary,
+            color: context.textSecondaryColor,
           ),
           items: safeOptions.map((int value) {
             return DropdownMenuItem<int>(
@@ -404,18 +404,18 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
       width: 40,
       height: 32,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
       ),
       child: Center(
         child: TextField(
           controller: _pageController,
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: AppColors.textPrimary,
+            color: context.textPrimaryColor,
             fontWeight: FontWeight.w600,
           ),
           decoration: const InputDecoration(
@@ -454,16 +454,18 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
           decoration: BoxDecoration(
             border: Border.all(
               color: isEnabled
-                  ? AppColors.border.withValues(alpha: 0.3)
-                  : AppColors.border.withValues(alpha: 0.1),
+                  ? context.borderColor
+                  : context.borderColor.withOpacity(0.3),
             ),
             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
           ),
           child: Icon(
             icon,
             size: size * 0.5,
-            color: isEnabled ? AppColors.textPrimary : AppColors.textSecondary,
+            color: isEnabled
+                ? context.textPrimaryColor
+                : context.textSecondaryColor,
           ),
         ),
       ),
@@ -482,11 +484,9 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : Colors.white,
+          color: isActive ? context.primaryColor : Theme.of(context).cardColor,
           border: Border.all(
-            color: isActive
-                ? AppColors.primary
-                : AppColors.border.withValues(alpha: 0.3),
+            color: isActive ? context.primaryColor : context.borderColor,
           ),
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         ),
@@ -495,7 +495,9 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
           pageNumber.toString(),
           style: TextStyle(
             fontSize: AppSizes.fontSizeSmall,
-            color: isActive ? Colors.white : AppColors.textPrimary,
+            color: isActive
+                ? Theme.of(context).colorScheme.onPrimary
+                : context.textPrimaryColor,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -549,10 +551,10 @@ class _ResponsiveMapPaginationState extends State<ResponsiveMapPagination> {
             height: 32,
             alignment: Alignment.center,
             child: Text(
-              '⋯',
+              '?',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 fontWeight: FontWeight.w400,
               ),
             ),

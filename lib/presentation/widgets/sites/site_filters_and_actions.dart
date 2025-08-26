@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_enums.dart';
 import '../common/app_button.dart';
@@ -63,8 +63,8 @@ class _SiteFiltersAndActionsState extends State<SiteFiltersAndActions> {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
+        color: context.surfaceColor,
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
       ),
       child: Column(
@@ -133,32 +133,32 @@ class _SiteFiltersAndActionsState extends State<SiteFiltersAndActions> {
               children: [
                 Text(
                   'Found ${widget.totalItems} sites',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
-                    color: AppColors.textSecondary,
+                    color: context.textSecondaryColor,
                   ),
                 ),
                 if (widget.searchQuery.isNotEmpty) ...[
-                  const Text(
+                  Text(
                     ' for "',
                     style: TextStyle(
                       fontSize: AppSizes.fontSizeSmall,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondaryColor,
                     ),
                   ),
                   Text(
                     widget.searchQuery,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppSizes.fontSizeSmall,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const Text(
+                  Text(
                     '"',
                     style: TextStyle(
                       fontSize: AppSizes.fontSizeSmall,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -173,7 +173,7 @@ class _SiteFiltersAndActionsState extends State<SiteFiltersAndActions> {
   Widget _buildViewModeSelector() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
       ),
       child: Row(
@@ -185,7 +185,7 @@ class _SiteFiltersAndActionsState extends State<SiteFiltersAndActions> {
             onPressed: () => widget.onViewModeChanged(SiteViewMode.table),
             tooltip: 'Table View',
           ),
-          Container(width: 1, height: 32, color: AppColors.border),
+          Container(width: 1, height: 32, color: context.borderColor),
           _buildModeButton(
             icon: Icons.view_kanban,
             isSelected: widget.currentViewMode == SiteViewMode.kanban,
@@ -207,7 +207,7 @@ class _SiteFiltersAndActionsState extends State<SiteFiltersAndActions> {
       message: tooltip,
       child: Material(
         color: isSelected
-            ? AppColors.primary.withOpacity(0.1)
+            ? context.primaryColor.withOpacity(0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         child: InkWell(
@@ -218,7 +218,7 @@ class _SiteFiltersAndActionsState extends State<SiteFiltersAndActions> {
             child: Icon(
               icon,
               size: 18,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected ? context.primaryColor : context.textSecondaryColor,
             ),
           ),
         ),
@@ -226,3 +226,8 @@ class _SiteFiltersAndActionsState extends State<SiteFiltersAndActions> {
     );
   }
 }
+
+
+
+
+

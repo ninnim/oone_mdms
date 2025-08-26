@@ -1,5 +1,6 @@
-import '../../../core/models/schedule.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import '../../../core/models/schedule.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../common/kanban_view.dart';
 import 'package:flutter/material.dart';
 
@@ -83,6 +84,7 @@ class ScheduleKanbanConfig {
     Function(Schedule)? onView,
     Function(Schedule)? onEdit,
     Function(Schedule)? onDelete,
+    required BuildContext context,
   }) {
     final actions = <KanbanAction>[];
 
@@ -92,7 +94,7 @@ class ScheduleKanbanConfig {
           key: 'view',
           label: 'View Details',
           icon: Icons.visibility,
-          color: AppColors.primary,
+          color: context.primaryColor,
           onTap: (item) => onView((item as ScheduleKanbanItem).schedule),
         ),
       );
@@ -104,7 +106,7 @@ class ScheduleKanbanConfig {
           key: 'edit',
           label: 'Edit',
           icon: Icons.edit,
-          color: AppColors.warning,
+          color: context.warningColor,
           onTap: (item) => onEdit((item as ScheduleKanbanItem).schedule),
         ),
       );
@@ -116,7 +118,7 @@ class ScheduleKanbanConfig {
           key: 'delete',
           label: 'Delete',
           icon: Icons.delete,
-          color: AppColors.error,
+          color: context.errorColor,
           onTap: (item) => onDelete((item as ScheduleKanbanItem).schedule),
         ),
       );
@@ -125,3 +127,6 @@ class ScheduleKanbanConfig {
     return actions;
   }
 }
+
+
+

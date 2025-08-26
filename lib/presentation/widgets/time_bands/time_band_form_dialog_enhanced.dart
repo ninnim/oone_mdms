@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-
-import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/models/time_band.dart';
@@ -514,9 +513,9 @@ class _TimeBandFormDialogEnhancedState
       padding: const EdgeInsets.all(AppSizes.spacing12),
       margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: context.primaryColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: context.primaryColor.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,7 +525,7 @@ class _TimeBandFormDialogEnhancedState
               Icon(
                 Icons.flash_on,
                 size: AppSizes.iconSmall,
-                color: AppColors.primary,
+                color: context.primaryColor,
               ),
               const SizedBox(width: AppSizes.spacing8),
               Text(
@@ -534,7 +533,7 @@ class _TimeBandFormDialogEnhancedState
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeSmall,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: context.primaryColor,
                 ),
               ),
               const Spacer(),
@@ -544,7 +543,7 @@ class _TimeBandFormDialogEnhancedState
                   icon: const Icon(Icons.clear_all, size: AppSizes.iconSmall),
                   label: const Text('Clear'),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.error,
+                    foregroundColor: context.errorColor,
                     textStyle: const TextStyle(
                       fontSize: AppSizes.fontSizeSmall,
                       fontWeight: FontWeight.w500,
@@ -565,8 +564,8 @@ class _TimeBandFormDialogEnhancedState
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               color: _isQuickTimeSelected
-                  ? AppColors.warning
-                  : AppColors.textSecondary,
+                  ? context.warningColor
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -586,16 +585,16 @@ class _TimeBandFormDialogEnhancedState
                     vertical: AppSizes.spacing8,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : AppColors.surface,
+                    color: isSelected ? context.primaryColor : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.border,
+                      color: isSelected ? context.primaryColor : Theme.of(context).colorScheme.outline,
                       width: isSelected ? 2 : 1,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.2),
+                              color: context.primaryColor.withOpacity(0.2),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -609,8 +608,8 @@ class _TimeBandFormDialogEnhancedState
                         _getQuickTimeIcon(period),
                         size: AppSizes.iconMedium,
                         color: isSelected
-                            ? AppColors.surface
-                            : AppColors.primary,
+                            ? Theme.of(context).colorScheme.surface
+                            : context.primaryColor,
                       ),
                       const SizedBox(height: AppSizes.spacing4),
                       Text(
@@ -619,8 +618,8 @@ class _TimeBandFormDialogEnhancedState
                           fontSize: AppSizes.fontSizeSmall,
                           fontWeight: FontWeight.w600,
                           color: isSelected
-                              ? AppColors.surface
-                              : AppColors.textPrimary,
+                              ? Theme.of(context).colorScheme.surface
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: AppSizes.spacing4),
@@ -629,8 +628,8 @@ class _TimeBandFormDialogEnhancedState
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeSmall,
                           color: isSelected
-                              ? AppColors.surface.withOpacity(0.9)
-                              : AppColors.textSecondary,
+                              ? Theme.of(context).colorScheme.surface.withOpacity(0.9)
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -696,10 +695,10 @@ class _TimeBandFormDialogEnhancedState
             Container(
               padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: Theme.of(context).colorScheme.surface,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.border.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
                     width: 1,
                   ),
                 ),
@@ -721,7 +720,7 @@ class _TimeBandFormDialogEnhancedState
     final bool isReadOnly = widget.isViewMode && !_isEditMode;
 
     return Container(
-      color: AppColors.background,
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Form(
         key: _formKey,
@@ -817,9 +816,9 @@ class _TimeBandFormDialogEnhancedState
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -832,7 +831,7 @@ class _TimeBandFormDialogEnhancedState
                   ? AppSizes.fontSizeMedium
                   : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -858,9 +857,9 @@ class _TimeBandFormDialogEnhancedState
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -873,7 +872,7 @@ class _TimeBandFormDialogEnhancedState
                   ? AppSizes.fontSizeMedium
                   : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -894,15 +893,15 @@ class _TimeBandFormDialogEnhancedState
                       keyboardType: TextInputType.number,
                       inputFormatters: [_timeInputFormatter],
                       suffixIcon: isReadOnly
-                          ? const Icon(
+                          ?  Icon(
                               Icons.access_time,
-                              color: Colors.grey,
+                              color: context.textSecondaryColor,
                               size: AppSizes.iconSmall,
                             )
                           : _isQuickTimeSelected
                           ? Icon(
                               Icons.lock,
-                              color: AppColors.warning,
+                              color: context.warningColor,
                               size: AppSizes.iconSmall,
                             )
                           : IconButton(
@@ -933,15 +932,15 @@ class _TimeBandFormDialogEnhancedState
                       keyboardType: TextInputType.number,
                       inputFormatters: [_timeInputFormatter],
                       suffixIcon: isReadOnly
-                          ? const Icon(
+                          ?  Icon(
                               size: AppSizes.iconSmall,
                               Icons.access_time,
-                              color: Colors.grey,
+                              color: context.textSecondaryColor,
                             )
                           : _isQuickTimeSelected
                           ? Icon(
                               Icons.lock,
-                              color: AppColors.warning,
+                              color: context.warningColor,
                               size: AppSizes.iconSmall,
                             )
                           : IconButton(
@@ -975,15 +974,15 @@ class _TimeBandFormDialogEnhancedState
                         keyboardType: TextInputType.number,
                         inputFormatters: [_timeInputFormatter],
                         suffixIcon: isReadOnly
-                            ? const Icon(
+                            ? Icon(
                                 Icons.access_time,
-                                color: Colors.grey,
+                                color: context.textSecondaryColor,
                                 size: AppSizes.iconSmall,
                               )
                             : _isQuickTimeSelected
                             ? Icon(
                                 Icons.lock,
-                                color: AppColors.warning,
+                                color: context.warningColor,
                                 size: AppSizes.iconSmall,
                               )
                             : IconButton(
@@ -1016,15 +1015,15 @@ class _TimeBandFormDialogEnhancedState
                         keyboardType: TextInputType.number,
                         inputFormatters: [_timeInputFormatter],
                         suffixIcon: isReadOnly
-                            ? const Icon(
+                            ?  Icon(
                                 size: AppSizes.iconSmall,
                                 Icons.access_time,
-                                color: Colors.grey,
+                                color: context.textSecondaryColor,
                               )
                             : _isQuickTimeSelected
                             ? Icon(
                                 Icons.lock,
-                                color: AppColors.warning,
+                                color: context.warningColor,
                                 size: AppSizes.iconSmall,
                               )
                             : IconButton(
@@ -1058,9 +1057,9 @@ class _TimeBandFormDialogEnhancedState
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -1073,7 +1072,7 @@ class _TimeBandFormDialogEnhancedState
                   ? AppSizes.fontSizeMedium
                   : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -1114,9 +1113,9 @@ class _TimeBandFormDialogEnhancedState
   Widget _buildDescriptionSection() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.border.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
       padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       child: Column(
@@ -1129,7 +1128,7 @@ class _TimeBandFormDialogEnhancedState
                   ? AppSizes.fontSizeMedium
                   : AppSizes.fontSizeLarge,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: ResponsiveHelper.getSpacing(context)),
@@ -1137,9 +1136,9 @@ class _TimeBandFormDialogEnhancedState
             width: double.infinity,
             padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              border: Border.all(color: AppColors.border.withOpacity(0.3)),
+              border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1149,7 +1148,7 @@ class _TimeBandFormDialogEnhancedState
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeSmall,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
                 const SizedBox(height: AppSizes.spacing8),
@@ -1160,8 +1159,8 @@ class _TimeBandFormDialogEnhancedState
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeMedium,
                     color: _getDisplayDescription().isEmpty
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
+                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.7)
+                        : Theme.of(context).colorScheme.onSurface,
                     fontStyle: _getDisplayDescription().isEmpty
                         ? FontStyle.italic
                         : FontStyle.normal,
@@ -1204,8 +1203,8 @@ class _TimeBandFormDialogEnhancedState
                     label: const Text('Clear All'),
                     style: TextButton.styleFrom(
                       foregroundColor: enabled
-                          ? AppColors.error
-                          : AppColors.textSecondary,
+                          ? context.errorColor//AppColors.error
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       textStyle: const TextStyle(
                         fontSize: AppSizes.fontSizeSmall,
                         fontWeight: FontWeight.w500,
@@ -1229,8 +1228,8 @@ class _TimeBandFormDialogEnhancedState
                     label: const Text('Select All'),
                     style: TextButton.styleFrom(
                       foregroundColor: enabled
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
+                          ? context.primaryColor //AppColors.primary
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       textStyle: const TextStyle(
                         fontSize: AppSizes.fontSizeSmall,
                         fontWeight: FontWeight.w500,
@@ -1249,15 +1248,15 @@ class _TimeBandFormDialogEnhancedState
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: context.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              border: Border.all(color: context.primaryColor.withOpacity(0.3)),
             ),
             child: Text(
               '${selectedValues.length} selected: ${_getSelectedLabels(options, selectedValues)}',
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: AppColors.primary,
+                color: context.primaryColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1283,10 +1282,10 @@ class _TimeBandFormDialogEnhancedState
             Color chipColor;
             if (title.contains('Days')) {
               // Days of week - use green spectrum
-              chipColor = AppColors.primary;
+              chipColor = context.primaryColor;
             } else {
               // Use primary color for easier theming
-              chipColor = AppColors.primary;
+              chipColor = context.primaryColor;
             }
 
             return GestureDetector(
@@ -1537,3 +1536,7 @@ class _TimeBandFormDialogEnhancedState
     super.dispose();
   }
 }
+
+
+
+

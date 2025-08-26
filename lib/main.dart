@@ -13,6 +13,7 @@ import 'core/services/service_locator.dart';
 import 'core/services/token_management_service.dart';
 import 'core/services/time_band_service.dart';
 import 'core/services/startup_validation_service.dart';
+import 'core/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,6 +90,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: serviceLocator),
         ChangeNotifierProvider.value(value: keycloakService),
         ChangeNotifierProvider.value(value: tokenManagementService),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider.value(value: timeBandService),
         Provider.value(value: timeOfUseService),
         Provider.value(value: deviceService),
@@ -97,12 +99,29 @@ class MyApp extends StatelessWidget {
         Provider.value(value: seasonService),
         Provider.value(value: specialDayService),
       ],
-      child: MaterialApp.router(
-        title: 'MDMS',
-        theme: AppTheme.lightTheme,
-        debugShowCheckedModeBanner: false,
-        routerConfig: AppRouter.getRouter(keycloakService),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
+            title: 'MDMS',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: _getFlutterThemeMode(themeProvider.themeMode),
+            debugShowCheckedModeBanner: false,
+            routerConfig: AppRouter.getRouter(keycloakService),
+          );
+        },
       ),
     );
+  }
+
+  ThemeMode _getFlutterThemeMode(AppThemeMode appThemeMode) {
+    switch (appThemeMode) {
+      case AppThemeMode.light:
+        return ThemeMode.light;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+      case AppThemeMode.system:
+        return ThemeMode.system;
+    }
   }
 }

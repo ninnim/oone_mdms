@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/special_day.dart';
 
@@ -27,9 +27,9 @@ class SpecialDaySummaryCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -48,7 +48,8 @@ class SpecialDaySummaryCard extends StatelessWidget {
                   'Total',
                   stats.totalSpecialDays.toString(),
                   Icons.event_note,
-                  AppColors.primary,
+                  context.primaryColor,
+                  context,
                 ),
               ),
               SizedBox(width: spacing),
@@ -57,7 +58,8 @@ class SpecialDaySummaryCard extends StatelessWidget {
                   'Active',
                   stats.activeSpecialDays.toString(),
                   Icons.check_circle_outline,
-                  AppColors.success,
+                  context.successColor,
+                  context,
                 ),
               ),
               SizedBox(width: spacing),
@@ -66,7 +68,8 @@ class SpecialDaySummaryCard extends StatelessWidget {
                   'Inactive',
                   stats.inactiveSpecialDays.toString(),
                   Icons.cancel_outlined,
-                  AppColors.error,
+                  context.errorColor,
+                  context,
                 ),
               ),
               SizedBox(width: spacing),
@@ -75,7 +78,8 @@ class SpecialDaySummaryCard extends StatelessWidget {
                   'Total Details',
                   stats.totalDetails.toString(),
                   Icons.list_alt,
-                  AppColors.info,
+                  context.infoColor,
+                  context,
                 ),
               ),
             ],
@@ -90,6 +94,7 @@ class SpecialDaySummaryCard extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
+    BuildContext context,
   ) {
     // Responsive sizing based on compact mode
     final iconSize = isCompact ? 16.0 : 20.0;
@@ -128,7 +133,7 @@ class SpecialDaySummaryCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: titleSize,
-              color: AppColors.textSecondary,
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
             overflow: TextOverflow.ellipsis,
@@ -171,3 +176,8 @@ class SpecialDayStats {
     required this.totalDetails,
   });
 }
+
+
+
+
+
