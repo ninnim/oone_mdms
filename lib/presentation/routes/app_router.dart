@@ -5,6 +5,7 @@ import 'package:mdms_clone/presentation/screens/schedules/schedule_screen.dart';
 import 'package:mdms_clone/presentation/screens/tou_management/seasons_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_bands/time_bands_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_of_use/time_of_use_screen.dart';
+import 'package:mdms_clone/presentation/screens/settings/appearance_screen.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
 import 'package:mdms_clone/presentation/widgets/common/theme_switch.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +13,6 @@ import 'dart:html' as html;
 import 'dart:async';
 import '../themes/app_theme.dart';
 import '../../core/constants/app_sizes.dart';
-import '../themes/app_theme.dart';
 import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
@@ -22,14 +22,11 @@ import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
 import '../../core/models/device_group.dart';
 import '../../core/services/device_service.dart';
-import '../../core/services/site_service.dart';
 import '../../core/services/device_group_service.dart';
 import '../../core/services/keycloak_service.dart';
 import '../screens/device_groups/device_groups_screen.dart';
 import '../screens/device_groups/device_group_details_screen.dart';
 import '../screens/sites/sites_screen.dart';
-import '../screens/sites/site_details_screen.dart';
-import '../../core/models/site.dart';
 
 class AppRouter {
   static GoRouter getRouter(KeycloakService keycloakService) {
@@ -198,6 +195,11 @@ class AppRouter {
               path: '/settings',
               name: 'settings',
               builder: (context, state) => const SettingsRouteWrapper(),
+            ),
+            GoRoute(
+              path: '/appearance',
+              name: 'appearance',
+              builder: (context, state) => const AppearanceRouteWrapper(),
             ),
             GoRoute(
               path: '/sites',
@@ -1069,6 +1071,15 @@ class SettingsRouteWrapper extends StatelessWidget {
   }
 }
 
+class AppearanceRouteWrapper extends StatelessWidget {
+  const AppearanceRouteWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppearanceScreen();
+  }
+}
+
 // Updated MainLayout to work with routing and hierarchical sidebar
 class MainLayoutWithRouter extends StatefulWidget {
   final Widget child;
@@ -1161,6 +1172,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/insights')) return 'insights';
 
     // Settings sub-routes
+    if (location.startsWith('/appearance')) return 'appearance';
     if (location.startsWith('/my-profile')) return 'my-profile';
     if (location.startsWith('/security')) return 'security';
     if (location.startsWith('/integrations')) return 'integrations';
@@ -1337,6 +1349,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         // Settings Group
         _buildCollapsedGroupHeader('settings', Icons.settings, [
           'sites',
+          'appearance',
           // 'my-profile',
           // 'security',
           // 'integrations',
@@ -1351,6 +1364,11 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             'sites',
             Icons.business,
             selectedScreen == 'sites',
+          ),
+          _buildCollapsedSubMenuItem(
+            'appearance',
+            Icons.palette,
+            selectedScreen == 'appearance',
           ),
           // _buildCollapsedSubMenuItem(
           //   'my-profile',
@@ -1467,6 +1485,22 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
   }
 
   Widget _buildCollapsedSubMenuItem(String id, IconData icon, bool isSelected) {
+    // Special handling for settings subroutes
+    String route;
+    if (id == 'appearance') {
+      route = '/appearance';
+    } else if (id == 'sites') {
+      route = '/sites';
+    } else if (id == 'my-profile') {
+      route = '/my-profile';
+    } else if (id == 'security') {
+      route = '/security';
+    } else if (id == 'billing') {
+      route = '/billing';
+    } else {
+      route = '/$id';
+    }
+
     return Container(
       margin: const EdgeInsets.only(
         bottom: AppSizes.spacing8,
@@ -1475,7 +1509,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.go('/$id'),
+          onTap: () => context.go(route),
           borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
           child: Container(
             width: 30,
@@ -1695,6 +1729,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     // }
     if ([
       'sites',
+      'appearance',
       'my-profile',
       'security',
       // 'integrations',
@@ -1839,6 +1874,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         // Settings Group
         _buildGroupHeader('settings', 'Settings', Icons.settings, [
           'sites',
+          'appearance',
           'my-profile',
           'security',
           //  'integrations',
@@ -1854,6 +1890,12 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               'Sites',
               Icons.business,
               selectedScreen == 'sites',
+            ),
+            _buildSubMenuItem(
+              'appearance',
+              'Appearance',
+              Icons.palette,
+              selectedScreen == 'appearance',
             ),
             // _buildSubMenuItem(
             //   'my-profile',
@@ -2085,14 +2127,30 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     IconData icon,
     bool isSelected,
   ) {
+    // Special handling for settings subroutes
+    String route;
+    if (id == 'appearance') {
+      route = '/appearance';
+    } else if (id == 'sites') {
+      route = '/sites';
+    } else if (id == 'my-profile') {
+      route = '/my-profile';
+    } else if (id == 'security') {
+      route = '/security';
+    } else if (id == 'billing') {
+      route = '/billing';
+    } else {
+      route = '/$id';
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.go('/$id'),
+          onTap: () => context.go(route),
           borderRadius: BorderRadius.circular(8),
-          hoverColor: const Color(0xFF2563eb).withOpacity(0.05),
+          hoverColor: context.primaryColor.withOpacity(0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSizes.spacing12,
@@ -2100,16 +2158,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF2563eb).withOpacity(0.15)
+                  ? context.primaryColor.withOpacity(0.15)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: isSelected
-                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.5))
+                  ? Border.all(color: context.primaryColor.withOpacity(0.5))
                   : null,
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF2563eb).withOpacity(0.1),
+                        color: context.primaryColor.withOpacity(0.1),
                         blurRadius: 3,
                         offset: const Offset(0, 1),
                       ),
@@ -2121,8 +2179,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                 Icon(
                   icon,
                   color: isSelected
-                      ? const Color(0xFF2563eb)
-                      : const Color(0xFF64748b),
+                      ? context.primaryColor
+                      : context.textSecondaryColor,
                   size: 16,
                 ),
                 const SizedBox(width: 12),
@@ -2131,8 +2189,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                     title,
                     style: TextStyle(
                       color: isSelected
-                          ? const Color(0xFF2563eb)
-                          : const Color(0xFF64748b),
+                          ? context.primaryColor
+                          : context.textSecondaryColor,
                       fontSize: 13,
                       fontWeight: isSelected
                           ? FontWeight.w600
@@ -2440,6 +2498,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
     if (location.startsWith('/tou-management')) return 'TOU Management';
     if (location.startsWith('/tickets')) return 'Tickets';
     if (location.startsWith('/analytics')) return 'Analytics';
+    if (location.startsWith('/appearance')) return 'Appearance';
     if (location.startsWith('/settings')) return 'Settings';
 
     // TOU Management sub-routes

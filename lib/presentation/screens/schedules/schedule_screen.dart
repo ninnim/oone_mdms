@@ -544,7 +544,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color:context.primaryColor, //AppColors.primary,
+        color: context.primaryColor, //AppColors.primary,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
@@ -992,7 +992,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
   Widget _buildContent() {
     // Show loading state
     if (_isLoading && _schedules.isEmpty) {
-      return  Center(
+      return Center(
         child: AppLottieStateWidget.loading(
           title: 'Loading Schedules',
           titleColor: context.primaryColor,
@@ -1094,5 +1094,3 @@ class _ScheduleScreenState extends State<ScheduleScreen> with ResponsiveMixin {
     _loadSchedules();
   }
 }
-
-

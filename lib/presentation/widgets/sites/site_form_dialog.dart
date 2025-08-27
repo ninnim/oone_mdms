@@ -8,7 +8,6 @@ import '../common/app_input_field.dart';
 import '../common/app_toast.dart';
 import '../common/app_dropdown_field.dart';
 import '../common/app_dialog_header.dart';
-import '../../themes/app_theme.dart';
 
 class SiteFormDialog extends StatefulWidget {
   final Site? site; // null for create, non-null for edit
@@ -162,20 +161,23 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
 
             // Body
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
+              child: Container(
+                color: context.backgroundColor,
+                padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
                 child: Form(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Site Information Section
-                      _buildSiteInformationSection(isDesktop),
-                      const SizedBox(height: AppSizes.spacing16),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Site Information Section
+                        _buildSiteInformationSection(isDesktop),
+                        const SizedBox(height: AppSizes.spacing16),
 
-                      // Description Section
-                      _buildDescriptionSection(),
-                    ],
+                        // Description Section
+                        _buildDescriptionSection(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -420,9 +422,10 @@ class _SiteFormDialogState extends State<SiteFormDialog> {
 
   Widget _buildFooter(bool isDesktop) {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing16),
+      padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: context.borderColor)),
+        color: context.surfaceColor,
       ),
       child: isDesktop
           ? Row(

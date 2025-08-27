@@ -14,6 +14,7 @@ import 'core/services/token_management_service.dart';
 import 'core/services/time_band_service.dart';
 import 'core/services/startup_validation_service.dart';
 import 'core/providers/theme_provider.dart';
+import 'core/providers/appearance_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,7 +70,10 @@ class MyApp extends StatelessWidget {
   final SeasonService seasonService;
   final SpecialDayService specialDayService;
 
-  const MyApp({
+  // Create router once to prevent navigation resets
+  late final _router = AppRouter.getRouter(keycloakService);
+
+  MyApp({
     super.key,
     required this.serviceLocator,
     required this.keycloakService,
@@ -91,6 +95,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: keycloakService),
         ChangeNotifierProvider.value(value: tokenManagementService),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AppearanceProvider()),
         Provider.value(value: timeBandService),
         Provider.value(value: timeOfUseService),
         Provider.value(value: deviceService),
@@ -99,15 +104,24 @@ class MyApp extends StatelessWidget {
         Provider.value(value: seasonService),
         Provider.value(value: specialDayService),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+      child: Consumer2<ThemeProvider, AppearanceProvider>(
+        builder: (context, themeProvider, appearanceProvider, child) {
+          // Use default theme if no customization, otherwise use custom color
+          final ThemeData lightTheme = appearanceProvider.hasCustomColor
+              ? AppTheme.lightThemeWithColor(appearanceProvider.primaryColor)
+              : AppTheme.lightTheme;
+
+          final ThemeData darkTheme = appearanceProvider.hasCustomColor
+              ? AppTheme.darkThemeWithColor(appearanceProvider.primaryColor)
+              : AppTheme.darkTheme;
+
           return MaterialApp.router(
             title: 'MDMS',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            theme: lightTheme,
+            darkTheme: darkTheme,
             themeMode: _getFlutterThemeMode(themeProvider.themeMode),
             debugShowCheckedModeBanner: false,
-            routerConfig: AppRouter.getRouter(keycloakService),
+            routerConfig: _router, // Use the same router instance
           );
         },
       ),

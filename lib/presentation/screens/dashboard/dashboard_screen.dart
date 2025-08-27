@@ -5,7 +5,8 @@ import '../../widgets/common/status_chip.dart';
 import '../../widgets/common/theme_switch.dart';
 import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
+import '../../themes/app_theme.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -60,10 +61,11 @@ class DashboardScreen extends StatelessWidget {
             children: [
               Text(
                 'Device Management Dashboard',
+
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.lightTextPrimary,
+                  color: context.textPrimaryColor, //AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(height: AppSizes.spacing8),
@@ -71,7 +73,8 @@ class DashboardScreen extends StatelessWidget {
                 'Welcome back! Here\'s an overview of your device network.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: AppColors.lightTextSecondary,
+                  color: context
+                      .textSecondaryColor, //AppColors.lightTextSecondary,
                 ),
               ),
             ],
@@ -103,7 +106,7 @@ class DashboardScreen extends StatelessWidget {
             'Total Devices',
             '1,247',
             Icons.electrical_services,
-            AppColors.primary,
+            context.primaryColor,
             '+12 this week',
           ),
         ),
@@ -114,7 +117,7 @@ class DashboardScreen extends StatelessWidget {
             'Active Devices',
             '1,189',
             Icons.power,
-            AppColors.success,
+            context.successColor,
             '95.3% uptime',
           ),
         ),
@@ -125,7 +128,7 @@ class DashboardScreen extends StatelessWidget {
             'Offline Devices',
             '58',
             Icons.power_off,
-            AppColors.error,
+            context.errorColor,
             '-3 since yesterday',
           ),
         ),
@@ -136,7 +139,7 @@ class DashboardScreen extends StatelessWidget {
             'Device Groups',
             '23',
             Icons.group_work,
-            AppColors.info,
+            context.infoColor,
             '4 active groups',
           ),
         ),
@@ -169,7 +172,7 @@ class DashboardScreen extends StatelessWidget {
               const Spacer(),
               Icon(
                 Icons.trending_up,
-                color: AppColors.success,
+                color: context.successColor,
                 size: AppSizes.iconSmall,
               ),
             ],
@@ -284,13 +287,10 @@ class DashboardScreen extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             ),
-            child: const Icon(
-              Icons.electrical_services,
-              color: AppColors.primary,
-            ),
+            child: Icon(Icons.electrical_services, color: context.primaryColor),
           ),
           const SizedBox(width: AppSizes.spacing12),
           Expanded(
@@ -348,7 +348,7 @@ class DashboardScreen extends StatelessWidget {
                   context,
                   'Commissioned',
                   '852',
-                  AppColors.success,
+                  context.successColor,
                   68.3,
                 ),
               ),
@@ -357,7 +357,7 @@ class DashboardScreen extends StatelessWidget {
                   context,
                   'Offline/None',
                   '337',
-                  AppColors.secondary,
+                  context.secondaryColor,
                   27.0,
                 ),
               ),
@@ -366,7 +366,7 @@ class DashboardScreen extends StatelessWidget {
                   context,
                   'Renovation',
                   '58',
-                  AppColors.warning,
+                  context.warningColor,
                   4.7,
                 ),
               ),
@@ -445,7 +445,7 @@ class DashboardScreen extends StatelessWidget {
             'Add New Device',
             'Register a new device in the system',
             Icons.add_circle_outline,
-            AppColors.primary,
+            context.primaryColor,
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildQuickActionItem(
@@ -453,7 +453,7 @@ class DashboardScreen extends StatelessWidget {
             'Device Groups',
             'Manage device groupings and categories',
             Icons.group_work,
-            AppColors.info,
+            context.infoColor,
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildQuickActionItem(
@@ -461,7 +461,7 @@ class DashboardScreen extends StatelessWidget {
             'System Reports',
             'Generate performance and usage reports',
             Icons.analytics,
-            AppColors.secondary,
+            context.secondaryColor,
           ),
           const SizedBox(height: AppSizes.spacing12),
           _buildQuickActionItem(
@@ -469,7 +469,7 @@ class DashboardScreen extends StatelessWidget {
             'Device Map',
             'View devices on interactive map',
             Icons.map,
-            AppColors.success,
+            context.successColor,
           ),
         ],
       ),
@@ -553,7 +553,7 @@ class DashboardScreen extends StatelessWidget {
             'Device Offline',
             '3 devices have been offline for >24h',
             Icons.warning,
-            AppColors.warning,
+            context.warningColor,
             '2 hours ago',
           ),
           const SizedBox(height: AppSizes.spacing12),
@@ -562,7 +562,7 @@ class DashboardScreen extends StatelessWidget {
             'High Usage',
             'Unusual power consumption detected',
             Icons.bolt,
-            AppColors.error,
+            context.errorColor,
             '4 hours ago',
           ),
           const SizedBox(height: AppSizes.spacing12),
@@ -571,7 +571,7 @@ class DashboardScreen extends StatelessWidget {
             'Maintenance Due',
             '15 devices scheduled for maintenance',
             Icons.build,
-            AppColors.info,
+            context.infoColor,
             '1 day ago',
           ),
           const SizedBox(height: AppSizes.spacing16),

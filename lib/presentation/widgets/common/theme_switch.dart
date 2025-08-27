@@ -105,10 +105,8 @@ class ThemeSwitch extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        // Use post-frame callback to prevent any navigation issues
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _changeTheme(themeProvider, mode);
-        });
+        // Direct call - provider handles isolation
+        _changeTheme(themeProvider, mode);
       },
       borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
       child: AnimatedContainer(
@@ -162,17 +160,6 @@ class ThemeSwitch extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _getThemeIcon(AppThemeMode mode) {
-    switch (mode) {
-      case AppThemeMode.light:
-        return Icons.light_mode;
-      case AppThemeMode.dark:
-        return Icons.dark_mode;
-      case AppThemeMode.system:
-        return Icons.brightness_auto;
-    }
   }
 }
 

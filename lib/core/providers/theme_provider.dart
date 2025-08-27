@@ -20,12 +20,15 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> setThemeMode(AppThemeMode mode) async {
     if (_themeMode != mode) {
       _themeMode = mode;
-      // Use a post-frame callback to prevent navigation issues during theme switch
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
+      // Use a more isolated approach to prevent navigation issues
+      Future.microtask(() {
+        if (mounted) notifyListeners();
       });
     }
   }
+
+  // Helper to check if provider is still mounted
+  bool get mounted => hasListeners;
 
   // Helper methods for easy access
   Future<void> setLightMode() => setThemeMode(AppThemeMode.light);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mdms_clone/core/constants/app_colors.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/keycloak_service.dart';
@@ -41,12 +42,7 @@ class _SimpleAuthRedirectScreenState extends State<SimpleAuthRedirectScreen> {
       if (error != null) {
         print('SimpleAuthRedirectScreen: OAuth error: $error');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Authentication error: $error'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppToast.showError(context, error: 'Authentication error: $error');
         }
         return;
       }

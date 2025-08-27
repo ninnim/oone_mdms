@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/utils/responsive_helper.dart';
 import 'package:mdms_clone/presentation/widgets/common/status_chip.dart';
 import 'dart:async';
 import '../../../core/models/device_group.dart';
@@ -539,64 +540,67 @@ class _DeviceGroupManageDevicesDialogState
 
             // Body Content with padding
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: Column(
-                  children: [
-                    // Search field - styled exactly like device screen
-                    AppInputField.search(
-                      controller: _searchController,
-                      hintText: 'Search devices...',
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        size: AppSizes.iconSmall,
-                      ),
-                      onChanged: (value) {
-                        // Search based on current tab
-                        if (_currentTabIndex == 0) {
-                          _onAvailableSearchChanged(value);
-                        } else {
-                          _onCurrentSearchChanged(value);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-
-                    // Content with AppPillTabs
-                    Expanded(
-                      child: AppPillTabs(
-                        initialIndex: _currentTabIndex,
-                        onTabChanged: (index) {
-                          setState(() {
-                            _currentTabIndex = index;
-                          });
+              child: Container(
+                color: context.backgroundColor,
+                child: Padding(
+                  padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+                  child: Column(
+                    children: [
+                      // Search field - styled exactly like device screen
+                      AppInputField.search(
+                        controller: _searchController,
+                        hintText: 'Search devices...',
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          size: AppSizes.iconSmall,
+                        ),
+                        onChanged: (value) {
+                          // Search based on current tab
+                          if (_currentTabIndex == 0) {
+                            _onAvailableSearchChanged(value);
+                          } else {
+                            _onCurrentSearchChanged(value);
+                          }
                         },
-                        tabs: [
-                          AppTab(
-                            label:
-                                'Available Devices ($_totalAvailableDevices)',
-                            icon: Icon(
-                              Icons.add_circle_outline,
-                              size: AppSizes.iconSmall,
-                            ),
-                            content: _buildAvailableDevicesTab(),
-                          ),
-                          AppTab(
-                            label: 'Current Devices ($_totalCurrentDevices)',
-                            icon: Icon(Icons.devices, size: AppSizes.iconSmall),
-                            content: _buildCurrentDevicesTab(),
-                          ),
-                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: AppSizes.spacing16),
+                
+                      // Content with AppPillTabs
+                      Expanded(
+                        child: AppPillTabs(
+                          initialIndex: _currentTabIndex,
+                          onTabChanged: (index) {
+                            setState(() {
+                              _currentTabIndex = index;
+                            });
+                          },
+                          tabs: [
+                            AppTab(
+                              label:
+                                  'Available Devices ($_totalAvailableDevices)',
+                              icon: Icon(
+                                Icons.add_circle_outline,
+                                size: AppSizes.iconSmall,
+                              ),
+                              content: _buildAvailableDevicesTab(),
+                            ),
+                            AppTab(
+                              label: 'Current Devices ($_totalCurrentDevices)',
+                              icon: Icon(Icons.devices, size: AppSizes.iconSmall),
+                              content: _buildCurrentDevicesTab(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
 
             // Footer with Action buttons (with padding)
             Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
+             padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
                 color: context.surfaceColor,
                 border: Border(

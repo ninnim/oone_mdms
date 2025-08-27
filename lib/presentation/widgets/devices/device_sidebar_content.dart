@@ -188,8 +188,8 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing20),
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(AppSizes.radiusMedium),
         ),
@@ -210,7 +210,9 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
             widget.device.serialNumber,
             style: TextStyle(
               fontSize: AppSizes.fontSizeMedium,
-              color: Theme.of(context).colorScheme.onInverseSurface.withOpacity(0.9),
+              color: Theme.of(
+                context,
+              ).colorScheme.onInverseSurface.withOpacity(0.9),
               fontFamily: 'monospace',
             ),
           ),
@@ -220,7 +222,9 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
               widget.device.name,
               style: TextStyle(
                 fontSize: AppSizes.fontSizeSmall,
-                color: Theme.of(context).colorScheme.onInverseSurface.withOpacity(0.8),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onInverseSurface.withOpacity(0.8),
               ),
             ),
           ],
@@ -234,9 +238,11 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
       color: Theme.of(context).colorScheme.surface,
       child: TabBar(
         controller: _tabController,
-        labelColor: AppColors.primary,
-        unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-        indicatorColor: AppColors.primary,
+        labelColor: Theme.of(context).colorScheme.primary,
+        unselectedLabelColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withOpacity(0.7),
+        indicatorColor: Theme.of(context).colorScheme.primary,
         indicatorWeight: 3,
         labelStyle: TextStyle(
           fontSize: AppSizes.fontSizeSmall,
@@ -527,8 +533,10 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
         displayText = 'Commissioned';
         break;
       case 'multidrive':
-        backgroundColor = AppColors.primary.withOpacity(0.1);
-        textColor = AppColors.primary;
+        backgroundColor = Theme.of(
+          context,
+        ).colorScheme.primary.withOpacity(0.1);
+        textColor = Theme.of(context).colorScheme.primary;
         displayText = 'MULTIDRIVE';
         break;
       case 'e-power':
@@ -646,7 +654,11 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
         children: [
           Row(
             children: [
-              Icon(Icons.analytics, color: AppColors.primary, size: 20),
+              Icon(
+                Icons.analytics,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: AppSizes.spacing8),
               Text(
                 'Device Metrics',
@@ -662,14 +674,18 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
               ? SizedBox(
                   height: 200,
                   child: Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 )
               : _metricsData == null
               ? Container(
                   height: 200,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7).withOpacity(0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.7).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                   ),
                   child: Center(
@@ -679,13 +695,17 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                         Icon(
                           Icons.analytics_outlined,
                           size: 48,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.7),
                         ),
                         const SizedBox(height: AppSizes.spacing8),
                         Text(
                           'No metrics data available',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7),
                             fontSize: AppSizes.fontSizeSmall,
                           ),
                         ),
@@ -734,7 +754,9 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                                 child: Text(
                                   '${value.toInt()}',
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.7),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 10,
                                   ),
@@ -751,7 +773,9 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                               return Text(
                                 value.toInt().toString(),
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
                                 ),
@@ -763,7 +787,9 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                       ),
                       borderData: FlBorderData(
                         show: true,
-                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
                       minX: 0,
                       maxX: 10,
@@ -836,7 +862,11 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
         children: [
           Row(
             children: [
-              Icon(Icons.bar_chart, color: AppColors.primary, size: 20),
+              Icon(
+                Icons.bar_chart,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: AppSizes.spacing8),
               Text(
                 'Billing Consumption Charts',
@@ -852,14 +882,18 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
               ? SizedBox(
                   height: 200,
                   child: Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 )
               : readings.isEmpty
               ? Container(
                   height: 200,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7).withOpacity(0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.7).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                   ),
                   child: Center(
@@ -869,13 +903,17 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                         Icon(
                           Icons.analytics_outlined,
                           size: 48,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.7),
                         ),
                         const SizedBox(height: AppSizes.spacing8),
                         Text(
                           'No billing data available',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7),
                             fontSize: AppSizes.fontSizeSmall,
                           ),
                         ),
@@ -934,7 +972,10 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                                       child: Text(
                                         '${date.day}/${date.month}',
                                         style: TextStyle(
-                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.7),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 10,
                                         ),
@@ -957,7 +998,9 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                               return Text(
                                 value.toInt().toString(),
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
                                 ),
@@ -969,7 +1012,9 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                       ),
                       borderData: FlBorderData(
                         show: true,
-                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
                       minX: 0,
                       maxX: readings.length.toDouble() - 1,
@@ -981,8 +1026,10 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
                           isCurved: true,
                           gradient: LinearGradient(
                             colors: [
-                              AppColors.primary,
-                              AppColors.primary.withOpacity(0.3),
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.3),
                             ],
                           ),
                           barWidth: 3,
@@ -1052,7 +1099,3 @@ class _DeviceSidebarContentState extends State<DeviceSidebarContent>
     return spots.isEmpty ? [FlSpot(0, 0)] : spots;
   }
 }
-
-
-
-

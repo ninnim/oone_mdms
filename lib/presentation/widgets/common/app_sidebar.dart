@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../themes/app_theme.dart';
 
 class AppSidebar extends StatefulWidget {

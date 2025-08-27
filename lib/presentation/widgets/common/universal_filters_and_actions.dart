@@ -102,7 +102,7 @@ class _UniversalFiltersAndActionsState<T extends Enum>
 
   @override
   void dispose() {
-    _searchController.dispose();
+    //_searchController.dispose();
     super.dispose();
   }
 
@@ -181,7 +181,7 @@ class _UniversalFiltersAndActionsState<T extends Enum>
           const SizedBox(width: AppSizes.spacing16),
 
           // Action buttons
-          _buildActionButtons(),
+          _buildActionButtons(context),
         ],
       ),
     );
@@ -299,7 +299,7 @@ class _UniversalFiltersAndActionsState<T extends Enum>
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(BuildContext context) {
     return Row(
       children: [
         // Custom action buttons

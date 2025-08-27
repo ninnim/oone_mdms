@@ -640,7 +640,13 @@ class _CreateEditDeviceGroupDialogState
               padding: ResponsiveHelper.getPadding(context),
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: context.borderColor)),
+                color: context.surfaceColor,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSizes.radiusMedium),
+                  bottomRight: Radius.circular(AppSizes.radiusMedium),
+                ),
               ),
+
               child: ResponsiveHelper.shouldUseCompactUI(context)
                   ? _buildMobileFooter()
                   : _buildDesktopFooter(),
@@ -653,6 +659,7 @@ class _CreateEditDeviceGroupDialogState
 
   Widget _buildBody() {
     return Container(
+      color: context.backgroundColor,
       padding: ResponsiveHelper.getPadding(context),
       child: Form(
         key: _formKey,

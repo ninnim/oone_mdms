@@ -5,7 +5,6 @@ import '../../widgets/devices/device_kanban_view.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../../core/models/device.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/utils/responsive_helper.dart';
@@ -159,9 +158,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
     // Auto-switch to kanban view on mobile
     if (isMobile && !_isKanbanView) {
       // Save previous view mode before switching to mobile kanban
-      if (_previousViewModeBeforeMobile == null) {
-        _previousViewModeBeforeMobile = _currentViewMode;
-      }
+      _previousViewModeBeforeMobile ??= _currentViewMode;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
@@ -217,7 +214,6 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
       _isLoading = true;
       _errorMessage = '';
     });
-
     try {
       final search = _searchController.text.isEmpty
           ? '%%'
@@ -347,15 +343,15 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
       margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
       padding: const EdgeInsets.all(AppSizes.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
+        color: context.errorColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.error),
+        border: Border.all(color: context.errorColor),
       ),
       child: Row(
         children: [
           Icon(
             Icons.error_outline,
-            color: AppColors.error,
+            color: context.errorColor,
             size: AppSizes.iconMedium,
           ),
           const SizedBox(width: AppSizes.spacing12),
@@ -363,14 +359,14 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
             child: Text(
               _errorMessage,
               style: TextStyle(
-                color: AppColors.error,
+                color: context.errorColor,
                 fontSize: AppSizes.fontSizeMedium,
               ),
             ),
           ),
           IconButton(
             onPressed: _loadDevices,
-            icon: const Icon(Icons.refresh, color: AppColors.error),
+            icon: Icon(Icons.refresh, color: context.errorColor),
             tooltip: 'Retry',
           ),
         ],
@@ -509,7 +505,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                     children: [
                       Icon(
                         Icons.devices,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                         size: AppSizes.iconSmall,
                       ),
                       SizedBox(
@@ -623,7 +619,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
             const SizedBox(width: AppSizes.spacing8),
             Padding(
               padding: const EdgeInsets.only(bottom: 4.0),
-              child: _buildMobileActionsButton(),
+              child: _buildMobileActionsButton(context),
             ),
           ],
         ),
@@ -644,16 +640,20 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
     );
   }
 
-  Widget _buildMobileActionsButton() {
+  Widget _buildMobileActionsButton(BuildContext context) {
     return Container(
       height: 36,
       width: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primaryColor,
         borderRadius: BorderRadius.circular(AppSizes.spacing8),
       ),
       child: PopupMenuButton<String>(
-        icon: Icon(Icons.more_vert, color: context.surfaceColor, size: 20),
+        icon: Icon(
+          Icons.more_vert,
+          color: Colors.white,
+          size: 20,
+        ),
         onSelected: (value) {
           switch (value) {
             case 'add':
@@ -702,7 +702,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                   Icons.table_chart,
                   size: 18,
                   color: _currentViewMode == DeviceDisplayMode.table
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -710,7 +710,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                   'Table View',
                   style: TextStyle(
                     color: _currentViewMode == DeviceDisplayMode.table
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -725,7 +725,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                   Icons.view_kanban,
                   size: 18,
                   color: _currentViewMode == DeviceDisplayMode.kanban
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -733,7 +733,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                   'Kanban View',
                   style: TextStyle(
                     color: _currentViewMode == DeviceDisplayMode.kanban
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -748,7 +748,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                   Icons.map,
                   size: 18,
                   color: _currentViewMode == DeviceDisplayMode.map
-                      ? AppColors.primary
+                      ? context.primaryColor
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -756,7 +756,7 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
                   'Map View',
                   style: TextStyle(
                     color: _currentViewMode == DeviceDisplayMode.map
-                        ? AppColors.primary
+                        ? context.primaryColor
                         : null,
                   ),
                 ),
@@ -1189,8 +1189,8 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
     if (_isLoading && _devices.isEmpty) {
       return AppLottieStateWidget.loading(
         title: 'Loading Devices',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
         message: 'Please wait while we fetch your devices...',
         lottieSize: 80,
       );
@@ -1207,8 +1207,8 @@ class _DevicesScreenState extends State<DevicesScreen> with ResponsiveMixin {
         title: 'No Devices Found',
         message: '',
         buttonText: 'Add Device',
-        titleColor: AppColors.primary,
-        messageColor: AppColors.secondary,
+        titleColor: context.primaryColor,
+        messageColor: context.secondaryColor,
         //onButtonPressed: _showAddDeviceModal,
       );
     }

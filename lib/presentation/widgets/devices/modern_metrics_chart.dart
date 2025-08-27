@@ -357,7 +357,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   label: Text('Refresh'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,

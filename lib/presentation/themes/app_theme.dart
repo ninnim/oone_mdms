@@ -3,37 +3,53 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
+  // Default themes using the original color scheme
+  static ThemeData get lightTheme => _buildLightTheme(AppColors.primary);
+  static ThemeData get darkTheme => _buildDarkTheme(AppColors.primary);
+
+  // Dynamic theme generators that accept a primary color
+  static ThemeData lightThemeWithColor(Color primaryColor) =>
+      _buildLightTheme(primaryColor);
+  static ThemeData darkThemeWithColor(Color primaryColor) =>
+      _buildDarkTheme(primaryColor);
+
+  static ThemeData _buildLightTheme(Color primaryColor) {
+    // Calculate appropriate text color for primary color
+    final primaryTextColor = _getContrastingTextColor(primaryColor);
+
+    // Only override primary colors, keep all other colors from AppColors
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: primaryColor,
+          brightness: Brightness.light,
+        ).copyWith(
+          // Preserve your original background and surface colors
+          surface: AppColors.lightSurface,
+          surfaceContainerHighest: AppColors.lightSurfaceVariant,
+          outline: AppColors.lightBorder,
+          // Only use the generated primary color, keep everything else
+          primary: primaryColor,
+          onPrimary: primaryTextColor, // Use calculated contrasting color
+        );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       fontFamily: 'SF Pro Display',
 
-      // Color Scheme
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        surface: AppColors.lightSurface,
-        surfaceContainerHighest: AppColors.lightSurfaceVariant,
-        error: AppColors.error,
-        onPrimary: AppColors.onPrimary,
-        onSecondary: AppColors.onSecondary,
-        onSurface: AppColors.lightTextPrimary,
-        onError: AppColors.onError,
-        outline: AppColors.lightBorder,
-        outlineVariant: AppColors.lightBorder,
-      ),
+      // Color Scheme - with preserved original colors
+      colorScheme: colorScheme,
 
       // Scaffold
       scaffoldBackgroundColor: AppColors.lightBackground,
 
       // App Bar Theme
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.lightSurface,
         foregroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
+        titleTextStyle: const TextStyle(
           color: AppColors.lightTextPrimary,
           fontSize: AppSizes.fontSizeXLarge,
           fontWeight: FontWeight.w600,
@@ -64,7 +80,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -87,8 +103,9 @@ class AppTheme {
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
+          backgroundColor: primaryColor,
+          foregroundColor:
+              colorScheme.onPrimary, // Use calculated color from scheme
           elevation: 0,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.spacing24,
@@ -107,7 +124,7 @@ class AppTheme {
       // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: primaryColor,
           side: const BorderSide(color: AppColors.lightBorder),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.spacing24,
@@ -236,26 +253,32 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme {
+  static ThemeData _buildDarkTheme(Color primaryColor) {
+    // Calculate appropriate text color for primary color
+    final primaryTextColor = _getContrastingTextColor(primaryColor);
+
+    // Only override primary colors, keep all other colors from AppColors
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: primaryColor,
+          brightness: Brightness.dark,
+        ).copyWith(
+          // Preserve your original background and surface colors
+          surface: AppColors.darkSurface,
+          surfaceContainerHighest: AppColors.darkSurfaceVariant,
+          outline: AppColors.darkBorder,
+          // Only use the generated primary color, keep everything else
+          primary: primaryColor,
+          onPrimary: primaryTextColor, // Use calculated contrasting color
+        );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       fontFamily: 'SF Pro Display',
 
-      // Color Scheme
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        surface: AppColors.darkSurface,
-        surfaceContainerHighest: AppColors.darkSurfaceVariant,
-        error: AppColors.error,
-        onPrimary: AppColors.onPrimary,
-        onSecondary: AppColors.onSecondary,
-        onSurface: AppColors.darkTextPrimary,
-        onError: AppColors.onError,
-        outline: AppColors.darkBorder,
-        outlineVariant: AppColors.darkBorder,
-      ),
+      // Color Scheme - with preserved original colors
+      colorScheme: colorScheme,
 
       // Scaffold
       scaffoldBackgroundColor: AppColors.darkBackground,
@@ -297,7 +320,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -320,8 +343,9 @@ class AppTheme {
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
+          backgroundColor: primaryColor,
+          foregroundColor:
+              colorScheme.onPrimary, // Use calculated color from scheme
           elevation: 0,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.spacing24,
@@ -340,7 +364,7 @@ class AppTheme {
       // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: primaryColor,
           side: const BorderSide(color: AppColors.darkBorder),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.spacing24,
@@ -467,6 +491,17 @@ class AppTheme {
         ),
       ),
     );
+  }
+
+  // Helper method to calculate contrasting text color based on background brightness
+  static Color _getContrastingTextColor(Color backgroundColor) {
+    // Calculate the luminance of the background color
+    final luminance = backgroundColor.computeLuminance();
+
+    // If the background is dark (low luminance), use white text
+    // If the background is light (high luminance), use black text
+    // The threshold 0.5 is commonly used for accessibility
+    return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }
 

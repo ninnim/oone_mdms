@@ -769,6 +769,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
       padding: ResponsiveHelper.getPadding(context),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: context.borderColor)),
+        color: context.surfaceColor,
       ),
       child: ResponsiveHelper.shouldUseCompactUI(context)
           ? _buildMobileFooter()
@@ -860,6 +861,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
   Widget _buildBody() {
     if (_isLoading && _availableTimeBands.isEmpty) {
       return Container(
+        color: context.backgroundColor,
         constraints: BoxConstraints(
           minHeight: ResponsiveHelper.shouldUseCompactUI(context) ? 300 : 400,
         ),
@@ -882,6 +884,7 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     }
 
     return Container(
+      color: context.backgroundColor,
       padding: ResponsiveHelper.getPadding(context),
       constraints: BoxConstraints(minHeight: context.isMobile ? 300 : 400),
       child: Form(
@@ -1953,6 +1956,7 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
     );
 
     return Dialog(
+      backgroundColor: context.backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
@@ -1972,9 +1976,9 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
 
             // Search and Filter Section
             Container(
-              padding: const EdgeInsets.all(AppSizes.spacing16),
+              padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
-                color: context.surfaceColor,
+                color: context.backgroundColor,
                 border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Column(
@@ -2062,15 +2066,9 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
               child: Container(
                 margin: const EdgeInsets.all(AppSizes.spacing16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.backgroundColor,
                   borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: [AppSizes.shadowSmall],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
@@ -2121,7 +2119,10 @@ class _TimeBandSelectionDialogState extends State<_TimeBandSelectionDialog> {
                 children: [
                   // Pagination - Always visible for consistency
                   Container(
-                    margin: const EdgeInsets.only(bottom: AppSizes.spacing16),
+                    color: context.surfaceColor,
+                    margin: EdgeInsets.only(
+                      bottom: ResponsiveHelper.getSpacing(context),
+                    ),
                     child: ResultsPagination(
                       currentPage: _currentPage,
                       totalPages: _totalPages,

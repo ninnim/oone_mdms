@@ -28,9 +28,7 @@ class SiteSummaryCard extends StatelessWidget {
         color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         border: Border.all(color: context.borderColor),
-        boxShadow: [
-        AppSizes.shadowSmall,
-        ],
+        boxShadow: [AppSizes.shadowSmall],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +198,6 @@ class SiteSummaryCard extends StatelessWidget {
     Color color,
     BuildContext context,
   ) {
-
     return Container(
       padding: const EdgeInsets.all(AppSizes.spacing6),
       decoration: BoxDecoration(

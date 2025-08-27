@@ -511,6 +511,7 @@ class _BluNestDataTableState<T> extends State<BluNestDataTable<T>> {
           }
         }
       },
+
       itemBuilder: (context) => [
         PopupMenuItem<String>(
           value: 'current_page',
