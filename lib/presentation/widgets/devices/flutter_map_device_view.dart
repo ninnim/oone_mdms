@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../core/constants/app_colors.dart';
+// import '../../../core/constants/app_colors.dart';
 import '../../themes/app_theme.dart';
 import '../../../core/models/device.dart';
 import '../../../core/services/device_service.dart';
@@ -216,13 +216,13 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
   Color _getDeviceStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'commissioned':
-        return AppColors.success;
+        return context.successColor;
       case 'decommissioned':
-        return AppColors.error;
+        return context.errorColor;
       case 'none':
-        return AppColors.warning;
+        return context.warningColor;
       default:
-        return AppColors.primary;
+        return context.primaryColor;
     }
   }
 
@@ -339,7 +339,7 @@ class _FlutterMapDeviceViewState extends State<FlutterMapDeviceView> {
 
   Widget _buildClusterMarker(int count) {
     final isLarge = count > 10;
-    final color = isLarge ? AppColors.error : AppColors.primary;
+    final color = isLarge ? context.errorColor : context.primaryColor;
 
     return Container(
       width: 40,

@@ -79,13 +79,10 @@ class AppRouter {
         GoRoute(
           path: '/auth',
           name: 'auth',
-          builder: (context, state) =>
-              const
-              // AppLottieStateWidget.loading(
-              //   title: 'Loading Authentication',
-              //   message: 'Please wait while we authenticate you.',
-              // ),
-              SimpleAuthRedirectScreen(),
+          pageBuilder: (context, state) => NoTransitionPage<void>(
+            key: state.pageKey,
+            child: const SimpleAuthRedirectScreen(),
+          ),
         ),
 
         // Protected routes (inside shell)
@@ -98,39 +95,51 @@ class AppRouter {
             GoRoute(
               path: '/dashboard',
               name: 'dashboard',
-              builder: (context, state) => const DashboardRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const DashboardRouteWrapper(),
+              ),
             ),
 
             // Device Routes
             GoRoute(
               path: '/devices',
               name: 'devices',
-              builder: (context, state) => const DevicesRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const DevicesRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/devices/details/:deviceId',
               name: 'device-details',
-              builder: (context, state) {
+              pageBuilder: (context, state) {
                 final deviceId = state.pathParameters['deviceId']!;
                 final deviceData = state.extra as Device?;
                 final backRoute =
                     state.uri.queryParameters['back'] ?? '/devices';
-                return DeviceDetailsRouteWrapper(
-                  deviceId: deviceId,
-                  device: deviceData,
-                  backRoute: backRoute,
+                return NoTransitionPage<void>(
+                  key: state.pageKey,
+                  child: DeviceDetailsRouteWrapper(
+                    deviceId: deviceId,
+                    device: deviceData,
+                    backRoute: backRoute,
+                  ),
                 );
               },
             ),
             GoRoute(
               path: '/devices/details/:deviceId/billing/:billingId',
               name: 'device-billing-readings',
-              builder: (context, state) {
+              pageBuilder: (context, state) {
                 final deviceId = state.pathParameters['deviceId']!;
                 final billingId = state.pathParameters['billingId']!;
-                return DeviceBillingReadingsRouteWrapper(
-                  deviceId: deviceId,
-                  billingId: billingId,
+                return NoTransitionPage<void>(
+                  key: state.pageKey,
+                  child: DeviceBillingReadingsRouteWrapper(
+                    deviceId: deviceId,
+                    billingId: billingId,
+                  ),
                 );
               },
             ),
@@ -139,26 +148,35 @@ class AppRouter {
             GoRoute(
               path: '/device-groups',
               name: 'device-groups',
-              builder: (context, state) => const DeviceGroupsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const DeviceGroupsRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/device-groups/details/:deviceGroupId',
               name: 'device-group-details',
-              builder: (context, state) {
+              pageBuilder: (context, state) {
                 final deviceGroupIdStr = state.pathParameters['deviceGroupId']!;
                 final deviceGroupId = int.tryParse(deviceGroupIdStr);
 
                 if (deviceGroupId == null) {
                   // Invalid device group ID, redirect to device groups list
-                  return const Scaffold(
-                    body: Center(child: Text('Invalid device group ID')),
+                  return NoTransitionPage<void>(
+                    key: state.pageKey,
+                    child: const Scaffold(
+                      body: Center(child: Text('Invalid device group ID')),
+                    ),
                   );
                 }
 
-                return DeviceGroupDetailsRouteWrapper(
-                  deviceGroupId: deviceGroupId,
-                  deviceGroup:
-                      null, // Always fetch fresh data instead of relying on state.extra
+                return NoTransitionPage<void>(
+                  key: state.pageKey,
+                  child: DeviceGroupDetailsRouteWrapper(
+                    deviceGroupId: deviceGroupId,
+                    deviceGroup:
+                        null, // Always fetch fresh data instead of relying on state.extra
+                  ),
                 );
               },
             ),
@@ -167,20 +185,29 @@ class AppRouter {
             GoRoute(
               path: '/schedules',
               name: 'schedules',
-              builder: (context, state) => const ScheduleRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const ScheduleRouteWrapper(),
+              ),
             ),
 
             GoRoute(
               path: '/time-of-use',
               name: 'time-of-use',
-              builder: (context, state) => const TimeOfUseRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const TimeOfUseRouteWrapper(),
+              ),
             ),
 
             // Tickets Routes
             GoRoute(
               path: '/tickets',
               name: 'tickets',
-              builder: (context, state) => const TicketsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const TicketsRouteWrapper(),
+              ),
             ),
 
             // // Analytics Routes
@@ -194,17 +221,26 @@ class AppRouter {
             GoRoute(
               path: '/settings',
               name: 'settings',
-              builder: (context, state) => const SettingsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SettingsRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/appearance',
               name: 'appearance',
-              builder: (context, state) => const AppearanceRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const AppearanceRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/sites',
               name: 'sites',
-              builder: (context, state) => const SitesRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SitesRouteWrapper(),
+              ),
             ),
             // GoRoute(
             //   path: '/sites/details/:siteId',
@@ -229,39 +265,60 @@ class AppRouter {
             GoRoute(
               path: '/my-profile',
               name: 'my-profile',
-              builder: (context, state) => const SettingsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SettingsRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/security',
               name: 'security',
-              builder: (context, state) => const SettingsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SettingsRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/integrations',
               name: 'integrations',
-              builder: (context, state) => const SettingsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SettingsRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/billing',
               name: 'billing',
-              builder: (context, state) => const SettingsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SettingsRouteWrapper(),
+              ),
             ),
 
             // TOU Management Sub-routes
             GoRoute(
               path: '/time-bands',
               name: 'time-bands',
-              builder: (context, state) => const TimeBandRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const TimeBandRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/special-days',
               name: 'special-days',
-              builder: (context, state) => const SpecialDaysRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SpecialDaysRouteWrapper(),
+              ),
             ),
             GoRoute(
               path: '/seasons',
               name: 'seasons',
-              builder: (context, state) => const SeasonsRouteWrapper(),
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const SeasonsRouteWrapper(),
+              ),
             ),
 
             // Analytics Sub-routes
