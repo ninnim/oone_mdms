@@ -45,34 +45,54 @@ class KeycloakService extends ChangeNotifier {
   oauth2.Client? _oauthClient;
   String? _accessToken;
 
+  // Callback for tenant service initialization
+  Function()? _onTokenRefreshed;
+
   // Public getters
   String? get selectRoles => getCurrentRole();
   bool get isAuthenticated => _oauthClient != null && _accessToken != null;
   Map<String, dynamic>? get currentUser => _currentUser;
   String? get accessToken {
-    print(
-      'KeycloakService: accessToken getter called - token available: ${_accessToken != null}',
-    );
-    if (_accessToken != null) {
-      print(
-        'KeycloakService: Returning token: ${_accessToken!.substring(0, 20)}...',
-      );
-    }
+    if (_accessToken != null) {}
     return _accessToken;
   }
 
+  /// Set callback to be called when token is refreshed successfully
+  void setTokenRefreshCallback(Function()? callback) {
+    _onTokenRefreshed = callback;
+  }
+
+  /// Call CurrentUser API to get tenant information
+  Future<void> callCurrentUserAPI() async {
+    if (_accessToken == null) return;
+
+    try {
+      final dio = Dio();
+      final response = await dio.get(
+        'https://mtc-stg.oone.bz/v1/CurrentUser?ModuleCode=MDMS',
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          print('KeycloakService: CurrentUser API call successful');
+        }
+        // Trigger tenant service refresh if callback is set
+        _onTokenRefreshed?.call();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('KeycloakService: CurrentUser API call failed: $e');
+      }
+    }
+  }
+
   Future<void> initialize() async {
-    print('KeycloakService: Initializing...');
     await _loadStoredTokens();
 
     if (isAuthenticated) {
-      print('KeycloakService: User already authenticated');
       await _loadUserInfo();
-    } else {
-      print(
-        'KeycloakService: User not authenticated - stored tokens not found or expired',
-      );
-    }
+    } else {}
     notifyListeners();
   }
 
@@ -96,10 +116,6 @@ class KeycloakService extends ChangeNotifier {
           '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
       final redirectUri = '$baseUrl/auth/callback';
 
-      print('KeycloakService: Current URL: $currentUrl');
-      print('KeycloakService: Base URL: $baseUrl');
-      print('KeycloakService: Redirect URI: $redirectUri');
-
       // Create OAuth2 authorization URL
       final authorizationUrl = Uri.parse(_authorizationEndpoint).replace(
         queryParameters: {
@@ -110,9 +126,6 @@ class KeycloakService extends ChangeNotifier {
         },
       );
 
-      print('KeycloakService: Authorization URL: $authorizationUrl');
-      print('KeycloakService: Attempting to redirect to Keycloak...');
-
       // Store the redirect URI for callback handling
       await _secureStorage.write(key: 'redirect_uri', value: redirectUri);
 
@@ -122,34 +135,45 @@ class KeycloakService extends ChangeNotifier {
         js.context.callMethod('eval', [
           'window.location.href = "${authorizationUrl.toString()}";',
         ]);
-        print('KeycloakService: Redirect initiated successfully');
       } catch (e) {
-        print(
-          'KeycloakService: Failed to redirect using eval, trying direct assignment: $e',
-        );
+        if (kDebugMode) {
+          print(
+            'KeycloakService: Failed to redirect using eval, trying direct assignment: $e',
+          );
+        }
         // Fallback method
         js.context['location']['href'] = authorizationUrl.toString();
       }
     } catch (e) {
-      print('KeycloakService: Error in _webLogin: $e');
+      if (kDebugMode) {
+        print('KeycloakService: Error in _webLogin: $e');
+      }
       rethrow;
     }
   }
 
   Future<bool> handleCallback(String code) async {
     try {
-      print(
-        'KeycloakService: Starting handleCallback with code: ${code.substring(0, 10)}...',
-      );
+      if (kDebugMode) {
+        print(
+          'KeycloakService: Starting handleCallback with code: ${code.substring(0, 10)}...',
+        );
+      }
       final redirectUri = await _secureStorage.read(key: 'redirect_uri');
       if (redirectUri == null) {
-        print('KeycloakService: Redirect URI not found');
+        if (kDebugMode) {
+          print('KeycloakService: Redirect URI not found');
+        }
         throw Exception('Redirect URI not found');
       }
-      print('KeycloakService: Using redirect URI: $redirectUri');
+      if (kDebugMode) {
+        print('KeycloakService: Using redirect URI: $redirectUri');
+      }
 
       // Exchange authorization code for tokens
-      print('KeycloakService: Exchanging code for tokens...');
+      if (kDebugMode) {
+        print('KeycloakService: Exchanging code for tokens...');
+      }
       final response = await Dio().post(
         _tokenEndpoint,
         data: {
@@ -164,19 +188,13 @@ class KeycloakService extends ChangeNotifier {
         ),
       );
 
-      print(
-        'KeycloakService: Token exchange response status: ${response.statusCode}',
-      );
       if (response.statusCode == 200) {
         final tokenData = response.data;
         _accessToken = tokenData['access_token'];
         final refreshToken = tokenData['refresh_token'];
-        print('KeycloakService: Tokens received successfully');
 
         // Store tokens
         await _storeTokens(_accessToken!, refreshToken);
-        print('KeycloakService: Tokens stored');
-
         // Clean the URL to remove authentication parameters early
         cleanUrlAfterAuth();
 
@@ -192,40 +210,25 @@ class KeycloakService extends ChangeNotifier {
           identifier: _clientId,
           secret: _clientSecret,
         );
-        //print('KeycloakService: OAuth client created');
 
         // Load user info
-        // print('KeycloakService: Loading user info...');
         await _loadUserInfo();
-        //  print('KeycloakService: User info loaded');
 
-        // Verify authentication state
-        //  print('KeycloakService: Final authentication state: $isAuthenticated');
+        // Call CurrentUser API to get tenant information
+        await callCurrentUserAPI();
 
-        // Notify listeners that authentication state has changed
         // print('KeycloakService: Notifying listeners...');
         notifyListeners();
-
-        // print('KeycloakService: handleCallback completed successfully');
-
         return true;
       }
-
-      // print(
-      //   'KeycloakService: Token exchange failed with status: ${response.statusCode}',
-      // );
       return false;
     } catch (e) {
-      //  print('KeycloakService: Callback handling error: $e');
       return false;
     }
   }
 
   Future<void> logout() async {
     try {
-      //print('KeycloakService: Starting logout process...');
-
-      // If we have a refresh token, revoke it at Keycloak
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
       if (refreshToken != null) {
         try {
@@ -242,7 +245,6 @@ class KeycloakService extends ChangeNotifier {
               headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             ),
           );
-          //  print('KeycloakService: Token revoked successfully');
         } catch (e) {
           print('KeycloakService: Error revoking token: $e');
           // Continue with logout even if revocation fails
@@ -312,13 +314,12 @@ class KeycloakService extends ChangeNotifier {
           secret: _clientSecret,
         );
 
-       // print('KeycloakService: Checking if access token is expired...');
+        // print('KeycloakService: Checking if access token is expired...');
         // Check if access token is expired and refresh if needed
         if (_isTokenExpired(_accessToken!)) {
-        ///  print('KeycloakService: Token expired, refreshing...');
+          ///  print('KeycloakService: Token expired, refreshing...');
           await _refreshTokens();
-        }
-         else {
+        } else {
           print('KeycloakService: Token is still valid');
         }
       } else {
@@ -415,6 +416,9 @@ class KeycloakService extends ChangeNotifier {
           identifier: _clientId,
           secret: _clientSecret,
         );
+
+        // Call CurrentUser API to get updated tenant information
+        await callCurrentUserAPI();
 
         notifyListeners();
       } else {
@@ -582,10 +586,6 @@ class KeycloakService extends ChangeNotifier {
       final decodedToken = JwtDecoder.decode(_accessToken!);
       final realmAccess = decodedToken['realm_access'] as Map<String, dynamic>?;
       final roles = realmAccess?['roles'] as List<dynamic>?;
-      final hasuraClaims = decodedToken['https://hasura.io/jwt/claims'];
-      final hasuraRoles =
-          hasuraClaims?['x-hasura-allowed-roles'] as List<dynamic>?;
-      final selectRoles = hasuraClaims.isNotEmpty ? hasuraRoles?.last : null;
       return roles?.map((role) => role.toString()).toList() ?? [];
     } catch (e) {
       print('KeycloakService: Error getting user roles: $e');

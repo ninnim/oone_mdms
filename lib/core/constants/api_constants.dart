@@ -3,8 +3,8 @@ class ApiConstants {
   static const String baseUrl = 'https://mdms.oone.bz';
 
   // Headers
-  static const String tokenHeader =
-      '4)-g\$xR&M0siAov3Fl4O'; // x-hasura-admin-secret
+  // static const String tokenHeader =
+  //     '4)-g\$xR&M0siAov3Fl4O'; // x-hasura-admin-secret
   static const String contentType = 'application/json';
   static const String authorization = 'Bearer ';
   static const String accept = 'application/json';

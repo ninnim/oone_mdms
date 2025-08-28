@@ -20,7 +20,7 @@ class SettingsScreen extends StatelessWidget {
           children: [
             Text('Appearance', style: AppTextStyles.subtitle(context)),
             const SizedBox(height: AppSizes.spacing16),
-            const ThemeSwitch(showLabel: true),
+         //   const ThemeSwitch(showLabel: true),
             const SizedBox(height: AppSizes.spacing32),
             AppCard(
               child: Column(

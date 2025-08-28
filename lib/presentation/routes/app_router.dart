@@ -6,8 +6,9 @@ import 'package:mdms_clone/presentation/screens/tou_management/seasons_screen.da
 import 'package:mdms_clone/presentation/screens/time_bands/time_bands_screen.dart';
 import 'package:mdms_clone/presentation/screens/time_of_use/time_of_use_screen.dart';
 import 'package:mdms_clone/presentation/screens/settings/appearance_screen.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_confirm_dialog.dart';
 import 'package:mdms_clone/presentation/widgets/common/app_lottie_state_widget.dart';
-import 'package:mdms_clone/presentation/widgets/common/theme_switch.dart';
+import 'package:mdms_clone/presentation/widgets/common/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'dart:html' as html;
 import 'dart:async';
@@ -24,6 +25,9 @@ import '../../core/models/device_group.dart';
 import '../../core/services/device_service.dart';
 import '../../core/services/device_group_service.dart';
 import '../../core/services/keycloak_service.dart';
+import '../../core/services/tenant_service.dart';
+import '../widgets/common/profile_dropdown.dart';
+import '../widgets/common/tenant_dropdown_button.dart';
 import '../screens/device_groups/device_groups_screen.dart';
 import '../screens/device_groups/device_group_details_screen.dart';
 import '../screens/sites/sites_screen.dart';
@@ -396,7 +400,13 @@ class DashboardRouteWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // We'll update this when we need to implement it
-    return DashboardScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return DashboardScreen(
+          key: ValueKey('dashboard_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
     // return const Scaffold(
     //   body: Center(child: Text('Dashboard Route - To be implemented')),
     // );
@@ -424,27 +434,36 @@ class DevicesScreenWithRouter extends StatefulWidget {
 class _DevicesScreenWithRouterState extends State<DevicesScreenWithRouter> {
   @override
   Widget build(BuildContext context) {
-    return DevicesScreen(
-      onBreadcrumbUpdate: (breadcrumbs) {
-        // Breadcrumbs are now handled by the router system
-      },
-      onBreadcrumbNavigate: (index) {
-        // Navigation handled by breadcrumb widget directly
-      },
-      onSetBreadcrumbHandler: (handler) {
-        // Not needed with router system
-      },
-      onDeepLinkUpdate: (deviceId, view, {billingId}) {
-        // Navigate using GoRouter when device context changes
-        if (view == 'details' && deviceId != null) {
-          context.go('/devices/details/$deviceId');
-        } else if (view == 'billing' && deviceId != null && billingId != null) {
-          context.go('/devices/details/$deviceId/billing/$billingId');
-        }
-      },
-      onDeepLinkClear: () {
-        // Navigate back to devices list
-        context.go('/devices');
+    // Listen to TenantService to rebuild when tenant changes
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        // Use tenant switch timestamp as a key to force rebuild
+        return DevicesScreen(
+          key: ValueKey('devices_${tenantService.tenantSwitchTimestamp}'),
+          onBreadcrumbUpdate: (breadcrumbs) {
+            // Breadcrumbs are now handled by the router system
+          },
+          onBreadcrumbNavigate: (index) {
+            // Navigation handled by breadcrumb widget directly
+          },
+          onSetBreadcrumbHandler: (handler) {
+            // Not needed with router system
+          },
+          onDeepLinkUpdate: (deviceId, view, {billingId}) {
+            // Navigate using GoRouter when device context changes
+            if (view == 'details' && deviceId != null) {
+              context.go('/devices/details/$deviceId');
+            } else if (view == 'billing' &&
+                deviceId != null &&
+                billingId != null) {
+              context.go('/devices/details/$deviceId/billing/$billingId');
+            }
+          },
+          onDeepLinkClear: () {
+            // Navigate back to devices list
+            context.go('/devices');
+          },
+        );
       },
     );
   }
@@ -471,6 +490,7 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
   Device? _device;
   bool _isLoading = true;
   String? _error;
+  int? _lastTenantSwitchTimestamp;
 
   @override
   void initState() {
@@ -481,6 +501,18 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
     } else {
       _loadDevice();
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tenantService = Provider.of<TenantService>(context, listen: false);
+    if (_lastTenantSwitchTimestamp != null &&
+        _lastTenantSwitchTimestamp != tenantService.tenantSwitchTimestamp) {
+      // Tenant has changed, reload data
+      _loadDevice();
+    }
+    _lastTenantSwitchTimestamp = tenantService.tenantSwitchTimestamp;
   }
 
   Future<void> _loadDevice() async {
@@ -509,65 +541,82 @@ class _DeviceDetailsRouteWrapperState extends State<DeviceDetailsRouteWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          // child: Container(),
-          child: AppLottieStateWidget.loading(
-            // title: 'Loading Device Details',
-            // message: 'Please wait while we load the device details.',
-            lottieSize: 80,
-          ),
-          // Column(
-          //   mainAxisAlignment: MainAxisAlignment.center,
-          //   children: [
-          //     AppLottieStateWidget.loading(
-          //       title: 'Loading Device Details',
-          //       message: 'Please wait while we load the device details.',
-          //       lottieSize: 80,
-          //     ),
-          //     // SizedBox(height: 16),
-          //     // Text('Loading device details...'),
-          //   ],
-          // ),
-        ),
-      );
-    }
-
-    if (_error != null || _device == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: AppSizes.iconLarge,
-                color: context.errorColor,
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        if (_isLoading) {
+          return Scaffold(
+            key: ValueKey(
+              'device_details_loading_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: Center(
+              // child: Container(),
+              child: AppLottieStateWidget.loading(
+                // title: 'Loading Device Details',
+                // message: 'Please wait while we load the device details.',
+                lottieSize: 80,
               ),
-              SizedBox(height: 16),
-              Text(_error ?? 'Device not found'),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go(widget.backRoute),
-                child: Text('Go Back'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+              // Column(
+              //   mainAxisAlignment: MainAxisAlignment.center,
+              //   children: [
+              //     AppLottieStateWidget.loading(
+              //       title: 'Loading Device Details',
+              //       message: 'Please wait while we load the device details.',
+              //       lottieSize: 80,
+              //     ),
+              //     // SizedBox(height: 16),
+              //     // Text('Loading device details...'),
+              //   ],
+              // ),
+            ),
+          );
+        }
 
-    // Wrap the Device360DetailsScreen in a Scaffold to prevent layout overflow
-    return Scaffold(
-      body: Device360DetailsScreen(
-        device: _device!,
-        onBack: () => context.go(widget.backRoute),
-        onNavigateToBillingReadings: (device, billingRecord) {
-          // Use the updated AppRouter method instead of the old logic
-          AppRouter.goToDeviceBillingReadings(context, device, billingRecord);
-        },
-      ),
+        if (_error != null || _device == null) {
+          return Scaffold(
+            key: ValueKey(
+              'device_details_error_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: AppSizes.iconLarge,
+                    color: context.errorColor,
+                  ),
+                  SizedBox(height: 16),
+                  Text(_error ?? 'Device not found'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.go(widget.backRoute),
+                    child: Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Wrap the Device360DetailsScreen in a Scaffold to prevent layout overflow
+        return Scaffold(
+          key: ValueKey(
+            'device_details_${widget.deviceId}_${tenantService.tenantSwitchTimestamp}',
+          ),
+          body: Device360DetailsScreen(
+            device: _device!,
+            onBack: () => context.go(widget.backRoute),
+            onNavigateToBillingReadings: (device, billingRecord) {
+              // Use the updated AppRouter method instead of the old logic
+              AppRouter.goToDeviceBillingReadings(
+                context,
+                device,
+                billingRecord,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -593,11 +642,24 @@ class _DeviceBillingReadingsRouteWrapperState
   Map<String, dynamic>? _billingRecord;
   bool _isLoading = true;
   String? _error;
+  int? _lastTenantSwitchTimestamp;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tenantService = Provider.of<TenantService>(context, listen: false);
+    if (_lastTenantSwitchTimestamp != null &&
+        _lastTenantSwitchTimestamp != tenantService.tenantSwitchTimestamp) {
+      // Tenant has changed, reload data
+      _loadData();
+    }
+    _lastTenantSwitchTimestamp = tenantService.tenantSwitchTimestamp;
   }
 
   Future<void> _loadData() async {
@@ -692,65 +754,83 @@ class _DeviceBillingReadingsRouteWrapperState
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          child: Container(),
-          // child: Column(
-          //   mainAxisAlignment: MainAxisAlignment.center,
-          //   children: [
-          //     AppLottieStateWidget.loading(
-          //       title: 'Loading Billing Readings',
-          //       message: 'Please wait while we load the billing readings.',
-          //       lottieSize: 80,
-          //     ),
-          //     // SizedBox(height: 16),
-          //     // Text('Loading billing readings...'),
-          //   ],
-          // ),
-        ),
-      );
-    }
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        if (_isLoading) {
+          return Scaffold(
+            key: ValueKey(
+              'billing_readings_loading_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: Center(
+              child: Container(),
+              // child: Column(
+              //   mainAxisAlignment: MainAxisAlignment.center,
+              //   children: [
+              //     AppLottieStateWidget.loading(
+              //       title: 'Loading Billing Readings',
+              //       message: 'Please wait while we load the billing readings.',
+              //       lottieSize: 80,
+              //     ),
+              //     // SizedBox(height: 16),
+              //     // Text('Loading billing readings...'),
+              //   ],
+              // ),
+            ),
+          );
+        }
 
-    if (_error != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: AppSizes.spacing64,
-                color: context.errorColor,
+        if (_error != null) {
+          return Scaffold(
+            key: ValueKey(
+              'billing_readings_error_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: AppSizes.spacing64,
+                    color: context.errorColor,
+                  ),
+                  SizedBox(height: 16),
+                  Text('Error: $_error'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () =>
+                        context.go('/devices/details/${widget.deviceId}'),
+                    child: Text('Back to Device Details'),
+                  ),
+                ],
               ),
-              SizedBox(height: 16),
-              Text('Error: $_error'),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () =>
-                    context.go('/devices/details/${widget.deviceId}'),
-                child: Text('Back to Device Details'),
-              ),
-            ],
+            ),
+          );
+        }
+
+        if (_device == null || _billingRecord == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.go('/devices/details/${widget.deviceId}');
+          });
+          return Scaffold(
+            key: ValueKey(
+              'billing_readings_redirect_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: SizedBox.shrink(),
+          );
+        }
+
+        // Wrap in Scaffold to prevent layout issues
+        return Scaffold(
+          key: ValueKey(
+            'billing_readings_${widget.deviceId}_${widget.billingId}_${tenantService.tenantSwitchTimestamp}',
           ),
-        ),
-      );
-    }
-
-    if (_device == null || _billingRecord == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/devices/details/${widget.deviceId}');
-      });
-      return const Scaffold(body: SizedBox.shrink());
-    }
-
-    // Wrap in Scaffold to prevent layout issues
-    return Scaffold(
-      body: DeviceBillingReadingsScreen(
-        device: _device!,
-        billingRecord: _billingRecord!,
-        onBack: () => context.go('/devices/details/${widget.deviceId}'),
-      ),
+          body: DeviceBillingReadingsScreen(
+            device: _device!,
+            billingRecord: _billingRecord!,
+            onBack: () => context.go('/devices/details/${widget.deviceId}'),
+          ),
+        );
+      },
     );
   }
 }
@@ -760,7 +840,13 @@ class DeviceGroupsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DeviceGroupsScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return DeviceGroupsScreen(
+          key: ValueKey('device_groups_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -769,7 +855,13 @@ class ScheduleRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScheduleScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return ScheduleScreen(
+          key: ValueKey('schedule_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -793,6 +885,7 @@ class _DeviceGroupDetailsRouteWrapperState
   DeviceGroup? _deviceGroup;
   bool _isLoading = true;
   String? _errorMessage;
+  int? _lastTenantSwitchTimestamp;
 
   @override
   void initState() {
@@ -804,6 +897,18 @@ class _DeviceGroupDetailsRouteWrapperState
     } else {
       _loadDeviceGroup();
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tenantService = Provider.of<TenantService>(context, listen: false);
+    if (_lastTenantSwitchTimestamp != null &&
+        _lastTenantSwitchTimestamp != tenantService.tenantSwitchTimestamp) {
+      // Tenant has changed, reload data
+      _loadDeviceGroup();
+    }
+    _lastTenantSwitchTimestamp = tenantService.tenantSwitchTimestamp;
   }
 
   Future<void> _loadDeviceGroup() async {
@@ -842,53 +947,71 @@ class _DeviceGroupDetailsRouteWrapperState
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
-      );
-    }
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        if (_isLoading) {
+          return Scaffold(
+            key: ValueKey(
+              'device_group_loading_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: Center(child: AppLottieStateWidget.loading(lottieSize: 80)),
+          );
+        }
 
-    if (_errorMessage != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error: $_errorMessage'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/device-groups'),
-                child: const Text('Back to Device Groups'),
+        if (_errorMessage != null) {
+          return Scaffold(
+            key: ValueKey(
+              'device_group_error_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: $_errorMessage'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.go('/device-groups'),
+                    child: const Text('Back to Device Groups'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
 
-    if (_deviceGroup == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.search_off, size: 64),
-              const SizedBox(height: 16),
-              const Text('Device Group not found'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/device-groups'),
-                child: const Text('Back to Device Groups'),
+        if (_deviceGroup == null) {
+          return Scaffold(
+            key: ValueKey(
+              'device_group_not_found_${tenantService.tenantSwitchTimestamp}',
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.search_off, size: 64),
+                  const SizedBox(height: 16),
+                  const Text('Device Group not found'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.go('/device-groups'),
+                    child: const Text('Back to Device Groups'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
 
-    return DeviceGroupDetailsScreen(deviceGroup: _deviceGroup!);
+        return DeviceGroupDetailsScreen(
+          key: ValueKey(
+            'device_group_details_${widget.deviceGroupId}_${tenantService.tenantSwitchTimestamp}',
+          ),
+          deviceGroup: _deviceGroup!,
+        );
+      },
+    );
   }
 }
 
@@ -1006,7 +1129,13 @@ class TimeOfUseRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const TimeOfUseScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return TimeOfUseScreen(
+          key: ValueKey('timeofuse_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -1015,7 +1144,13 @@ class TimeBandRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const TimeBandsScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return TimeBandsScreen(
+          key: ValueKey('timebands_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -1024,7 +1159,13 @@ class SpecialDaysRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SpecialDaysScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return SpecialDaysScreen(
+          key: ValueKey('specialdays_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -1033,7 +1174,13 @@ class SeasonsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SeasonsScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return SeasonsScreen(
+          key: ValueKey('seasons_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -1042,18 +1189,23 @@ class TicketsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: AppLottieStateWidget.comingSoon(
-          title: 'Coming Soon...',
-          message: 'Please wait new features will comming soon...',
-          lottieSize: 400,
-          titleColor: context.primaryColor,
-          messageColor: context.textSecondaryColor,
-        ),
-      ),
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return Scaffold(
+          key: ValueKey('tickets_${tenantService.tenantSwitchTimestamp}'),
+          body: Center(
+            child: AppLottieStateWidget.comingSoon(
+              title: 'Coming Soon...',
+              message: 'Please wait new features will comming soon...',
+              lottieSize: 400,
+              titleColor: context.primaryColor,
+              messageColor: context.textSecondaryColor,
+            ),
+          ),
 
-      //Text('TOU Management Route - To be implemented')
+          //Text('TOU Management Route - To be implemented')
+        );
+      },
     );
   }
 }
@@ -1084,7 +1236,13 @@ class SitesRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SitesScreenWithRouter();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return SitesScreenWithRouter(
+          key: ValueKey('sites_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -1112,18 +1270,23 @@ class SettingsRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: AppLottieStateWidget.comingSoon(
-          title: 'Coming Soon...',
-          message: 'Please wait new features will comming soon...',
-          lottieSize: 400,
-          titleColor: context.primaryColor,
-          messageColor: context.textSecondaryColor,
-        ),
-      ),
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return Scaffold(
+          key: ValueKey('settings_${tenantService.tenantSwitchTimestamp}'),
+          body: Center(
+            child: AppLottieStateWidget.comingSoon(
+              title: 'Coming Soon...',
+              message: 'Please wait new features will comming soon...',
+              lottieSize: 400,
+              titleColor: context.primaryColor,
+              messageColor: context.textSecondaryColor,
+            ),
+          ),
 
-      //Text('TOU Management Route - To be implemented')
+          //Text('TOU Management Route - To be implemented')
+        );
+      },
     );
   }
 }
@@ -1133,7 +1296,13 @@ class AppearanceRouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppearanceScreen();
+    return Consumer<TenantService>(
+      builder: (context, tenantService, child) {
+        return AppearanceScreen(
+          key: ValueKey('appearance_${tenantService.tenantSwitchTimestamp}'),
+        );
+      },
+    );
   }
 }
 
@@ -1709,7 +1878,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             ),
           ),
           if (!_sidebarCollapsed) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSizes.spacing12),
             Expanded(
               child: Text(
                 'MDMS',
@@ -2099,7 +2268,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         child: InkWell(
           onTap: () => context.go('/$id'),
           borderRadius: BorderRadius.circular(8),
-          hoverColor: const Color(0xFF2563eb).withOpacity(0.05),
+          hoverColor: context.primaryColor.withOpacity(0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSizes.spacing12,
@@ -2107,16 +2276,16 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF2563eb).withOpacity(0.15)
+                  ? context.primaryColor.withValues(alpha: 0.15)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: isSelected
-                  ? Border.all(color: const Color(0xFF2563eb).withOpacity(0.5))
+                  ? Border.all(color: context.primaryColor.withOpacity(0.5))
                   : null,
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF2563eb).withOpacity(0.1),
+                        color: context.primaryColor.withOpacity(0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -2128,8 +2297,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                 Icon(
                   icon,
                   color: isSelected
-                      ? const Color(0xFF2563eb)
-                      : const Color(0xFF64748b),
+                      ? context.primaryColor
+                      : context.textSecondaryColor,
                   size: 20,
                 ),
                 if (!_sidebarCollapsed) ...[
@@ -2139,8 +2308,8 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                       title,
                       style: TextStyle(
                         color: isSelected
-                            ? const Color(0xFF2563eb)
-                            : const Color(0xFF64748b),
+                            ? context.primaryColor
+                            : context.textSecondaryColor,
                         fontSize: 14,
                         fontWeight: isSelected
                             ? FontWeight.w600
@@ -2292,40 +2461,40 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
 
   Widget _buildSidebarFooter() {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: context.borderColor, width: 1)),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: const Color(0xFF2563eb),
-            child: Text(
-              'A',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: context.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.info_outline,
+              size: 20,
+              color: context.primaryColor,
             ),
           ),
           if (!_sidebarCollapsed) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSizes.spacing12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Admin User',
+                    'MDMS',
                     style: TextStyle(
-                      color: Color(0xFF1e293b),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      color: context.textPrimaryColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    'admin@mdms.com',
+                    'Version 1.0.0',
                     style: TextStyle(
                       color: context.textSecondaryColor,
                       fontSize: 11,
@@ -2334,7 +2503,6 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
                 ],
               ),
             ),
-            Icon(Icons.more_vert, color: context.textSecondaryColor, size: 16),
           ],
         ],
       ),
@@ -2391,7 +2559,7 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               ),
               const Spacer(),
               // Theme Switcher
-              const ThemeSwitch(isCompact: true, showLabel: false),
+              //const ThemeSwitch(isCompact: true, showLabel: false),
               const SizedBox(width: 16),
               // URL Display
               // Container(
@@ -2423,92 +2591,18 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
               //   ),
               // ),
               // const SizedBox(width: 16),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.notifications_outlined),
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              const SizedBox(width: 8),
-              // User Avatar with Dropdown១
-              PopupMenuButton<String>(
-                offset: const Offset(0, 40),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Text(
-                        'A',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      size: 16,
-                    ),
-                  ],
-                ),
-                itemBuilder: (context) => [
-                  // PopupMenuItem<String>(
-                  //   value: 'appearance',
-                  //   child: Row(
-                  //     children: [
-                  //       const Icon(
-                  //         Icons.palette_outlined,
-                  //         size: 18,
-                  //         color: Color(0xFF64748b),
-                  //       ),
-                  //       const SizedBox(width: 12),
-                  //       const Text('Appearance'),
-                  //     ],
-                  //   ),
-                  // ),
-                  PopupMenuItem<String>(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.logout,
-                          size: 18,
-                          color: Color(0xFFef4444),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Logout',
-                          style: TextStyle(color: const Color(0xFFef4444)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                onSelected: (value) {
-                  switch (value) {
-                    case 'appearance':
-                      // Handle appearance settings
-                      context.go('/settings');
-                      break;
-                    case 'logout':
-                      // Handle logout
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Logout functionality will be implemented',
-                          ),
-                          backgroundColor: Color(0xFF2563eb),
-                        ),
-                      );
-                      break;
+
+              // Tenant Dropdown Button
+              const TenantDropdownButton(),
+              // User Profile Dropdown
+              ProfileDropdown(
+                onNavigate: (path) => context.go(path),
+                onSignOut: () async {
+                  final confirmed = await _showLogoutConfirmationDialog(
+                    context,
+                  );
+                  if (confirmed == true) {
+                    await _handleLogout(context);
                   }
                 },
               ),
@@ -2588,6 +2682,63 @@ class _MainLayoutWithRouterState extends State<MainLayoutWithRouter> {
         location.contains('/billing') ||
         location.split('/').length > 2;
   }
+
+  // Show logout confirmation dialog
+  Future<bool?> _showLogoutConfirmationDialog(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AppConfirmDialog(
+          title: ('Sign Out'),
+          message: ('Are you sure you want to sign out?'),
+          onCancel: () => Navigator.of(context).pop(false),
+          onConfirm: () => Navigator.of(context).pop(true),
+          // actions: <Widget>[
+          //   TextButton(
+          //     onPressed: () {
+          //       Navigator.of(context).pop(false);
+          //     },
+          //     child: const Text('Cancel'),
+          //   ),
+          //   ElevatedButton(
+          //     onPressed: () {
+          //       Navigator.of(context).pop(true);
+          //     },
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: const Color(0xFF2563eb),
+          //       foregroundColor: Colors.white,
+          //     ),
+          //     child: const Text('Sign Out'),
+          //   ),
+          // ],
+        );
+      },
+    );
+  }
+
+  // Handle logout functionality
+  Future<void> _handleLogout(BuildContext context) async {
+    try {
+      // Get the keycloak service and call logout
+      final keycloakService = Provider.of<KeycloakService>(
+        context,
+        listen: false,
+      );
+      await keycloakService.logout();
+
+      // Redirect to sign in page
+      if (context.mounted) {
+        context.go('/signin');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppToast.showError(context, error: 'Logout failed: $e');
+      }
+    }
+  }
+
+  // Get user display name
 }
 
 // Custom painter for connecting lines in expandable menu groups

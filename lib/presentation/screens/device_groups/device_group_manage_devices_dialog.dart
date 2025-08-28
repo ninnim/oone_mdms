@@ -564,7 +564,7 @@ class _DeviceGroupManageDevicesDialogState
                         },
                       ),
                       const SizedBox(height: AppSizes.spacing16),
-                
+
                       // Content with AppPillTabs
                       Expanded(
                         child: AppPillTabs(
@@ -586,7 +586,10 @@ class _DeviceGroupManageDevicesDialogState
                             ),
                             AppTab(
                               label: 'Current Devices ($_totalCurrentDevices)',
-                              icon: Icon(Icons.devices, size: AppSizes.iconSmall),
+                              icon: Icon(
+                                Icons.devices,
+                                size: AppSizes.iconSmall,
+                              ),
                               content: _buildCurrentDevicesTab(),
                             ),
                           ],
@@ -600,14 +603,18 @@ class _DeviceGroupManageDevicesDialogState
 
             // Footer with Action buttons (with padding)
             Container(
-             padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
+              padding: EdgeInsets.all(ResponsiveHelper.getSpacing(context)),
               decoration: BoxDecoration(
                 color: context.surfaceColor,
                 border: Border(
                   top: BorderSide(
-                    color: context.borderColor.withValues(alpha: 0.1),
+                    color: context.borderColor.withOpacity(0.1),
                     width: 1,
                   ),
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSizes.radiusMedium),
+                  bottomRight: Radius.circular(AppSizes.radiusMedium),
                 ),
               ),
               child: Row(

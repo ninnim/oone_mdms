@@ -1,0 +1,93 @@
+
+
+
+
+// Authorization: Bearer <your_access_token>
+
+
+//use for get current user /Tenant
+//Method: GET
+//URL: https://mtc-stg.oone.bz/v1/CurrentUser?ModuleCode=MDMS
+
+Response payload:
+{
+  "hasAccessibleTenant": true,
+  "hasAccessibleModule": true,
+  "tenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+  "currentTenant": {
+    "tenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+    "tenant": "MDS",
+    "tenantCode": "36b6045da89f4f6da03df8bd7898b0cc",
+    "isSuperUser": true,
+    "status": "active",
+    "lastAccessDate": "2025-08-28T08:33:01.415403+07:00",
+    "type": "personal",
+    "verified": false,
+    "attributes": [],
+    "userId": "35c2bb3e-a5d4-430d-a002-56a850bc45d5"
+  },
+  "userModule": {
+    "moduleId": 13,
+    "module": "<km-KH>ប្រព័ន្ធ OMMD (OONE Middleware Meter Data) </km-KH><en-US>OMMD (OONE Middleware Meter Data)</en-US>",
+    "moduleCode": "mdms",
+    "isSuperUser": true,
+    "userId": "35c2bb3e-a5d4-430d-a002-56a850bc45d5"
+  }
+}
+
+After Login /refeshToken successful you will call to get Current Tenant display /and user 
+
+
+use for get All Tenants display as list card
+ //Method: GET
+///https://mtc-stg.oone.bz/v1/Tenant
+
+Response payload:
+[
+  {
+    "tenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f",
+    "tenant": "MDS",
+    "tenantCode": "36b6045da89f4f6da03df8bd7898b0cc",
+    "isSuperUser": true,
+    "status": "active",
+    "lastAccessDate": "2025-08-28T08:33:01.415403+07:00",
+    "type": "personal",
+    "verified": false,
+    "attributes": [],
+    "userId": "35c2bb3e-a5d4-430d-a002-56a850bc45d5"
+  },
+  {
+    "tenantId": "025aa4a1-8617-4e24-b890-2e69a09180ee",
+    "tenant": "CD",
+    "tenantCode": "53cb3296af064d0d8f7b6bbdc08fc7a4",
+    "isSuperUser": true,
+    "status": "active",
+    "lastAccessDate": "2025-08-28T08:31:10.824202+07:00",
+    "type": "personal",
+    "verified": false,
+    "attributes": [],
+    "userId": "35c2bb3e-a5d4-430d-a002-56a850bc45d5"
+  }
+]
+
+Display only status =true
+
+
+// Switch Tenant user for switch to current tenant to display in project.
+//Method: PUT
+//https://mtc-stg.oone.bz/v1/Tenant/SwitchTenant
+
+Request payload:
+{
+  "toTenantId": "b96abbbb-3458-46f1-800d-d7df54fbbf2f"
+}
+
+
+After swtich successful you must call
+//use for get current user /Tenant
+to display,
+
+And make sure after switch we call the API to get the current user/tenant information again.
+and need to refresh token to get new access token. and Header request api becuase we need to new data for that tenant, make sure it reload that Main module (not in details screen if user switch in details screen it will reload and back to main screen (module)),
+
+

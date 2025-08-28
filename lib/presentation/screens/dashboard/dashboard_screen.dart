@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import '../../widgets/common/app_card.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/status_chip.dart';
-import '../../widgets/common/theme_switch.dart';
 import '../../themes/app_theme.dart';
 import '../../../core/constants/app_sizes.dart';
 // import '../../../core/constants/app_colors.dart';
-import '../../themes/app_theme.dart';
+
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -80,7 +79,7 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
         ),
-        const ThemeSwitch(isCompact: true, showLabel: false),
+        //const ThemeSwitch(isCompact: true, showLabel: false),
         // AppButton(
         //   text: 'Add Device',
         //   type: AppButtonType.primary,
@@ -92,7 +91,7 @@ class DashboardScreen extends StatelessWidget {
         //   onPressed: () {
         //     // Navigate to devices screen or show add modal
         //   },
-        // ),
+        // ),P
       ],
     );
   }
@@ -311,7 +310,7 @@ class DashboardScreen extends StatelessWidget {
                     fontSize: 12,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -418,7 +417,7 @@ class DashboardScreen extends StatelessWidget {
           status,
           style: TextStyle(
             fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           ),
           textAlign: TextAlign.center,
         ),
@@ -518,7 +517,7 @@ class DashboardScreen extends StatelessWidget {
                     fontSize: 12,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -527,7 +526,7 @@ class DashboardScreen extends StatelessWidget {
           Icon(
             Icons.arrow_forward_ios,
             size: 16,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
         ],
       ),
@@ -623,7 +622,7 @@ class DashboardScreen extends StatelessWidget {
                   fontSize: 12,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: AppSizes.spacing4),
@@ -633,7 +632,7 @@ class DashboardScreen extends StatelessWidget {
                   fontSize: 11,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.5),
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],

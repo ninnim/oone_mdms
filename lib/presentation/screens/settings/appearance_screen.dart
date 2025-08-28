@@ -262,6 +262,7 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
   Widget _buildColorPresets(AppearanceProvider appearanceProvider) {
     final presetColors = [
       const Color(0xFF3B82F6), // Blue (default)
+      const Color(0xFF996699), // Purple (oone)
       const Color(0xFF8B5CF6), // Purple
       const Color(0xFF10B981), // Emerald
       const Color(0xFFF59E0B), // Amber
@@ -563,8 +564,8 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
             AppToast.showInfo(
               context,
               message: 'Appearance settings saved!',
-              
-            //  backgroundColor: appearanceProvider.primaryColor,
+
+              //  backgroundColor: appearanceProvider.primaryColor,
             );
             // );
           },

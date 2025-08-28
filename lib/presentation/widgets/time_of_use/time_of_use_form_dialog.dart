@@ -768,8 +768,17 @@ class _TimeOfUseFormDialogState extends State<TimeOfUseFormDialog> {
     return Container(
       padding: ResponsiveHelper.getPadding(context),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: context.borderColor)),
         color: context.surfaceColor,
+        border: Border(
+          top: BorderSide(
+            color: context.borderColor.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(AppSizes.radiusMedium),
+          bottomRight: Radius.circular(AppSizes.radiusMedium),
+        ),
       ),
       child: ResponsiveHelper.shouldUseCompactUI(context)
           ? _buildMobileFooter()

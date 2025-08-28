@@ -20,10 +20,8 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> setThemeMode(AppThemeMode mode) async {
     if (_themeMode != mode) {
       _themeMode = mode;
-      // Use a more isolated approach to prevent navigation issues
-      Future.microtask(() {
-        if (mounted) notifyListeners();
-      });
+      // Immediate notification for instant theme switching
+      notifyListeners();
     }
   }
 

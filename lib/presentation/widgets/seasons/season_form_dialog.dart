@@ -266,180 +266,184 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
 
               // Form Content
               Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: ResponsiveHelper.getPadding(context),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Name Field
-                        AppInputField(
-                          label: 'Name',
-                          controller: _nameController,
-                          readOnly: isViewMode,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Season name is required';
-                            }
-                            if (value.trim().length < 2) {
-                              return 'Season name must be at least 2 characters';
-                            }
-                            return null;
-                          },
-                          hintText: 'Enter season name (e.g., Summer, Winter)',
-                        ),
-
-                        SizedBox(
-                          height: isMobile
-                              ? AppSizes.spacing16
-                              : AppSizes.spacing20,
-                        ),
-
-                        // Description Field
-                        AppInputField(
-                          label: 'Description',
-                          controller: _descriptionController,
-                          readOnly: isViewMode,
-                          maxLines: isMobile ? 2 : 3,
-                          hintText: 'Enter season description',
-                        ),
-
-                        SizedBox(
-                          height: isMobile
-                              ? AppSizes.spacing16
-                              : AppSizes.spacing24,
-                        ),
-
-                        // Month Selection Header with Smart Bulk Action
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Select Months',
-                                style: TextStyle(
-                                  fontSize: isMobile
-                                      ? AppSizes.fontSizeMedium
-                                      : AppSizes.fontSizeLarge,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.textPrimaryColor,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            // Smart Select All/Clear All button (only in edit mode)
-                            if (!isViewMode) _buildSmartSelectButton(),
-                          ],
-                        ),
-                        SizedBox(
-                          height: isMobile
-                              ? AppSizes.spacing8
-                              : AppSizes.spacing12,
-                        ),
-
-                        // Quick Season Patterns (only in edit mode)
-                        Container(
-                          padding: EdgeInsets.all(
-                            isMobile ? AppSizes.spacing8 : AppSizes.spacing12,
+                child: Container(
+                  color: context.surfaceColor,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: ResponsiveHelper.getPadding(context),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Name Field
+                          AppInputField(
+                            label: 'Name',
+                            controller: _nameController,
+                            readOnly: isViewMode,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Season name is required';
+                              }
+                              if (value.trim().length < 2) {
+                                return 'Season name must be at least 2 characters';
+                              }
+                              return null;
+                            },
+                            hintText:
+                                'Enter season name (e.g., Summer, Winter)',
                           ),
-                          decoration: BoxDecoration(
-                            color: context.surfaceVariantColor.withValues(
-                              alpha: 0.5,
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              AppSizes.radiusMedium,
-                            ),
-                            border: Border.all(
-                              color: context.borderColor.withOpacity(0.5),
-                            ),
+
+                          SizedBox(
+                            height: isMobile
+                                ? AppSizes.spacing16
+                                : AppSizes.spacing20,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                          // Description Field
+                          AppInputField(
+                            label: 'Description',
+                            controller: _descriptionController,
+                            readOnly: isViewMode,
+                            maxLines: isMobile ? 2 : 3,
+                            hintText: 'Enter season description',
+                          ),
+
+                          SizedBox(
+                            height: isMobile
+                                ? AppSizes.spacing16
+                                : AppSizes.spacing24,
+                          ),
+
+                          // Month Selection Header with Smart Bulk Action
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Quick Patterns:',
-                                style: TextStyle(
-                                  fontSize: isMobile
-                                      ? AppSizes.fontSizeExtraSmall
-                                      : AppSizes.fontSizeSmall,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.textSecondaryColor,
+                              Expanded(
+                                child: Text(
+                                  'Select Months',
+                                  style: TextStyle(
+                                    fontSize: isMobile
+                                        ? AppSizes.fontSizeMedium
+                                        : AppSizes.fontSizeLarge,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.textPrimaryColor,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              SizedBox(
-                                height: isMobile
-                                    ? AppSizes.spacing4
-                                    : AppSizes.spacing8,
-                              ),
-                              Wrap(
-                                spacing: isMobile
-                                    ? AppSizes.spacing4
-                                    : AppSizes.spacing8,
-                                runSpacing: AppSizes.spacing4,
-                                children: [
-                                  _buildQuickPatternChip(
-                                    'Winter',
-                                    [12, 1, 2],
-                                    context.primaryColor,
-                                    isReadOnly: isViewMode,
-                                  ),
-                                  _buildQuickPatternChip(
-                                    'Spring',
-                                    [3, 4, 5],
-                                    context.primaryColor,
-                                    isReadOnly: isViewMode,
-                                  ),
-                                  _buildQuickPatternChip('Summer', [
-                                    6,
-                                    7,
-                                    8,
-                                  ], context.primaryColor),
-                                  _buildQuickPatternChip(
-                                    'Autumn',
-                                    [9, 10, 11],
-                                    context.primaryColor,
-                                    isReadOnly: isViewMode,
-                                  ),
-                                ],
-                              ),
+                              // Smart Select All/Clear All button (only in edit mode)
+                              if (!isViewMode) _buildSmartSelectButton(),
                             ],
                           ),
-                        ),
-                        SizedBox(
-                          height: isMobile
-                              ? AppSizes.spacing6
-                              : AppSizes.spacing8,
-                        ),
-
-                        Text(
-                          'Choose the months that belong to this season',
-                          style: TextStyle(
-                            fontSize: isMobile
-                                ? AppSizes.fontSizeSmall
-                                : AppSizes.fontSizeMedium,
-                            color: context.textSecondaryColor,
+                          SizedBox(
+                            height: isMobile
+                                ? AppSizes.spacing8
+                                : AppSizes.spacing12,
                           ),
-                        ),
-                        SizedBox(
-                          height: isMobile
-                              ? AppSizes.spacing12
-                              : AppSizes.spacing16,
-                        ),
 
-                        _buildMonthSelection(isReadOnly: isViewMode),
+                          // Quick Season Patterns (only in edit mode)
+                          Container(
+                            padding: EdgeInsets.all(
+                              isMobile ? AppSizes.spacing8 : AppSizes.spacing12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.surfaceVariantColor.withValues(
+                                alpha: 0.5,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusMedium,
+                              ),
+                              border: Border.all(
+                                color: context.borderColor.withOpacity(0.5),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Quick Patterns:',
+                                  style: TextStyle(
+                                    fontSize: isMobile
+                                        ? AppSizes.fontSizeExtraSmall
+                                        : AppSizes.fontSizeSmall,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.textSecondaryColor,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: isMobile
+                                      ? AppSizes.spacing4
+                                      : AppSizes.spacing8,
+                                ),
+                                Wrap(
+                                  spacing: isMobile
+                                      ? AppSizes.spacing4
+                                      : AppSizes.spacing8,
+                                  runSpacing: AppSizes.spacing4,
+                                  children: [
+                                    _buildQuickPatternChip(
+                                      'Winter',
+                                      [12, 1, 2],
+                                      context.primaryColor,
+                                      isReadOnly: isViewMode,
+                                    ),
+                                    _buildQuickPatternChip(
+                                      'Spring',
+                                      [3, 4, 5],
+                                      context.primaryColor,
+                                      isReadOnly: isViewMode,
+                                    ),
+                                    _buildQuickPatternChip('Summer', [
+                                      6,
+                                      7,
+                                      8,
+                                    ], context.primaryColor),
+                                    _buildQuickPatternChip(
+                                      'Autumn',
+                                      [9, 10, 11],
+                                      context.primaryColor,
+                                      isReadOnly: isViewMode,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            height: isMobile
+                                ? AppSizes.spacing6
+                                : AppSizes.spacing8,
+                          ),
 
-                        SizedBox(
-                          height: isMobile
-                              ? AppSizes.spacing12
-                              : AppSizes.spacing16,
-                        ),
+                          Text(
+                            'Choose the months that belong to this season',
+                            style: TextStyle(
+                              fontSize: isMobile
+                                  ? AppSizes.fontSizeSmall
+                                  : AppSizes.fontSizeMedium,
+                              color: context.textSecondaryColor,
+                            ),
+                          ),
+                          SizedBox(
+                            height: isMobile
+                                ? AppSizes.spacing12
+                                : AppSizes.spacing16,
+                          ),
 
-                        // Selected months summary
-                        _buildSelectedMonthsSummary(),
-                      ],
+                          _buildMonthSelection(isReadOnly: isViewMode),
+
+                          SizedBox(
+                            height: isMobile
+                                ? AppSizes.spacing12
+                                : AppSizes.spacing16,
+                          ),
+
+                          // Selected months summary
+                          _buildSelectedMonthsSummary(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -449,7 +453,17 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
               Container(
                 padding: ResponsiveHelper.getPadding(context),
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: context.borderColor)),
+                  color: context.surfaceColor,
+                  border: Border(
+                    top: BorderSide(
+                      color: context.borderColor.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(AppSizes.radiusMedium),
+                    bottomRight: Radius.circular(AppSizes.radiusMedium),
+                  ),
                 ),
                 child: ResponsiveHelper.shouldUseCompactUI(context)
                     ? _buildMobileFooter(isCreate, isViewMode)
@@ -657,9 +671,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
             style: TextStyle(
               fontSize: AppSizes.fontSizeExtraSmall,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-              color: isSelected
-                  ? primaryColor
-                  : primaryColor.withOpacity(0.8),
+              color: isSelected ? primaryColor : primaryColor.withOpacity(0.8),
             ),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
@@ -692,9 +704,7 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
             style: TextStyle(
               fontSize: AppSizes.fontSizeSmall,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected
-                  ? primaryColor
-                  : primaryColor.withOpacity(0.8),
+              color: isSelected ? primaryColor : primaryColor.withOpacity(0.8),
             ),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
@@ -977,8 +987,3 @@ class _SeasonFormDialogState extends State<SeasonFormDialog> {
     }
   }
 }
-
-
-
-
-

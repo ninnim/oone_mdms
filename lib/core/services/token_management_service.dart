@@ -285,7 +285,6 @@ class TokenManagementService extends ChangeNotifier {
     final headers = <String, String>{
       'Content-Type': ApiConstants.contentType,
       'Accept': ApiConstants.accept,
-      'x-hasura-admin-secret': ApiConstants.tokenHeader,
     };
 
     // Add Bearer token if available

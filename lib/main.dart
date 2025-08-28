@@ -13,8 +13,10 @@ import 'core/services/service_locator.dart';
 import 'core/services/token_management_service.dart';
 import 'core/services/time_band_service.dart';
 import 'core/services/startup_validation_service.dart';
+import 'core/services/tenant_service.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/appearance_provider.dart';
+import 'package:flutter_web_plugins/url_strategy.dart' show usePathUrlStrategy;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,7 @@ void main() async {
   // Initialize ServiceLocator with all dynamic services
   final serviceLocator = ServiceLocator();
   await serviceLocator.initialize();
+  usePathUrlStrategy();
 
   // Validate initial setup
   final isValid = await StartupValidationService.validateInitialSetup();
@@ -41,6 +44,12 @@ void main() async {
   final siteService = SiteService(apiService);
   final seasonService = SeasonService(apiService);
   final specialDayService = SpecialDayService(apiService);
+  final tenantService = TenantService(keycloakService);
+
+  // Set up tenant service callback for token refresh
+  keycloakService.setTokenRefreshCallback(() {
+    tenantService.getCurrentUser();
+  });
 
   runApp(
     MyApp(
@@ -54,6 +63,7 @@ void main() async {
       siteService: siteService,
       seasonService: seasonService,
       specialDayService: specialDayService,
+      tenantService: tenantService,
     ),
   );
 }
@@ -69,6 +79,7 @@ class MyApp extends StatelessWidget {
   final SiteService siteService;
   final SeasonService seasonService;
   final SpecialDayService specialDayService;
+  final TenantService tenantService;
 
   // Create router once to prevent navigation resets
   late final _router = AppRouter.getRouter(keycloakService);
@@ -85,6 +96,7 @@ class MyApp extends StatelessWidget {
     required this.siteService,
     required this.seasonService,
     required this.specialDayService,
+    required this.tenantService,
   });
 
   @override
@@ -94,6 +106,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: serviceLocator),
         ChangeNotifierProvider.value(value: keycloakService),
         ChangeNotifierProvider.value(value: tokenManagementService),
+        ChangeNotifierProvider.value(value: tenantService),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AppearanceProvider()),
         Provider.value(value: timeBandService),
