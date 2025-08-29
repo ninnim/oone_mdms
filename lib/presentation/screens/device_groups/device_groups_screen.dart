@@ -956,8 +956,10 @@ class _DeviceGroupsScreenState extends State<DeviceGroupsScreen>
         title: 'Actions',
         flex: 1,
         sortable: false,
+        isActions: true,
         builder: (group) => Container(
-          alignment: Alignment.center,
+          alignment: Alignment.centerRight,
+          // alignment: Alignment.center,
           height: AppSizes.spacing40,
           child: PopupMenuButton<String>(
             icon: Icon(

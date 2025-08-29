@@ -17,7 +17,7 @@ import '../../core/constants/app_sizes.dart';
 import '../screens/devices/device_360_details_screen.dart';
 import '../screens/devices/device_billing_readings_screen.dart';
 import '../screens/devices/devices_screen.dart';
-import '../screens/auth/simple_auth_redirect_screen.dart';
+import '../screens/auth/auth_redirect_screen.dart';
 import '../screens/special_days/special_days_screen.dart';
 import '../widgets/common/breadcrumb_navigation.dart';
 import '../../core/models/device.dart';
@@ -72,7 +72,7 @@ class AppRouter {
         // If authenticated and on auth route (without code), redirect to dashboard
         if (isAuthenticated && currentPath == '/auth' && !hasCode) {
           print('GoRouter: Redirecting to / because authenticated');
-          return '/';
+          return '/auth';
         }
 
         // No redirect needed

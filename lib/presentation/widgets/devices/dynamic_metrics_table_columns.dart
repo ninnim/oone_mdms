@@ -68,12 +68,12 @@ class DynamicMetricsTableColumns {
         return Container(
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(color: context.borderColor, width: 0.5),
-              bottom: BorderSide(color: context.borderColor, width: 0.5),
-            ),
-          ),
+          // decoration: BoxDecoration(
+          //   border: Border(
+          //     right: BorderSide(color: context.borderColor, width: 0.5),
+          //     bottom: BorderSide(color: context.borderColor, width: 0.5),
+          //   ),
+          // ),
           child: Text(
             '$rowNumber',
             style: TextStyle(
@@ -104,12 +104,12 @@ class DynamicMetricsTableColumns {
           return Container(
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(color: context.borderColor, width: 0.5),
-                bottom: BorderSide(color: context.borderColor, width: 0.5),
-              ),
-            ),
+            // decoration: BoxDecoration(
+            //   border: Border(
+            //     right: BorderSide(color: context.borderColor, width: 0.5),
+            //     bottom: BorderSide(color: context.borderColor, width: 0.5),
+            //   ),
+            // ),
             child: Text(
               'N/A',
               style: TextStyle(
@@ -130,12 +130,12 @@ class DynamicMetricsTableColumns {
           return Container(
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(color: context.borderColor, width: 0.5),
-                bottom: BorderSide(color: context.borderColor, width: 0.5),
-              ),
-            ),
+            // decoration: BoxDecoration(
+            //   border: Border(
+            //     right: BorderSide(color: context.borderColor, width: 0.5),
+            //     bottom: BorderSide(color: context.borderColor, width: 0.5),
+            //   ),
+            // ),
             child: Text(
               formattedDate,
               style: TextStyle(
@@ -150,12 +150,12 @@ class DynamicMetricsTableColumns {
           return Container(
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(color: context.borderColor, width: 0.5),
-                bottom: BorderSide(color: context.borderColor, width: 0.5),
-              ),
-            ),
+            // decoration: BoxDecoration(
+            //   border: Border(
+            //     right: BorderSide(color: context.borderColor, width: 0.5),
+            //     bottom: BorderSide(color: context.borderColor, width: 0.5),
+            //   ),
+            // ),
             child: Text(
               timestamp.toString(),
               style: TextStyle(
@@ -186,12 +186,12 @@ class DynamicMetricsTableColumns {
       builder: (metric) => Container(
         alignment: _getColumnAlignment(fieldName),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        decoration: BoxDecoration(
-          border: Border(
-            right: BorderSide(color: context.borderColor, width: 0.5),
-            bottom: BorderSide(color: context.borderColor, width: 0.5),
-          ),
-        ),
+        // decoration: BoxDecoration(
+        //   border: Border(
+        //     right: BorderSide(color: context.borderColor, width: 0.5),
+        //     bottom: BorderSide(color: context.borderColor, width: 0.5),
+        //   ),
+        // ),
         child: _buildCellContent(metric[fieldName], fieldName, context),
       ),
     );

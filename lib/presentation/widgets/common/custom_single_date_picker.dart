@@ -259,7 +259,8 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
     final startYear = widget.firstDate.year;
     final endYear = widget.lastDate.year;
 
-    return SizedBox(
+    return Container(
+      color: context.surfaceColor,
       height: 300,
       child: ListView.builder(
         itemCount: endYear - startYear + 1,
@@ -289,6 +290,7 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
 
     return Container(
       decoration: BoxDecoration(
+        color: context.backgroundColor,
         border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
@@ -298,7 +300,7 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: context.backgroundColor,
+              color: context.surfaceColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppSizes.radiusLarge),
                 topRight: Radius.circular(AppSizes.radiusLarge),
@@ -515,21 +517,28 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
-      child: SizedBox(
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.backgroundColor,
+          border: Border(bottom: BorderSide(color: context.borderColor)),
+          borderRadius: BorderRadius.all(Radius.circular(AppSizes.radiusLarge)),
+        ),
         width: 400,
+
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Container(
               padding: const EdgeInsets.all(AppSizes.spacing16),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: context.borderColor)),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(AppSizes.radiusLarge),
-                  topRight: Radius.circular(AppSizes.radiusLarge),
-                ),
-              ),
+              // decoration: BoxDecoration(
+              //   color: context.surfaceColor,
+              //   border: Border(bottom: BorderSide(color: context.borderColor)),
+              //   borderRadius: BorderRadius.only(
+              //     topLeft: Radius.circular(AppSizes.radiusLarge),
+              //     topRight: Radius.circular(AppSizes.radiusLarge),
+              //   ),
+              // ),
               child: Row(
                 children: [
                   Text(

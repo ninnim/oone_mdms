@@ -77,13 +77,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                 border: Border.all(
                   color: Theme.of(context).dividerColor.withOpacity(0.1),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow: [AppSizes.shadowSmall],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
@@ -103,8 +97,8 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                       child: Container(
                         height: AppSizes.buttonHeightSmall,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.spacing16,
-                          vertical: AppSizes.spacing8,
+                          horizontal: AppSizes.spacing8,
+                          vertical: AppSizes.spacing4,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
@@ -125,7 +119,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                           children: [
                             Icon(
                               chartType.icon,
-                              size: 16,
+                              size: AppSizes.iconSmall,
                               color: isSelected
                                   ? context.primaryColor
                                   : Theme.of(
@@ -138,6 +132,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                                 chartType.displayName,
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
+                                      fontSize: AppSizes.fontSizeSmall,
                                       color: isSelected
                                           ? context.primaryColor
                                           : Theme.of(
@@ -152,7 +147,7 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
                             if (isSelected)
                               Icon(
                                 Icons.check,
-                                size: 16,
+                                size: AppSizes.iconSmall,
                                 color: context.primaryColor,
                               ),
                           ],
@@ -179,8 +174,8 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
         child: Container(
           height: AppSizes.buttonHeightSmall,
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.spacing16,
-            vertical: AppSizes.spacing8,
+            horizontal: AppSizes.spacing8,
+            vertical: AppSizes.spacing4,
           ),
           decoration: BoxDecoration(
             border: Border.all(
@@ -197,20 +192,21 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
             children: [
               Icon(
                 widget.selectedType.icon,
-                size: 16,
+                size: AppSizes.iconSmall,
                 color: Theme.of(context).textTheme.bodyMedium?.color,
               ),
               const SizedBox(width: AppSizes.spacing8),
               Text(
                 widget.selectedType.displayName,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  fontSize: AppSizes.fontSizeSmall,
+                ),
               ),
               const SizedBox(width: AppSizes.spacing8),
               Icon(
                 _isOpen ? Icons.expand_less : Icons.expand_more,
-                size: 18,
+                size: AppSizes.iconSmall,
                 color: Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ],
@@ -220,6 +216,3 @@ class _ModernChartTypeDropdownState extends State<ModernChartTypeDropdown> {
     );
   }
 }
-
-
-

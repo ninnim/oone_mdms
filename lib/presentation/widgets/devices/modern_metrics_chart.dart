@@ -7,8 +7,21 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/chart_type.dart';
 import '../common/app_card.dart';
 import '../common/modern_chart_type_dropdown.dart';
+import '../common/custom_date_range_picker.dart';
 import 'dart:math' as math;
 import 'dart:async';
+
+// Time period enum for chart filtering (inspired by CoinMarketCap)
+enum TimePeriod {
+  oneDay('1D'),
+  sevenDays('7D'),
+  oneMonth('1M'),
+  oneYear('1Y'),
+  all('All');
+
+  const TimePeriod(this.label);
+  final String label;
+}
 
 class ModernMetricsChart extends StatefulWidget {
   final List<Map<String, dynamic>> data;
@@ -16,6 +29,12 @@ class ModernMetricsChart extends StatefulWidget {
   final VoidCallback? onRefresh;
   final VoidCallback? onExport;
   final Function(int pageSize)? onPageSizeChanged;
+  final Function(TimePeriod timePeriod, DateTime fromDate, DateTime toDate)?
+  onTimePeriodChanged;
+  final Function(DateTime? startDate, DateTime? endDate)? onDateRangeChanged;
+  // NEW: Current date range for custom date picker initialization
+  final DateTime? currentStartDate;
+  final DateTime? currentEndDate;
 
   const ModernMetricsChart({
     super.key,
@@ -24,6 +43,10 @@ class ModernMetricsChart extends StatefulWidget {
     this.onRefresh,
     this.onExport,
     this.onPageSizeChanged,
+    this.onTimePeriodChanged,
+    this.onDateRangeChanged,
+    this.currentStartDate,
+    this.currentEndDate,
   });
 
   @override
@@ -34,9 +57,24 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
     with TickerProviderStateMixin {
   ChartType _selectedChartType = ChartType.line;
   Set<String> _selectedFields = <String>{};
-  Map<String, Color> _fieldColors = {};
+  final Map<String, Color> _fieldColors = {};
   late AnimationController _animationController;
   late Animation<double> _animation;
+
+  // Time period filters (inspired by CoinMarketCap) - default to 1M as requested
+  TimePeriod _selectedTimePeriod = TimePeriod.oneMonth;
+  late AnimationController _filterAnimationController;
+  late Animation<double> _filterAnimation;
+
+  // Date range picker for optional specific filtering
+  DateTime? _startDate;
+  DateTime? _endDate;
+  DateTime? _fromDate; // NEW: For custom date range picker
+  DateTime? _toDate; // NEW: For custom date range picker
+  bool _showDateRangePicker = false;
+  // New state variable to control custom date picker visibility
+  bool get _showCustomDatePicker =>
+      true; // Always show for now, can be made conditional later
 
   // PageSize control
   int _pageSize = 0; // Default 0 means get all
@@ -57,9 +95,31 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+
+    // Initialize filter animation controller
+    _filterAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _filterAnimation = CurvedAnimation(
+      parent: _filterAnimationController,
+      curve: Curves.easeInOut,
+    );
+
     _pageSizeController.text = _pageSize == 0 ? 'All' : _pageSize.toString();
+
+    // Initialize date range for custom date picker
+    _fromDate = widget.currentStartDate;
+    _toDate = widget.currentEndDate;
+
     _initializeFields();
     _animationController.forward();
+    _filterAnimationController.forward();
+
+    // Trigger initial API call with default 1M period and PageSize=0
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _triggerTimePeriodApiCall(_selectedTimePeriod);
+    });
   }
 
   @override
@@ -75,6 +135,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
   @override
   void dispose() {
     _animationController.dispose();
+    _filterAnimationController.dispose();
     _pageSizeController.dispose();
     _horizontalScrollController.dispose();
     _pageSizeTimer?.cancel();
@@ -82,21 +143,244 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
   }
 
   void _triggerDelayedApiCall(int pageSize) {
-    print(
-      'ModernMetricsChart: Triggering delayed API call with pageSize: $pageSize',
-    );
     _pageSizeTimer = Timer(const Duration(milliseconds: 800), () {
-      print(
-        'ModernMetricsChart: Timer fired, calling onPageSizeChanged with: $pageSize',
-      );
       if (widget.onPageSizeChanged != null) {
         widget.onPageSizeChanged!(pageSize);
-      } else {
-        print(
-          'ModernMetricsChart: WARNING - onPageSizeChanged callback is null!',
-        );
       }
     });
+  }
+
+  // Helper method to calculate From and To dates based on time period
+  Map<String, DateTime> _calculateDateRangeForPeriod(TimePeriod timePeriod) {
+    final DateTime now = DateTime.now();
+    DateTime fromDate;
+    DateTime toDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      23,
+      59,
+      59,
+      999,
+    ); // End of today
+
+    switch (timePeriod) {
+      case TimePeriod.oneDay:
+        // 1D: From start of today to end of today
+        fromDate = DateTime(now.year, now.month, now.day, 0, 0, 0);
+        break;
+      case TimePeriod.sevenDays:
+        // 7D: From 7 days ago (start of day) to end of today
+        final sevenDaysAgo = now.subtract(const Duration(days: 6));
+        fromDate = DateTime(
+          sevenDaysAgo.year,
+          sevenDaysAgo.month,
+          sevenDaysAgo.day,
+          0,
+          0,
+          0,
+        );
+        break;
+      case TimePeriod.oneMonth:
+        // 1M: From 30 days ago (start of day) to end of today
+        final thirtyDaysAgo = now.subtract(const Duration(days: 29));
+        fromDate = DateTime(
+          thirtyDaysAgo.year,
+          thirtyDaysAgo.month,
+          thirtyDaysAgo.day,
+          0,
+          0,
+          0,
+        );
+        break;
+      case TimePeriod.oneYear:
+        // 1Y: From exactly 1 year ago to end of today
+        fromDate = DateTime(now.year - 1, now.month, now.day, 0, 0, 0);
+        break;
+      case TimePeriod.all:
+        // All: From 5 years ago (start of year) to end of today
+        fromDate = DateTime(now.year - 5, 1, 1, 0, 0, 0);
+        break;
+    }
+
+    return {'from': fromDate, 'to': toDate};
+  }
+
+  // API trigger for time period changes
+  void _triggerTimePeriodApiCall(TimePeriod timePeriod) {
+    final dateRange = _calculateDateRangeForPeriod(timePeriod);
+    final fromDate = dateRange['from']!;
+    final toDate = dateRange['to']!;
+
+    // PRIORITY FIX: Time Period buttons should trigger BOTH callbacks
+    // This ensures the API gets the Time Period dates, not custom date range
+    if (widget.onTimePeriodChanged != null) {
+      widget.onTimePeriodChanged!(timePeriod, fromDate, toDate);
+    }
+
+    // CRITICAL: Also trigger date range callback with Time Period dates
+    // This ensures compatibility with parent components that only listen to onDateRangeChanged
+    if (widget.onDateRangeChanged != null) {
+      widget.onDateRangeChanged!(fromDate, toDate);
+    }
+
+    // Always pass PageSize=0 for time period filters
+    if (widget.onPageSizeChanged != null) {
+      widget.onPageSizeChanged!(0);
+    }
+  }
+
+  // API trigger for date range changes
+  void _triggerDateRangeApiCall(DateTime? startDate, DateTime? endDate) {
+    if (widget.onDateRangeChanged != null) {
+      widget.onDateRangeChanged!(startDate, endDate);
+    }
+    // Always pass PageSize=0 for date range filters
+    if (widget.onPageSizeChanged != null) {
+      widget.onPageSizeChanged!(0);
+    }
+  }
+
+  // Data grouping methods based on time period
+  List<Map<String, dynamic>> _groupDataByTimePeriod(
+    List<Map<String, dynamic>> data,
+  ) {
+    if (data.isEmpty) return data;
+
+    switch (_selectedTimePeriod) {
+      case TimePeriod.oneDay:
+        return data; // Return original data for 1D view
+      case TimePeriod.sevenDays:
+        return _groupDataByDays(data);
+      case TimePeriod.oneMonth:
+        return _groupDataByDays(data);
+      case TimePeriod.oneYear:
+        return _groupDataByMonths(data);
+      case TimePeriod.all:
+        return _groupDataByYears(data);
+    }
+  }
+
+  List<Map<String, dynamic>> _groupDataByDays(List<Map<String, dynamic>> data) {
+    final groupedData = <String, Map<String, List<double>>>{};
+
+    for (final record in data) {
+      final timestamp = record['timestamp'] ?? record['Timestamp'];
+      if (timestamp == null) continue;
+
+      DateTime date;
+      try {
+        date = DateTime.parse(timestamp.toString());
+      } catch (e) {
+        continue;
+      }
+
+      // Group by day (YYYY-MM-DD)
+      final dayKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      groupedData.putIfAbsent(dayKey, () => {});
+
+      record.forEach((key, value) {
+        if (key.toLowerCase() != 'timestamp' && value != null && value is num) {
+          groupedData[dayKey]!.putIfAbsent(key, () => []);
+          groupedData[dayKey]![key]!.add(value.toDouble());
+        }
+      });
+    }
+
+    return _averageGroupedData(groupedData);
+  }
+
+  List<Map<String, dynamic>> _groupDataByMonths(
+    List<Map<String, dynamic>> data,
+  ) {
+    final groupedData = <String, Map<String, List<double>>>{};
+
+    for (final record in data) {
+      final timestamp = record['timestamp'] ?? record['Timestamp'];
+      if (timestamp == null) continue;
+
+      DateTime date;
+      try {
+        date = DateTime.parse(timestamp.toString());
+      } catch (e) {
+        continue;
+      }
+
+      // Group by month (YYYY-MM)
+      final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+
+      groupedData.putIfAbsent(monthKey, () => {});
+
+      record.forEach((key, value) {
+        if (key.toLowerCase() != 'timestamp' && value != null && value is num) {
+          groupedData[monthKey]!.putIfAbsent(key, () => []);
+          groupedData[monthKey]![key]!.add(value.toDouble());
+        }
+      });
+    }
+
+    return _averageGroupedData(groupedData);
+  }
+
+  List<Map<String, dynamic>> _groupDataByYears(
+    List<Map<String, dynamic>> data,
+  ) {
+    final groupedData = <String, Map<String, List<double>>>{};
+
+    for (final record in data) {
+      final timestamp = record['timestamp'] ?? record['Timestamp'];
+      if (timestamp == null) continue;
+
+      DateTime date;
+      try {
+        date = DateTime.parse(timestamp.toString());
+      } catch (e) {
+        continue;
+      }
+
+      // Group by year
+      final yearKey = date.year.toString();
+
+      groupedData.putIfAbsent(yearKey, () => {});
+
+      record.forEach((key, value) {
+        if (key.toLowerCase() != 'timestamp' && value != null && value is num) {
+          groupedData[yearKey]!.putIfAbsent(key, () => []);
+          groupedData[yearKey]![key]!.add(value.toDouble());
+        }
+      });
+    }
+
+    return _averageGroupedData(groupedData);
+  }
+
+  List<Map<String, dynamic>> _averageGroupedData(
+    Map<String, Map<String, List<double>>> groupedData,
+  ) {
+    final result = <Map<String, dynamic>>[];
+
+    groupedData.forEach((timeKey, fieldsData) {
+      final record = <String, dynamic>{'timestamp': timeKey};
+
+      fieldsData.forEach((field, values) {
+        if (values.isNotEmpty) {
+          // Sum the values for better metrics representation (total consumption per period)
+          final sum = values.reduce((a, b) => a + b);
+          record[field] = sum;
+        }
+      });
+
+      result.add(record);
+    });
+
+    // Sort by timestamp
+    result.sort(
+      (a, b) => a['timestamp'].toString().compareTo(b['timestamp'].toString()),
+    );
+
+    return result;
   }
 
   void _initializeFields() {
@@ -148,12 +432,6 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
 
     // Generate colors for all available fields
     _generateFieldColors(availableFields);
-
-    print(
-      'Initialized fields: ${availableFields.length} total, ${_selectedFields.length} selected',
-    );
-    print('Available fields: ${availableFields.toList()}');
-    print('Selected fields: ${_selectedFields.toList()}');
   }
 
   Map<String, List<String>> _groupFieldsByType(Set<String> fields) {
@@ -256,7 +534,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
     // Show loading state when switching to Graphs view
     if (widget.isLoading) {
       return AppCard(
-        child: Container(
+        child: SizedBox(
           height: 500,
           child: Center(
             child: AppLottieStateWidget.loading(lottieSize: 80),
@@ -282,11 +560,12 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
-                const SizedBox(height: AppSizes.spacing16),
+                // REMOVED: _buildHeader() - not needed anymore
+                // REMOVED: _buildTimePeriodFilter() - moved to chart header
+                // REMOVED: _buildDateRangeFilter() - moved to chart header
                 _buildFieldSelection(),
                 const SizedBox(height: AppSizes.spacing16),
-                _buildChart(),
+                _buildChart(), // Enhanced with Time Period, Custom Date Range, Export, Refresh
                 const SizedBox(height: AppSizes.spacing16),
                 _buildSummaryCards(),
                 const SizedBox(height: AppSizes.spacing24),
@@ -298,77 +577,84 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
     );
   }
 
-  Widget _buildHeader() {
-    return AppCard(
-      child:
-          //Row(
-          // children: [
-          //   Text(
-          //     'Metrics Visualizationss',
-          //     style: TextStyle(
-          //       fontSize: AppSie,
-          //       fontWeight: FontWeight.w700,
-          //       color: AppColors.textPrimary,
-          //     ),
-          //   ),
-          //   const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // Chart Type Selector
-              // Container(
-              //   decoration: BoxDecoration(
-              //     border: Border.all(color: AppColors.border),
-              //     borderRadius: BorderRadius.circular(8),
-              //   ),
-              //   child: ModernChartTypeDropdown(
-              //     selectedType: _selectedChartType,
-              //     onChanged: (type) {
-              //       setState(() {
-              //         _selectedChartType = type;
-              //       });
-              //     },
-              //   ),
-              // ),
-              const SizedBox(width: AppSizes.spacing12),
-              // Export Button
-              if (widget.onExport != null)
-                IconButton(
-                  onPressed: widget.onExport,
-                  icon: const Icon(Icons.download),
-                  tooltip: 'Export Chart',
-                  style: IconButton.styleFrom(
-                    backgroundColor: context.surfaceColor,
-                    foregroundColor: context.textSecondaryColor,
+  void _onTimePeriodChanged(TimePeriod period) {
+    setState(() {
+      _selectedTimePeriod = period;
+      // Clear custom date range when time period is selected (time period has priority)
+      _startDate = null;
+      _endDate = null;
+    });
+
+    // Trigger animation
+    _filterAnimationController.forward(from: 0);
+
+    // Trigger chart update with new grouping
+    _animationController.reset();
+    _animationController.forward();
+
+    // Trigger API call with new time period and PageSize=0
+    _triggerTimePeriodApiCall(period);
+  }
+
+  void _toggleLogScale() {
+    // TODO: Implement logarithmic scale toggle
+    // This would modify the Y-axis to use logarithmic scaling
+  }
+
+  Widget _buildTimePeriodFilter() {
+    return Row(
+      children: TimePeriod.values.map((period) {
+        final isSelected = _selectedTimePeriod == period;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.only(right: AppSizes.spacing8),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _onTimePeriodChanged(period),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing8,
+                  vertical: AppSizes.spacing2,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? context.primaryColor
+                      : context.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                  border: Border.all(
+                    color: isSelected
+                        ? context.primaryColor
+                        : context.borderColor,
+                    width: isSelected ? 2 : 1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: context.primaryColor.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  period.label,
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeMedium,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected
+                        ? Colors.white
+                        : context.textSecondaryColor,
                   ),
                 ),
-              const SizedBox(width: AppSizes.spacing8),
-              // Refresh Button
-              if (widget.onRefresh != null)
-                ElevatedButton.icon(
-                  onPressed: widget.isLoading ? null : widget.onRefresh,
-                  icon: widget.isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh, size: 16),
-                  label: Text('Refresh'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primaryColor,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-            ],
-            //   ),
-            // ],
+              ),
+            ),
           ),
+        );
+      }).toList(),
     );
   }
 
@@ -437,12 +723,12 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 decoration: BoxDecoration(
                   color: _selectedFields.isEmpty
                       ? context.borderColor
-                      : context.primaryColor.withOpacity(0.1),
+                      : context.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _selectedFields.isEmpty
                         ? context.borderColor
-                        : context.primaryColor.withOpacity(0.3),
+                        : context.primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(
@@ -525,6 +811,292 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
     );
   }
 
+  // BUILD ENHANCED CHART HEADER
+  Widget _buildEnhancedChartHeader() {
+    return Column(
+      children: [
+        // Main header row
+        Row(
+          children: [
+            // Chart title and info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Metrics Visualization',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeMedium,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimaryColor,
+                    ),
+                  ),
+                  Text(
+                    'Total Points: ${_prepareChartData().length}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textSecondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // PageSize input
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Points: ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textSecondaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    height: 32,
+                    child: TextFormField(
+                      controller: _pageSizeController,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.spacing8,
+                          vertical: AppSizes.spacing4,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMedium,
+                          ),
+                          borderSide: BorderSide(
+                            color: context.borderColor,
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMedium,
+                          ),
+                          borderSide: BorderSide(
+                            color: context.borderColor,
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMedium,
+                          ),
+                          borderSide: BorderSide(
+                            color: context.primaryColor,
+                            width: 2,
+                          ),
+                        ),
+                        hintText: _pageSize == 0 ? 'All' : '$_pageSize',
+                        hintStyle: TextStyle(
+                          fontSize: AppSizes.fontSizeSmall,
+                          color: context.textSecondaryColor,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        // Cancel previous timer
+                        _pageSizeTimer?.cancel();
+
+                        if (value.isNotEmpty) {
+                          if (value.toLowerCase() == 'all') {
+                            setState(() {
+                              _pageSize = 0;
+                            });
+                            _triggerDelayedApiCall(0);
+                          } else {
+                            final int? newSize = int.tryParse(value);
+                            if (newSize != null && newSize > 0) {
+                              setState(() {
+                                _pageSize = newSize;
+                              });
+                              _triggerDelayedApiCall(newSize);
+                            }
+                          }
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return null;
+                        }
+                        if (value.toLowerCase() == 'all') {
+                          return null;
+                        }
+                        final int? size = int.tryParse(value);
+                        if (size == null) {
+                          return 'Invalid number';
+                        }
+                        if (size <= 0) {
+                          return 'Must be > 0';
+                        }
+                        if (size > 10000) {
+                          return 'Max: 10000';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Chart type dropdown
+            SizedBox(
+              height: 32,
+              child: ModernChartTypeDropdown(
+                selectedType: _selectedChartType,
+                onChanged: (type) {
+                  setState(() {
+                    _selectedChartType = type;
+                  });
+                  _animationController.reset();
+                  _animationController.forward();
+                },
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: AppSizes.spacing12),
+
+        // Second row: Time Period, Custom Date Picker, Export, Refresh
+        Row(
+          children: [
+            // TIME PERIOD FILTERS
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _buildTimePeriodFilter(),
+              ),
+            ),
+
+            const SizedBox(width: AppSizes.spacing12),
+
+            // DIRECT CUSTOM DATE PICKER (no button/dialog)
+            // if (_showCustomDatePicker) ...[
+            //   SizedBox(
+            //     height: 28, // Match the height of other buttons
+            //     //  child: _buildInlineCustomDatePicker(),
+            //   ),
+            //   const SizedBox(width: AppSizes.spacing8),
+            // ],
+
+            // EXPORT BUTTON
+            // SizedBox(height: 28, child: _buildExportButton()),
+            // const SizedBox(width: AppSizes.spacing8),
+
+            // // REFRESH BUTTON
+            // SizedBox(height: 28, child: _buildRefreshButton()),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Widget _buildInlineCustomDatePicker() {
+  //   return SizedBox(
+  //     width: 180, // Consistent width for the date picker
+  //     height: 28, // Match button heights
+  //     child: CustomDateRangePicker(
+  //       initialStartDate: _startDate,
+  //       initialEndDate: _endDate,
+  //       onDateRangeSelected: (from, to) {
+  //         setState(() {
+  //           _fromDate = from;
+  //           _toDate = to;
+  //           // Reset time period when custom date is selected for clear UX
+  //          // _selectedTimePeriod = TimePeriod.oneMonth;
+  //         });
+  //              _onCustomDateRangeChanged(_startDate, _endDate);
+
+  //         // Trigger API call with custom date range
+  //         if (widget.onDateRangeChanged != null) {
+  //           widget.onDateRangeChanged!(from, to);
+  //         }
+  //       },
+  //     ),
+  //   );
+  // }
+
+  Widget _buildExportButton() {
+    return OutlinedButton.icon(
+      onPressed: () {
+        // TODO: Implement export functionality
+        if (widget.onExport != null) {
+          widget.onExport!();
+        }
+      },
+      icon: Icon(
+        Icons.file_download,
+        size: AppSizes.iconSmall,
+        color: context.primaryColor,
+      ),
+      label: Text(
+        'Export',
+        style: TextStyle(
+          fontSize: AppSizes.fontSizeSmall,
+          color: context.primaryColor,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing8,
+          vertical: AppSizes.spacing4,
+        ),
+        side: BorderSide(color: context.primaryColor),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRefreshButton() {
+    return OutlinedButton.icon(
+      onPressed: () {
+        // TODO: Implement refresh functionality
+        if (widget.onRefresh != null) {
+          widget.onRefresh!();
+        }
+      },
+      icon: Icon(
+        Icons.refresh,
+        size: AppSizes.iconSmall,
+        color: context.primaryColor,
+      ),
+      label: Text(
+        'Refresh',
+        style: TextStyle(
+          fontSize: AppSizes.fontSizeSmall,
+          color: context.primaryColor,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing8,
+          vertical: AppSizes.spacing4,
+        ),
+        side: BorderSide(color: context.primaryColor),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        ),
+      ),
+    );
+  }
+
   Widget _buildChart() {
     if (_selectedFields.isEmpty) {
       return AppCard(
@@ -563,168 +1135,8 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Chart header with legend
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Metrics Visualization',
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeMedium,
-                        fontWeight: FontWeight.w600,
-                        color: context.textPrimaryColor,
-                      ),
-                    ),
-                    Text(
-                      'Total Points: ${_prepareChartData().length}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.textSecondaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // PageSize input
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing8,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Points: ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.textSecondaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Container(
-                      width: 80,
-                      height: 32,
-                      child: TextFormField(
-                        controller: _pageSizeController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.spacing8,
-                            vertical: AppSizes.spacing4,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: BorderSide(
-                              color: context.borderColor,
-                              width: 1,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: BorderSide(
-                              color: context.borderColor,
-                              width: 1,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: BorderSide(
-                              color: context.primaryColor,
-                              width: 2,
-                            ),
-                          ),
-                          hintText: _pageSize == 0 ? 'All' : '${_pageSize}',
-                          hintStyle: TextStyle(
-                            fontSize: 12,
-                            color: context.textSecondaryColor,
-                          ),
-                        ),
-                        onChanged: (value) {
-                          print(
-                            'ModernMetricsChart: onChanged called with value: "$value"',
-                          );
-                          // Cancel previous timer
-                          _pageSizeTimer?.cancel();
-
-                          if (value.isNotEmpty) {
-                            if (value.toLowerCase() == 'all') {
-                              print(
-                                'ModernMetricsChart: Setting pageSize to 0 (All)',
-                              );
-                              setState(() {
-                                _pageSize = 0;
-                              });
-                              _triggerDelayedApiCall(0);
-                            } else {
-                              final int? newSize = int.tryParse(value);
-                              print(
-                                'ModernMetricsChart: Parsed value to: $newSize',
-                              );
-                              if (newSize != null && newSize > 0) {
-                                print(
-                                  'ModernMetricsChart: Valid pageSize, setting to: $newSize',
-                                );
-                                // Always allow any positive number - let the API handle the actual limits
-                                setState(() {
-                                  _pageSize = newSize;
-                                });
-                                _triggerDelayedApiCall(newSize);
-                              } else {
-                                print(
-                                  'ModernMetricsChart: Invalid pageSize: $newSize',
-                                );
-                              }
-                            }
-                          } else {
-                            print(
-                              'ModernMetricsChart: Empty value, not triggering API',
-                            );
-                          }
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null;
-                          }
-                          if (value.toLowerCase() == 'all') {
-                            return null;
-                          }
-                          final int? size = int.tryParse(value);
-                          if (size == null) {
-                            return 'Invalid number';
-                          }
-                          if (size <= 0) {
-                            return 'Must be > 0';
-                          }
-                          if (size > 10000) {
-                            return 'Max: 10000';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ModernChartTypeDropdown(
-                selectedType: _selectedChartType,
-                onChanged: (type) {
-                  setState(() {
-                    _selectedChartType = type;
-                  });
-                  _animationController.reset();
-                  _animationController.forward();
-                },
-              ),
-            ],
-          ),
+          // ENHANCED CHART HEADER with Time Period, Custom Date Picker, Export, Refresh
+          _buildEnhancedChartHeader(),
           const SizedBox(height: AppSizes.spacing16),
           // Legend row
           if (_selectedFields.isNotEmpty)
@@ -809,7 +1221,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                           opacity: 1.0 - _animation.value,
                           duration: const Duration(milliseconds: 200),
                           child: Container(
-                            color: context.surfaceColor.withOpacity(0.8),
+                            color: context.surfaceColor.withValues(alpha: 0.8),
                             child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -922,7 +1334,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                         child: SideTitleWidget(
                           axisSide: meta.axisSide,
                           child: Transform.rotate(
-                            angle: -1.5708, // -90 degrees in radians (π/2)
+                            angle: -1.5708, // -90 degrees in radians (p/2)
                             child: Text(
                               _formatEnhancedTimestamp(timestamp),
                               style: TextStyle(
@@ -985,7 +1397,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 ),
                 belowBarData: BarAreaData(show: false),
                 shadow: Shadow(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   offset: const Offset(0, 2),
                   blurRadius: 4,
                 ),
@@ -1107,7 +1519,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 topRight: Radius.circular(4),
               ),
               gradient: LinearGradient(
-                colors: [color, color.withOpacity(0.7)],
+                colors: [color, color.withValues(alpha: 0.7)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -1204,7 +1616,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                         child: SideTitleWidget(
                           axisSide: meta.axisSide,
                           child: Transform.rotate(
-                            angle: -1.5708, // -90 degrees in radians (π/2)
+                            angle: -1.5708, // -90 degrees in radians (p/2)
                             child: Text(
                               _formatEnhancedTimestamp(timestamp),
                               style: TextStyle(
@@ -1242,7 +1654,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
               drawVerticalLine: false,
               horizontalInterval: null,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: context.borderColor.withOpacity(0.3),
+                color: context.borderColor.withValues(alpha: 0.3),
                 strokeWidth: 1,
                 dashArray: [3, 3],
               ),
@@ -1278,7 +1690,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
               drawVerticalLine: false,
               horizontalInterval: null,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: context.borderColor.withOpacity(0.3),
+                color: context.borderColor.withValues(alpha: 0.3),
                 strokeWidth: 1,
                 dashArray: [3, 3],
               ),
@@ -1306,7 +1718,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                         child: SideTitleWidget(
                           axisSide: meta.axisSide,
                           child: Transform.rotate(
-                            angle: -1.5708, // -90 degrees in radians (π/2)
+                            angle: -1.5708, // -90 degrees in radians (p/2)
                             child: Text(
                               _formatEnhancedTimestamp(timestamp),
                               style: TextStyle(
@@ -1360,9 +1772,9 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                   show: true,
                   gradient: LinearGradient(
                     colors: [
-                      color.withOpacity(0.4),
-                      color.withOpacity(0.1),
-                      color.withOpacity(0.05),
+                      color.withValues(alpha: 0.4),
+                      color.withValues(alpha: 0.1),
+                      color.withValues(alpha: 0.05),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -1496,7 +1908,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
         boxShadow: [
           AppSizes.shadowSmall,
           // BoxShadow(
-          //   color:  Colors.black.withOpacity(0.04),
+          //   color:  Colors.black.withValues(alpha: 0.04),
           //   blurRadius: 8,
           //   offset: const Offset(0, 2),
           // ),
@@ -1512,7 +1924,7 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(fieldIcon, color: color, size: 16),
@@ -1772,6 +2184,64 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
     try {
       DateTime date;
       if (timestamp is String) {
+        // Handle grouped timestamp format (YYYY-MM-DD, YYYY-MM, YYYY)
+        if (_selectedTimePeriod != TimePeriod.oneDay) {
+          switch (_selectedTimePeriod) {
+            case TimePeriod.sevenDays:
+            case TimePeriod.oneMonth:
+              if (timestamp.contains('-') && timestamp.length == 10) {
+                // Format: YYYY-MM-DD -> "Aug 15"
+                date = DateTime.parse(timestamp);
+                final monthNames = [
+                  '',
+                  'Jan',
+                  'Feb',
+                  'Mar',
+                  'Apr',
+                  'May',
+                  'Jun',
+                  'Jul',
+                  'Aug',
+                  'Sep',
+                  'Oct',
+                  'Nov',
+                  'Dec',
+                ];
+                return '${monthNames[date.month]} ${date.day}';
+              }
+              break;
+            case TimePeriod.oneYear:
+              if (timestamp.contains('-') && timestamp.length == 7) {
+                // Format: YYYY-MM -> "Aug 2024"
+                final parts = timestamp.split('-');
+                final year = int.parse(parts[0]);
+                final month = int.parse(parts[1]);
+                final monthNames = [
+                  '',
+                  'Jan',
+                  'Feb',
+                  'Mar',
+                  'Apr',
+                  'May',
+                  'Jun',
+                  'Jul',
+                  'Aug',
+                  'Sep',
+                  'Oct',
+                  'Nov',
+                  'Dec',
+                ];
+                return '${monthNames[month]} $year';
+              }
+              break;
+            case TimePeriod.all:
+              // Format: YYYY -> "2024"
+              return timestamp.toString();
+            case TimePeriod.oneDay:
+              break;
+          }
+        }
+
         date = DateTime.parse(timestamp);
       } else if (timestamp is DateTime) {
         date = timestamp;
@@ -1779,27 +2249,74 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
         return timestamp.toString();
       }
 
-      // Format as "Aug/15 05:00" - month abbreviation, day, 24h time
-      final monthNames = [
-        '',
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      final month = monthNames[date.month];
-      final day = date.day.toString().padLeft(2, '0');
-      final hour = date.hour.toString().padLeft(2, '0');
-      final minute = date.minute.toString().padLeft(2, '0');
-      return '$month/$day $hour:$minute';
+      // Format based on selected time period
+      switch (_selectedTimePeriod) {
+        case TimePeriod.oneDay:
+          // Show full time for 1D view: "Aug/15 05:00"
+          final monthNames = [
+            '',
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+          ];
+          final month = monthNames[date.month];
+          final day = date.day.toString().padLeft(2, '0');
+          final hour = date.hour.toString().padLeft(2, '0');
+          final minute = date.minute.toString().padLeft(2, '0');
+          return '$month/$day $hour:$minute';
+
+        case TimePeriod.sevenDays:
+        case TimePeriod.oneMonth:
+          // Show day for 7D and 1M: "Aug 15"
+          final monthNames = [
+            '',
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+          ];
+          return '${monthNames[date.month]} ${date.day}';
+
+        case TimePeriod.oneYear:
+          // Show month for 1Y: "Aug 2024"
+          final monthNames = [
+            '',
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+          ];
+          return '${monthNames[date.month]} ${date.year}';
+
+        case TimePeriod.all:
+          // Show year for All: "2024"
+          return date.year.toString();
+      }
     } catch (e) {
       return timestamp.toString();
     }
@@ -1873,12 +2390,15 @@ class _ModernMetricsChartState extends State<ModernMetricsChart>
       });
     }).toList();
 
+    // Apply time period grouping
+    final groupedData = _groupDataByTimePeriod(allData);
+
     // Apply PageSize limit if specified (0 means get all)
-    if (_pageSize > 0 && _pageSize < allData.length) {
-      return allData.take(_pageSize).toList();
+    if (_pageSize > 0 && _pageSize < groupedData.length) {
+      return groupedData.take(_pageSize).toList();
     }
 
-    return allData;
+    return groupedData;
   }
 
   // Helper method for separate DateTime axis container

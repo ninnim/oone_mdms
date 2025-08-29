@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mdms_clone/core/utils/format_date_helper.dart';
 import '../../widgets/common/app_tabs.dart';
 import '../../widgets/common/status_chip.dart';
 import 'package:provider/provider.dart';
@@ -979,15 +980,17 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
     });
 
     try {
+      final startDateStr = formatStartOfDay(_metricsStartDate);
+      final endDateStr = formatEndOfDay(_metricsEndDate);
       print('Loading metrics data for device: ${widget.device.id}');
       print(
-        'Date range: ${_metricsStartDate.toIso8601String()} to ${_metricsEndDate.toIso8601String()}',
+        'Date rangenew: ${startDateStr} to ${endDateStr}',
       );
 
       final metricsResponse = await _deviceService.getDeviceMetrics(
         widget.device.id ?? '',
-        startDate: _metricsStartDate.toIso8601String(),
-        endDate: _metricsEndDate.toIso8601String(),
+        startDate: startDateStr,
+        endDate: endDateStr,
         pageSize: _metricsItemsPerPage,
         currentPage: _metricsCurrentPage,
       );
@@ -1059,18 +1062,21 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
       _loadingMetrics = true;
     });
 
+
     try {
+        final startDateStr = formatStartOfDay(_metricsStartDate);
+    final endDateStr = formatEndOfDay(_metricsEndDate);
       print(
         'Loading metrics data for graphs (PageSize=0) for device: ${widget.device.id}',
       );
       print(
-        'Date range: ${_metricsStartDate.toIso8601String()} to ${_metricsEndDate.toIso8601String()}',
+        'Date rangeGraphs: ${startDateStr} to ${endDateStr}',
       );
 
       final metricsResponse = await _deviceService.getDeviceMetrics(
         widget.device.id ?? '',
-        startDate: _metricsStartDate.toIso8601String(),
-        endDate: _metricsEndDate.toIso8601String(),
+        startDate: startDateStr,
+        endDate: endDateStr,
         pageSize: 0, // PageSize=0 to get all data for graphs
         currentPage: 1,
       );
@@ -3019,24 +3025,16 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
 
     return Column(
       children: [
-        // Fixed header section with padding
+        // Fixed header section with padding - SIMPLIFIED HEADER
         Container(
           padding: const EdgeInsets.all(AppSizes.spacing16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with filters and view toggle
+              // Header with only view toggle (removed date filter)
               Row(
                 children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        //const SizedBox(width: 16),
-                        // Date filters
-                        _buildDateFilter(),
-                      ],
-                    ),
-                  ),
+                  const Spacer(), // Push toggle to the right
                   // View toggle
                   Container(
                     height: AppSizes.buttonHeightSmall,
@@ -3216,6 +3214,12 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
           _loadMetricsDataForGraphs, // Use graph-specific loader with PageSize=0
       onExport: _exportMetricsChart,
       onPageSizeChanged: _handlePageSizeChanged,
+      // CRITICAL FIX: Add Time Period and Date Range callbacks
+      onTimePeriodChanged: _handleTimePeriodChanged,
+      onDateRangeChanged: _handleDateRangeChanged,
+      // NEW: Pass current date range for custom date picker initialization
+      currentStartDate: _metricsStartDate,
+      currentEndDate: _metricsEndDate,
     );
   }
 
@@ -3229,6 +3233,39 @@ class _Device360DetailsScreenState extends State<Device360DetailsScreen>
     } else {
       // Load with specific page size - we need to create a new method for this
       await _loadMetricsDataWithPageSize(pageSize);
+    }
+  }
+
+  // CRITICAL FIX: Handle Time Period changes from ModernMetricsChart
+  void _handleTimePeriodChanged(
+    TimePeriod timePeriod,
+    DateTime fromDate,
+    DateTime toDate,
+  ) async {
+    // Update the date range for API calls
+    setState(() {
+      _metricsStartDate = fromDate;
+      _metricsEndDate = toDate;
+      _metricsCurrentPage = 1; // Reset to first page
+    });
+
+    // Load metrics data with new date range and PageSize=0 for graphs
+    await _loadMetricsDataForGraphs();
+  }
+
+  // CRITICAL FIX: Handle custom Date Range changes from ModernMetricsChart
+  void _handleDateRangeChanged(DateTime? startDate, DateTime? endDate) async {
+    // Only process if both dates are provided (for custom date range)
+    // Time Period buttons will also trigger this with calculated dates
+    if (startDate != null && endDate != null) {
+      setState(() {
+        _metricsStartDate = startDate;
+        _metricsEndDate = endDate;
+        _metricsCurrentPage = 1; // Reset to first page
+      });
+
+      // Load metrics data with new date range and PageSize=0 for graphs
+      await _loadMetricsDataForGraphs();
     }
   }
 
